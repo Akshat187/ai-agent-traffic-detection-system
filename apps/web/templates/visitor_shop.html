@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meridian Shop — Curated Everyday Goods</title>
+  <meta name="description" content="Discover thoughtfully curated products across homeware, books, apparel, and technology at Meridian.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/static/meridian.css">
+  <style>
+    .page-header-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid var(--color-border);
+      margin-bottom: 2rem;
+    }
+    @media (min-width: 768px) {
+      .page-header-row {
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+    }
+
+    .shop-search-bar {
+      position: relative;
+      width: 100%;
+      max-width: 260px;
+      /* Ensure the search field always sits above product cards and their
+         hover-triggered stacking contexts (transform creates a new context). */
+      isolation: isolate;
+      z-index: 10;
+    }
+    .shop-search-bar input {
+      width: 100%;
+      padding-left: 2.25rem;
+      padding-right: 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-card);
+      font-size: 0.875rem;
+      height: 36px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      outline: none;
+    }
+    .shop-search-bar input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .shop-search-bar svg {
+      position: absolute;
+      left: 0.7rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 15px;
+      height: 15px;
+      color: var(--color-text-tertiary);
+      pointer-events: none;
+    }
+    /* search-wrap used in header __actions */
+    .search-wrap {
+      position: relative;
+      isolation: isolate;
+      z-index: 10;
+    }
+    .search-wrap input.form-control {
+      padding-left: 2.1rem;
+      border-radius: 9999px;
+      height: 36px;
+      width: 200px;
+      font-size: 0.8125rem;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-secondary);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s, width 0.2s;
+    }
+    .search-wrap input.form-control:focus {
+      width: 240px;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      background: var(--color-bg-card);
+    }
+    .search-wrap svg {
+      position: absolute;
+      left: 0.65rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      color: var(--color-text-tertiary);
+      pointer-events: none;
+    }
+
+    /* Product Cards */
+    .product-grid {
+      /* Isolate the grid's stacking context so hovering card transforms never
+         rise above the sticky nav header or search input (z-index: 10). */
+      isolation: isolate;
+      position: relative;
+    }
+    .product-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      border-radius: var(--radius-lg);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+      border-color: #cbd5e1;
+    }
+    .product-card .card-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 1.25rem;
+    }
+
+    /* Swatch Visuals (Consistent Minimalist Vector Treatment) */
+    .product-swatch {
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      position: relative;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+    .product-swatch svg {
+      width: 36px;
+      height: 36px;
+      opacity: 0.85;
+      transition: transform 0.2s ease;
+    }
+    .product-card:hover .product-swatch svg {
+      transform: scale(1.08);
+    }
+    .swatch-category-tag {
+      position: absolute;
+      top: 0.625rem;
+      left: 0.625rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(4px);
+      color: var(--color-text-secondary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    /* Category Swatch Gradients */
+    .swatch-homeware {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      color: #92400e;
+    }
+    .swatch-books {
+      background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+      color: #166534;
+    }
+    .swatch-apparel {
+      background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+      color: #3730a3;
+    }
+    .swatch-technology {
+      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+      color: #0369a1;
+    }
+
+    .product-name {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: 0.35rem;
+      line-height: 1.35;
+    }
+    .product-desc {
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+      flex: 1;
+      margin-bottom: 1.25rem;
+    }
+    .product-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding-top: 0.875rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .product-price {
+      font-size: 1.0625rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+    .product-add-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Cart sidebar */
+    .cart-panel {
+      position: fixed;
+      right: 0; top: 0; bottom: 0;
+      width: 380px;
+      max-width: 90vw;
+      background: var(--color-bg-card);
+      border-left: 1px solid var(--color-border);
+      box-shadow: var(--shadow-xl);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cart-panel.open { transform: translateX(0); }
+
+    .cart-panel__header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cart-panel__title { font-size: 1.0625rem; font-weight: 700; }
+    .cart-close {
+      width: 32px; height: 32px;
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      line-height: 1;
+      color: var(--color-text-secondary);
+    }
+    .cart-close:hover {
+      background: var(--color-border);
+      color: var(--color-text-primary);
+    }
+
+    .cart-items { flex: 1; overflow-y: auto; padding: 1rem 1.5rem; }
+
+    .cart-item {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      padding: 0.875rem 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item__badge {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .cart-item__badge svg { width: 20px; height: 20px; }
+    .cart-item__info { flex: 1; min-width: 0; }
+    .cart-item__name { font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cart-item__sub { font-size: 0.8125rem; color: var(--color-text-tertiary); }
+    .cart-item__price { font-size: 0.875rem; font-weight: 700; flex-shrink: 0; }
+    .cart-item__remove {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--color-text-tertiary);
+      font-size: 1.25rem;
+      padding: 0.25rem 0.5rem;
+      line-height: 1;
+    }
+    .cart-item__remove:hover { color: var(--color-error); }
+
+    .cart-panel__footer {
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid var(--color-border);
+      background: #fafbfc;
+    }
+    .cart-total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+    }
+
+    .cart-empty {
+      text-align: center;
+      color: var(--color-text-tertiary);
+      padding: 3rem 0;
+      font-size: 0.9375rem;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(2px);
+      z-index: 490;
+      display: none;
+    }
+    .overlay.visible { display: block; }
+
+    /* ─── Consent Banner ─────────────────────────────────── */
+    #consent-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 600;
+      background: rgba(15, 23, 42, 0.97);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      padding: 1.1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #consent-banner.visible {
+      transform: translateY(0);
+    }
+    #consent-banner p { margin: 0; flex: 1; min-width: 240px; color: #94a3b8; }
+    #consent-banner p strong { color: #f1f5f9; font-weight: 600; }
+    .consent-actions { display: flex; gap: 0.625rem; flex-shrink: 0; align-items: center; }
+    .consent-btn {
+      padding: 0.45rem 1.1rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .consent-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .consent-btn--accept { background: #4f46e5; color: #fff; }
+    .consent-btn--decline { background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.12); }
+  </style>
+</head>
+<body data-task="shopping">
+
+  <!-- ─── Navigation ─────────────────────────────────────────── -->
+  <header class="meridian-header">
+    <div class="container">
+      <div class="meridian-header__inner">
+        <a href="/" class="meridian-logo">
+          <div class="meridian-logo__mark">M</div>
+          <span>Meridian</span>
+        </a>
+        <nav class="meridian-nav" aria-label="Main navigation">
+          <a href="/visitor" class="meridian-nav__link">Home</a>
+          <a href="/visitor/shop" class="meridian-nav__link active" aria-current="page">Shop</a>
+          <a href="/visitor/travel" class="meridian-nav__link">Travel</a>
+          <a href="/visitor/forum" class="meridian-nav__link">Community</a>
+        </nav>
+        <div class="meridian-header__actions">
+          <div class="search-wrap hide-mobile">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
+            </svg>
+            <input id="shop-search" type="text" class="form-control" placeholder="Search catalog…" autocomplete="off" aria-label="Search catalog">
+          </div>
+          <button id="cart-toggle-btn" class="cart-indicator" aria-label="View shopping basket" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            <span id="cart-count-badge" class="cart-count-badge" aria-live="polite">0</span>
+            <span id="cart-total-label" class="hide-mobile font-medium" style="font-size:0.875rem">₹0.00</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Main Content ───────────────────────────────────────── -->
+  <main class="page-main">
+    <div class="container">
+
+      <!-- Page Header & Filters -->
+      <div class="page-header-row">
+        <div>
+          <h1 class="page-title">Curated Shop</h1>
+          <p class="page-subtitle">Hand-selected everyday essentials across homeware, books, apparel, and technology.</p>
+        </div>
+        <div class="flex items-center gap-3" style="flex-wrap:wrap">
+          <div class="filter-chips" role="group" aria-label="Filter by category">
+            <button class="chip active" data-category="all" id="filter-all">All (20)</button>
+            <button class="chip" data-category="homeware" id="filter-homeware">Homeware</button>
+            <button class="chip" data-category="books" id="filter-books">Books</button>
+            <button class="chip" data-category="apparel" id="filter-apparel">Apparel</button>
+            <button class="chip" data-category="technology" id="filter-technology">Technology</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Grid (20 Products) -->
+      <div class="product-grid" id="product-grid" role="list">
+
+        <!-- ══ Homeware (5) ══ -->
+        <article class="card product-card" data-category="homeware" data-id="prod_linen_throw" data-price="5799.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-homeware" aria-hidden="true">
+              <span class="swatch-category-tag">Homeware</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            </div>
+            <p class="product-name">Linen Throw Blanket — Natural</p>
+            <p class="product-desc">Woven from 100% Normandy flax linen. Softens organically with every wash, bringing effortless warmth to living spaces.</p>
+            <div class="product-footer">
+              <span class="product-price">₹5,799</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_linen_throw">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="homeware" data-id="prod_ceramic_mug" data-price="2399.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-homeware" aria-hidden="true">
+              <span class="swatch-category-tag">Homeware</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg>
+            </div>
+            <p class="product-name">Stoneware Studio Mug Set</p>
+            <p class="product-desc">Hand-turned speckled stoneware glazed in matte oatmeal. Ergonomic handle and heat-retaining clay body for slow mornings.</p>
+            <div class="product-footer">
+              <span class="product-price">₹2,399</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_ceramic_mug">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="homeware" data-id="prod_cast_iron_kettle" data-price="6299.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-homeware" aria-hidden="true">
+              <span class="swatch-category-tag">Homeware</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2a9 9 0 0 0-9 9c0 4.1 2.8 7.5 6.6 8.6L9 22h6l-.6-2.4c3.8-1.1 6.6-4.5 6.6-8.6a9 9 0 0 0-9-9z"/><path d="M4 11h16"/></svg>
+            </div>
+            <p class="product-name">Japanese Cast Iron Kettle</p>
+            <p class="product-desc">Traditional Tetsubin design with enameled interior and fine mesh tea infuser. Built to brew and retain heat for generations.</p>
+            <div class="product-footer">
+              <span class="product-price">₹6,299</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_cast_iron_kettle">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="homeware" data-id="prod_oak_organizer" data-price="3599.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-homeware" aria-hidden="true">
+              <span class="swatch-category-tag">Homeware</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M10 10v10"/></svg>
+            </div>
+            <p class="product-name">Solid White Oak Desk Caddy</p>
+            <p class="product-desc">Carved from sustainably managed European oak. Precision grooves keep stationery, cards, and daily essentials perfectly orderly.</p>
+            <div class="product-footer">
+              <span class="product-price">₹3,599</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_oak_organizer">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="homeware" data-id="prod_merino_cushion" data-price="4099.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-homeware" aria-hidden="true">
+              <span class="swatch-category-tag">Homeware</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m3 3 18 18M21 3 3 21"/></svg>
+            </div>
+            <p class="product-name">Woven Merino Cushion Cover</p>
+            <p class="product-desc">Chunky waffle weave in raw undyed wool. Tactile comfort with hidden brass zip closure and reinforced piped seams.</p>
+            <div class="product-footer">
+              <span class="product-price">₹4,099</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_merino_cushion">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ══ Books & Stationery (5) ══ -->
+        <article class="card product-card" data-category="books" data-id="prod_atlas_obscura" data-price="2749.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-books" aria-hidden="true">
+              <span class="swatch-category-tag">Books</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </div>
+            <p class="product-name">Atlas of Remote Islands — 2nd Ed.</p>
+            <p class="product-desc">Fifty islands far from the mainland that you have never visited and never will. Illustrated hardcover with custom gold-foil map prints.</p>
+            <div class="product-footer">
+              <span class="product-price">₹2,749</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_atlas_obscura">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="books" data-id="prod_bauhaus_monograph" data-price="3849.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-books" aria-hidden="true">
+              <span class="swatch-category-tag">Books</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+            <p class="product-name">Bauhaus Architecture Monograph</p>
+            <p class="product-desc">A comprehensive visual study of modernism, functionalism, and Weimar design principles featuring archival photography.</p>
+            <div class="product-footer">
+              <span class="product-price">₹3,849</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_bauhaus_monograph">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="books" data-id="prod_fountain_pen" data-price="5299.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-books" aria-hidden="true">
+              <span class="swatch-category-tag">Stationery</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+            </div>
+            <p class="product-name">Precision Brass Fountain Pen</p>
+            <p class="product-desc">Machined from solid raw brass with a stainless steel fine nib. Develops an individual patina over years of dedicated note taking.</p>
+            <div class="product-footer">
+              <span class="product-price">₹5,299</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_fountain_pen">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="books" data-id="prod_leather_journal" data-price="3249.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-books" aria-hidden="true">
+              <span class="swatch-category-tag">Stationery</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM9 3v18M15 3v18"/></svg>
+            </div>
+            <p class="product-name">Vegetable-Tanned Leather Journal</p>
+            <p class="product-desc">Supple Tuscan leather casing with 192 pages of fountain-pen-friendly 100gsm Swedish Munken paper. Lay-flat binding.</p>
+            <div class="product-footer">
+              <span class="product-price">₹3,249</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_leather_journal">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="books" data-id="prod_typography_handbook" data-price="2199.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-books" aria-hidden="true">
+              <span class="swatch-category-tag">Books</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            </div>
+            <p class="product-name">The Form of the Book — Essays</p>
+            <p class="product-desc">Jan Tschichold's classic essays on typographic proportion, grid architecture, and balanced visual hierarchy for publishers.</p>
+            <div class="product-footer">
+              <span class="product-price">₹2,199</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_typography_handbook">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ══ Apparel & Goods (5) ══ -->
+        <article class="card product-card" data-category="apparel" data-id="prod_wool_cardigan" data-price="12399.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-apparel" aria-hidden="true">
+              <span class="swatch-category-tag">Apparel</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>
+            </div>
+            <p class="product-name">Fine Merino Cardigan — Slate</p>
+            <p class="product-desc">Spun from 19.5-micron New Zealand merino with horn buttons. Breathable natural temperature regulation across seasons.</p>
+            <div class="product-footer">
+              <span class="product-price">₹12,399</span>
+              <div class="product-add-row">
+                <select class="form-control" style="width:64px;padding-right:1.25rem;font-size:0.8125rem" id="size-prod_wool_cardigan" aria-label="Select size">
+                  <option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option>
+                </select>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_wool_cardigan">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="apparel" data-id="prod_canvas_weekender" data-price="14099.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-apparel" aria-hidden="true">
+              <span class="swatch-category-tag">Apparel</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            </div>
+            <p class="product-name">Waxed Canvas Weekender Duffle</p>
+            <p class="product-desc">Heavyweight 16oz Scottish waxed cotton canvas with vegetable-tanned bridle leather handles and solid brass hardware.</p>
+            <div class="product-footer">
+              <span class="product-price">₹14,099</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_canvas_weekender">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="apparel" data-id="prod_minimalist_raincoat" data-price="15399.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-apparel" aria-hidden="true">
+              <span class="swatch-category-tag">Apparel</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <p class="product-name">Seam-Sealed Technical Raincoat</p>
+            <p class="product-desc">Three-layer waterproof membrane tailored in a clean Scandinavian silhouette with storm flap and laser-welded pockets.</p>
+            <div class="product-footer">
+              <span class="product-price">₹15,399</span>
+              <div class="product-add-row">
+                <select class="form-control" style="width:64px;padding-right:1.25rem;font-size:0.8125rem" id="size-prod_minimalist_raincoat" aria-label="Select size">
+                  <option>S</option><option selected>M</option><option>L</option><option>XL</option>
+                </select>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_minimalist_raincoat">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="apparel" data-id="prod_leather_cardholder" data-price="2899.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-apparel" aria-hidden="true">
+              <span class="swatch-category-tag">Apparel</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </div>
+            <p class="product-name">Slim Card Wallet — Saddle Tan</p>
+            <p class="product-desc">Accommodates 6 cards and folded banknotes with a central pocket. Hand-stitched with bonded waxed linen thread.</p>
+            <div class="product-footer">
+              <span class="product-price">₹2,899</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_leather_cardholder">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="apparel" data-id="prod_wool_beanie" data-price="3399.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-apparel" aria-hidden="true">
+              <span class="swatch-category-tag">Apparel</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2a8 8 0 0 0-8 8v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4a8 8 0 0 0-8-8z"/><path d="M4 14h16"/></svg>
+            </div>
+            <p class="product-name">Ribbed Cashmere-Wool Beanie</p>
+            <p class="product-desc">Superfine cashmere and lambswool blend knitted in Hawick, Scotland with a double-folded brim for cold brisk mornings.</p>
+            <div class="product-footer">
+              <span class="product-price">₹3,399</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_wool_beanie">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ══ Technology & Workspace (5) ══ -->
+        <article class="card product-card" data-category="technology" data-id="prod_desk_lamp" data-price="7599.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-technology" aria-hidden="true">
+              <span class="swatch-category-tag">Technology</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
+            </div>
+            <p class="product-name">Architect's Articulated Task Lamp</p>
+            <p class="product-desc">Continuous color temperature adjustment (2700K to 5000K) and touch dimmer with integrated USB-C device fast-charging.</p>
+            <div class="product-footer">
+              <span class="product-price">₹7,599</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_desk_lamp">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="technology" data-id="prod_mechanical_keyboard" data-price="10249.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-technology" aria-hidden="true">
+              <span class="swatch-category-tag">Technology</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"/></svg>
+            </div>
+            <p class="product-name">Walnut Wireless Mechanical Keyboard</p>
+            <p class="product-desc">Gasket-mounted hot-swappable switches encased in solid American walnut with dye-sub PBT keycaps and Bluetooth 5.2.</p>
+            <div class="product-footer">
+              <span class="product-price">₹10,249</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_mechanical_keyboard">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="technology" data-id="prod_aluminum_dock" data-price="8099.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-technology" aria-hidden="true">
+              <span class="swatch-category-tag">Technology</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+            </div>
+            <p class="product-name">Studio Thunderbolt USB-C Dock</p>
+            <p class="product-desc">Anodized CNC aluminum body driving dual 4K displays at 60Hz, 100W power passthrough, Gigabit Ethernet, and UHS-II card readers.</p>
+            <div class="product-footer">
+              <span class="product-price">₹8,099</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_aluminum_dock">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="technology" data-id="prod_monitor_stands" data-price="4449.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-technology" aria-hidden="true">
+              <span class="swatch-category-tag">Technology</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <p class="product-name">Birch Plywood Monitor Riser</p>
+            <p class="product-desc">Ergonomic eye-level display elevation with molded cork feet and space underneath to tuck away keyboards and cables neatly.</p>
+            <div class="product-footer">
+              <span class="product-price">₹4,449</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_monitor_stands">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card product-card" data-category="technology" data-id="prod_digital_pad" data-price="7249.00" role="listitem">
+          <div class="card-body">
+            <div class="product-swatch swatch-technology" aria-hidden="true">
+              <span class="swatch-category-tag">Technology</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+            </div>
+            <p class="product-name">E-Ink Reusable Notebook & Stylus</p>
+            <p class="product-desc">Glare-free paper-feel surface with instantaneous cloud synchronization to Markdown and PDF. Zero backlight eye fatigue.</p>
+            <div class="product-footer">
+              <span class="product-price">₹7,249</span>
+              <div class="product-add-row">
+                <div class="qty-wrap">
+                  <button class="qty-dec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" min="1" max="10" value="1" aria-label="Quantity">
+                  <button class="qty-inc" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn-primary btn-sm add-cart-btn" id="add-prod_digital_pad">Add</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div><!-- /product-grid -->
+
+      <!-- Empty State -->
+      <p id="no-results-msg" class="hidden text-center text-secondary" style="padding:4rem 0;font-size:0.9375rem">
+        No products match your filter criteria. Try adjusting your search query or category.
+      </p>
+
+      <!-- Checkout Floating Bar -->
+      <div id="checkout-bar" class="card" style="margin-top:3rem;display:none;background:#f8fafc">
+        <div class="card-body flex items-center justify-between gap-4" style="flex-wrap:wrap">
+          <div>
+            <p class="font-semibold" style="font-size:0.9375rem">Your Basket</p>
+            <p class="text-sm text-secondary" id="checkout-bar-summary">No items yet.</p>
+          </div>
+          <button id="checkout-btn" class="btn btn-primary">
+            Proceed to Checkout &rarr;
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /container -->
+  </main>
+
+  <!-- ─── Cart Panel ─────────────────────────────────────────── -->
+  <div id="cart-overlay" class="overlay" aria-hidden="true"></div>
+  <aside id="cart-panel" class="cart-panel" aria-label="Shopping basket" aria-hidden="true">
+    <div class="cart-panel__header">
+      <h2 class="cart-panel__title">Shopping Basket</h2>
+      <button id="cart-close-btn" class="cart-close" aria-label="Close basket">×</button>
+    </div>
+    <div class="cart-items" id="cart-items-list">
+      <p class="cart-empty">Your basket is currently empty.</p>
+    </div>
+    <div class="cart-panel__footer">
+      <div class="cart-total-row">
+        <span>Subtotal</span>
+        <span id="cart-total-amount">₹0.00</span>
+      </div>
+      <button id="checkout-final-btn" class="btn btn-primary w-full" disabled>
+        Complete Purchase &rarr;
+      </button>
+    </div>
+  </aside>
+
+  <!-- ─── Order Success Modal ────────────────────────────────── -->
+  <div id="success-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="success-title">
+    <div class="modal">
+      <div class="modal__icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2 class="modal__title" id="success-title">Order Confirmed</h2>
+      <p class="modal__body">Thank you for your purchase. We have received your order and dispatched your receipt. Your items will arrive within 2–3 business days.</p>
+      <div class="modal__actions">
+        <button onclick="window.location.reload()" class="btn btn-secondary" style="flex:1">Continue Shopping</button>
+        <a href="/visitor/forum" class="btn btn-primary" style="flex:1">Visit Community</a>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ─── Footer ─────────────────────────────────────────────── -->
+  <footer class="meridian-footer">
+    <div class="container">
+      <div class="meridian-footer__inner">
+        <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:1rem">
+          <a href="/" class="meridian-logo">
+            <div class="meridian-logo__mark">M</div>
+            <span>Meridian</span>
+          </a>
+          <nav class="meridian-footer__links" aria-label="Footer navigation">
+            <a href="/visitor" class="meridian-footer__link">Home</a>
+            <a href="/visitor/shop" class="meridian-footer__link">Shop</a>
+            <a href="/visitor/travel" class="meridian-footer__link">Travel</a>
+            <a href="/visitor/forum" class="meridian-footer__link">Community</a>
+          </nav>
+        </div>
+        <p class="meridian-footer__copy">© 2026 Meridian — Curated goods, travel & community.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── Embeddable Sentinel SDK & Page Logic ──────────────── -->
+  <script src="/static/sentinel.js" data-site-id="site_meridian_prod" data-task="shopping" async></script>
+  <script src="/static/visitor.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    // ─── 20-Product Catalog ────────────────────────────────────
+    const PRODUCTS = {
+      prod_linen_throw:        { name: 'Linen Throw Blanket', price: 5799.00, cat: 'homeware' },
+      prod_ceramic_mug:        { name: 'Stoneware Studio Mug Set', price: 2399.00, cat: 'homeware' },
+      prod_cast_iron_kettle:   { name: 'Japanese Cast Iron Kettle', price: 6299.00, cat: 'homeware' },
+      prod_oak_organizer:      { name: 'Solid White Oak Desk Caddy', price: 3599.00, cat: 'homeware' },
+      prod_merino_cushion:     { name: 'Woven Merino Cushion Cover', price: 4099.00, cat: 'homeware' },
+
+      prod_atlas_obscura:      { name: 'Atlas of Remote Islands', price: 2749.00, cat: 'books' },
+      prod_bauhaus_monograph:  { name: 'Bauhaus Architecture Monograph', price: 3849.00, cat: 'books' },
+      prod_fountain_pen:       { name: 'Precision Brass Fountain Pen', price: 5299.00, cat: 'books' },
+      prod_leather_journal:    { name: 'Leather Bound Journal', price: 3249.00, cat: 'books' },
+      prod_typography_handbook:{ name: 'The Form of the Book', price: 2199.00, cat: 'books' },
+
+      prod_wool_cardigan:      { name: 'Merino Wool Cardigan', price: 12399.00, cat: 'apparel' },
+      prod_canvas_weekender:   { name: 'Waxed Canvas Weekender', price: 14099.00, cat: 'apparel' },
+      prod_minimalist_raincoat:{ name: 'Technical Raincoat', price: 15399.00, cat: 'apparel' },
+      prod_leather_cardholder: { name: 'Slim Card Wallet', price: 2899.00, cat: 'apparel' },
+      prod_wool_beanie:        { name: 'Cashmere-Wool Beanie', price: 3399.00, cat: 'apparel' },
+
+      prod_desk_lamp:          { name: "Architect's Task Lamp", price: 7599.00, cat: 'technology' },
+      prod_mechanical_keyboard:{ name: 'Walnut Wireless Keyboard', price: 10249.00, cat: 'technology' },
+      prod_aluminum_dock:      { name: 'Thunderbolt USB-C Dock', price: 8099.00, cat: 'technology' },
+      prod_monitor_stands:     { name: 'Birch Plywood Monitor Riser', price: 4449.00, cat: 'technology' },
+      prod_digital_pad:        { name: 'E-Ink Reusable Notebook', price: 7249.00, cat: 'technology' },
+    };
+
+    const cart = {};  // { productId: { name, price, qty, cat } }
+
+    // ─── Cart Operations ───────────────────────────────────────
+    function addToCart(productId, qty) {
+      const p = PRODUCTS[productId];
+      if (!p) return;
+      if (cart[productId]) {
+        cart[productId].qty += qty;
+      } else {
+        cart[productId] = { ...p, qty };
+      }
+      refreshCart();
+      const sdk = window.Sentinel || window.WebSense;
+      if (sdk && sdk.logAction) {
+        sdk.logAction('add_to_cart', { product_id: productId, qty: qty, price: p.price });
+      }
+    }
+
+    function removeFromCart(productId) {
+      delete cart[productId];
+      refreshCart();
+    }
+
+    function cartTotal() {
+      return Object.values(cart).reduce((s, i) => s + i.price * i.qty, 0);
+    }
+
+    function cartCount() {
+      return Object.values(cart).reduce((s, i) => s + i.qty, 0);
+    }
+
+    function refreshCart() {
+      const count = cartCount();
+      const total = cartTotal();
+
+      // Header Badge & Total
+      const badge = document.getElementById('cart-count-badge');
+      if (badge) badge.textContent = count;
+      const totalLabel = document.getElementById('cart-total-label');
+      if (totalLabel) totalLabel.textContent = '₹' + total.toFixed(2);
+
+      // Cart panel items
+      const listEl = document.getElementById('cart-items-list');
+      if (listEl) {
+        if (count === 0) {
+          listEl.innerHTML = '<p class="cart-empty">Your basket is currently empty.</p>';
+        } else {
+          listEl.innerHTML = Object.entries(cart).map(([id, item]) => `
+            <div class="cart-item">
+              <div class="cart-item__badge swatch-${item.cat}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              </div>
+              <div class="cart-item__info">
+                <p class="cart-item__name">${item.name}</p>
+                <p class="cart-item__sub">Qty: ${item.qty} × ₹${item.price.toFixed(2)}</p>
+              </div>
+              <span class="cart-item__price">₹${(item.price * item.qty).toFixed(2)}</span>
+              <button class="cart-item__remove" data-remove="${id}" aria-label="Remove ${item.name}">×</button>
+            </div>
+          `).join('');
+
+          listEl.querySelectorAll('[data-remove]').forEach(btn => {
+            btn.addEventListener('click', () => removeFromCart(btn.dataset.remove));
+          });
+        }
+      }
+
+      const cartTotalAmt = document.getElementById('cart-total-amount');
+      if (cartTotalAmt) cartTotalAmt.textContent = '₹' + total.toFixed(2);
+      const checkoutFinal = document.getElementById('checkout-final-btn');
+      if (checkoutFinal) checkoutFinal.disabled = count === 0;
+
+      // Checkout floating bar
+      const bar = document.getElementById('checkout-bar');
+      if (bar) {
+        bar.style.display = count > 0 ? '' : 'none';
+        const summary = document.getElementById('checkout-bar-summary');
+        if (summary) {
+          summary.textContent = count + (count === 1 ? ' item' : ' items') + ' — ₹' + total.toFixed(2);
+        }
+      }
+    }
+
+    // ─── Cart Panel Toggle ─────────────────────────────────────
+    function openCart() {
+      const panel = document.getElementById('cart-panel');
+      const overlay = document.getElementById('cart-overlay');
+      const btn = document.getElementById('cart-toggle-btn');
+      if (panel) panel.classList.add('open');
+      if (overlay) overlay.classList.add('visible');
+      if (btn) btn.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeCart() {
+      const panel = document.getElementById('cart-panel');
+      const overlay = document.getElementById('cart-overlay');
+      const btn = document.getElementById('cart-toggle-btn');
+      if (panel) panel.classList.remove('open');
+      if (overlay) overlay.classList.remove('visible');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+
+    const toggleBtn = document.getElementById('cart-toggle-btn');
+    if (toggleBtn) toggleBtn.addEventListener('click', openCart);
+    const closeBtn = document.getElementById('cart-close-btn');
+    if (closeBtn) closeBtn.addEventListener('click', closeCart);
+    const overlay = document.getElementById('cart-overlay');
+    if (overlay) overlay.addEventListener('click', closeCart);
+
+    // ─── Add to Cart Event Handlers ────────────────────────────
+    document.querySelectorAll('.add-cart-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const card = this.closest('[data-id]');
+        if (!card) return;
+        const productId = card.dataset.id;
+        const qtyInput = card.querySelector('.qty-input');
+        const qty = qtyInput ? Math.max(1, parseInt(qtyInput.value) || 1) : 1;
+        addToCart(productId, qty);
+
+        // Visual feedback
+        const origText = this.textContent;
+        this.textContent = 'Added ✓';
+        this.classList.remove('btn-primary');
+        this.classList.add('btn-secondary');
+        setTimeout(() => {
+          this.textContent = origText;
+          this.classList.add('btn-primary');
+          this.classList.remove('btn-secondary');
+        }, 1200);
+      });
+    });
+
+    // ─── Quantity Inputs ───────────────────────────────────────
+    document.querySelectorAll('.qty-dec').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = btn.parentElement.querySelector('.qty-input');
+        if (input) input.value = Math.max(1, parseInt(input.value) - 1);
+      });
+    });
+    document.querySelectorAll('.qty-inc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = btn.parentElement.querySelector('.qty-input');
+        if (input) input.value = Math.min(10, parseInt(input.value) + 1);
+      });
+    });
+
+    // ─── Checkout Flow ─────────────────────────────────────────
+    function doCheckout() {
+      if (cartCount() === 0) return;
+      const sdk = window.Sentinel || window.WebSense;
+      if (sdk && sdk.logAction) {
+        sdk.logAction('checkout_initiated', { total: cartTotal(), items: cartCount() });
+      }
+
+      if (sdk && sdk.flush) {
+        sdk.flush('shopping').then(showSuccess).catch(showSuccess);
+      } else {
+        showSuccess();
+      }
+    }
+
+    function showSuccess() {
+      closeCart();
+      const modal = document.getElementById('success-modal');
+      if (modal) modal.classList.add('open');
+    }
+
+    const chkBtn = document.getElementById('checkout-btn');
+    if (chkBtn) chkBtn.addEventListener('click', doCheckout);
+    const chkFinal = document.getElementById('checkout-final-btn');
+    if (chkFinal) chkFinal.addEventListener('click', doCheckout);
+
+    const succModal = document.getElementById('success-modal');
+    if (succModal) {
+      succModal.addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('open');
+      });
+    }
+
+    // ─── Category Filtering ────────────────────────────────────
+    let activeCategory = 'all';
+    let currentSearch = '';
+
+    function applyFilterAndSearch() {
+      let visibleCount = 0;
+      document.querySelectorAll('.product-card').forEach(card => {
+        const cat = card.dataset.category || '';
+        const name = card.querySelector('.product-name')?.textContent.toLowerCase() || '';
+        const desc = card.querySelector('.product-desc')?.textContent.toLowerCase() || '';
+
+        const matchesCat = (activeCategory === 'all' || cat === activeCategory);
+        const matchesSearch = (!currentSearch || name.includes(currentSearch) || desc.includes(currentSearch));
+
+        const isVisible = matchesCat && matchesSearch;
+        card.style.display = isVisible ? '' : 'none';
+        if (isVisible) visibleCount++;
+      });
+
+      const noResults = document.getElementById('no-results-msg');
+      if (noResults) noResults.classList.toggle('hidden', visibleCount > 0);
+    }
+
+    document.querySelectorAll('.chip[data-category]').forEach(chip => {
+      chip.addEventListener('click', function() {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        activeCategory = this.dataset.category;
+        const sdk = window.Sentinel || window.WebSense;
+        if (sdk && sdk.logAction) sdk.logAction('filter_applied', { category: activeCategory });
+        applyFilterAndSearch();
+      });
+    });
+
+    // ─── Search Input ──────────────────────────────────────────
+    const searchInput = document.getElementById('shop-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        currentSearch = this.value.trim().toLowerCase();
+        applyFilterAndSearch();
+      });
+    }
+
+    // Initialize Cart
+    refreshCart();
+
+  })();
+  </script>
+
+  <!-- ─── Consent Banner ──────────────────────────────── -->
+  <div id="consent-banner" role="dialog" aria-live="polite" aria-label="Cookie and analytics consent">
+    <p>
+      <strong>Cookie &amp; Analytics Notice</strong>
+      &ensp;Meridian uses anonymous interaction analytics to improve your experience.
+      No personal data is collected. You can opt out at any time.
+    </p>
+    <div class="consent-actions">
+      <button class="consent-btn consent-btn--decline" id="consent-decline">Decline</button>
+      <button class="consent-btn consent-btn--accept" id="consent-accept">Accept &amp; Continue</button>
+    </div>
+  </div>
+
+  <!-- ─── Telemetry — loaded only after consent ─────────── -->
+  <script src="/static/visitor.js"></script>
+  <script>
+  (function() {
+    var CONSENT_KEY = 'meridian_consent';
+    var banner = document.getElementById('consent-banner');
+
+    function loadTelemetry() {
+      // Dynamically inject the Sentinel SDK only after consent is given.
+      // This ensures no telemetry fires on first visit before user decides.
+      var sdk = document.createElement('script');
+      sdk.src = '/static/sentinel.js';
+      sdk.setAttribute('data-site-id', 'site_meridian_prod');
+      sdk.setAttribute('data-task', 'shopping');
+      sdk.async = true;
+      document.body.appendChild(sdk);
+    }
+
+    function hideBanner() {
+      if (banner) {
+        banner.classList.remove('visible');
+        setTimeout(function() { banner.style.display = 'none'; }, 400);
+      }
+    }
+
+    var consent = localStorage.getItem(CONSENT_KEY);
+    if (consent === 'granted') {
+      loadTelemetry();
+    } else if (!consent) {
+      // First visit — show banner after a short delay so page renders first
+      setTimeout(function() { if (banner) banner.classList.add('visible'); }, 800);
+
+      document.getElementById('consent-accept').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'granted');
+        hideBanner();
+        loadTelemetry();
+      });
+      document.getElementById('consent-decline').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'declined');
+        hideBanner();
+        // Telemetry is NOT loaded — visitor opted out.
+      });
+    }
+    // If consent === 'declined', do nothing (no banner, no telemetry).
+  })();
+  </script>
+
+</body>
+</html>

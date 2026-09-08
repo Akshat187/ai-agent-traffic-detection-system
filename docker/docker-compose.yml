@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  sentineltrace-app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: sentineltrace_platform
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./sentineltrace.db
+      - DEBUG=False
+    volumes:
+      - sentineltrace_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  sentineltrace_data:

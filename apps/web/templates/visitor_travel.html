@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meridian Travel — Search Flights &amp; Hotels</title>
+  <meta name="description" content="Find and compare flights and hotels worldwide with Meridian Travel.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/static/meridian.css">
+  <style>
+    .travel-hero {
+      background: var(--color-text-primary);
+      color: var(--color-text-inverse);
+      padding: 3rem 0 4.5rem;
+      position: relative;
+    }
+    .travel-hero__eyebrow {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 0.75rem;
+    }
+    .travel-hero__title {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+    .travel-hero__sub { font-size: 1rem; color: rgba(255,255,255,0.65); }
+
+    .search-card-floating {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      padding: 1.75rem;
+      margin-top: -2.5rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .results-section { margin-top: 2.5rem; }
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .results-count {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+    }
+
+    .airline-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      flex-shrink: 0;
+    }
+
+    .route-line {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0 0.75rem;
+    }
+    .route-line hr {
+      flex: 1;
+      border: none;
+      border-top: 1px dashed var(--color-border);
+    }
+    .route-stop-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--color-border-hover);
+      flex-shrink: 0;
+    }
+
+    .flight-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+
+    @media (max-width: 640px) {
+      .flight-card { flex-wrap: wrap; }
+      .flight-card__price { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+    }
+
+    .sort-bar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .sort-btn {
+      padding: 0.3125rem 0.75rem;
+      border-radius: var(--radius-full);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-card);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .sort-btn:hover { border-color: var(--color-border-hover); color: var(--color-text-primary); }
+    .sort-btn.active { background: var(--color-text-primary); color: #fff; border-color: var(--color-text-primary); }
+
+    /* Booking modal */
+    .booking-detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 0.875rem;
+    }
+    .booking-detail-row:last-child { border-bottom: none; }
+    .booking-detail-row .label { color: var(--color-text-secondary); }
+    .booking-detail-row .value { font-weight: 600; }
+
+    /* ─── Consent Banner ─────────────────────────────────── */
+    #consent-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 600;
+      background: rgba(15, 23, 42, 0.97);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      color: #e2e8f0;
+      padding: 1.1rem 1.5rem;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem; flex-wrap: wrap;
+      font-size: 0.8125rem; line-height: 1.5;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #consent-banner.visible { transform: translateY(0); }
+    #consent-banner p { margin: 0; flex: 1; min-width: 240px; color: #94a3b8; }
+    #consent-banner p strong { color: #f1f5f9; font-weight: 600; }
+    .consent-actions { display: flex; gap: 0.625rem; flex-shrink: 0; align-items: center; }
+    .consent-btn {
+      padding: 0.45rem 1.1rem; border-radius: 9999px; font-size: 0.8rem;
+      font-weight: 600; cursor: pointer; border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .consent-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .consent-btn--accept { background: #4f46e5; color: #fff; }
+    .consent-btn--decline { background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.12); }
+  </style>
+</head>
+<body data-task="travel">
+
+  <!-- ─── Navigation ─────────────────────────────────────────── -->
+  <header class="meridian-header">
+    <div class="container">
+      <div class="meridian-header__inner">
+        <a href="/" class="meridian-logo">
+          <div class="meridian-logo__mark">M</div>
+          <span>Meridian</span>
+        </a>
+        <nav class="meridian-nav" aria-label="Main navigation">
+          <a href="/visitor" class="meridian-nav__link">Home</a>
+          <a href="/visitor/shop" class="meridian-nav__link">Shop</a>
+          <a href="/visitor/travel" class="meridian-nav__link active" aria-current="page">Travel</a>
+          <a href="/visitor/forum" class="meridian-nav__link">Community</a>
+        </nav>
+        <div class="meridian-header__actions">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Hero ──────────────────────────────────────────────── -->
+  <section class="travel-hero" aria-labelledby="travel-heading">
+    <div class="container">
+      <p class="travel-hero__eyebrow">Meridian Travel</p>
+      <h1 class="travel-hero__title" id="travel-heading">Where would you like to go?</h1>
+      <p class="travel-hero__sub">Compare fares across hundreds of airlines. No booking fees.</p>
+    </div>
+  </section>
+
+  <!-- ─── Main Content ───────────────────────────────────────── -->
+  <main class="page-main" style="padding-top:0">
+    <div class="container">
+
+      <!-- Floating Search Card -->
+      <div class="search-card-floating">
+        <!-- Trip Type Tabs -->
+        <div class="travel-tab-bar" role="tablist" aria-label="Trip type">
+          <button class="travel-tab active" role="tab" aria-selected="true" id="tab-return" data-trip="return">Return</button>
+          <button class="travel-tab" role="tab" aria-selected="false" id="tab-oneway" data-trip="oneway">One way</button>
+          <button class="travel-tab" role="tab" aria-selected="false" id="tab-multi" data-trip="multi">Multi-city</button>
+        </div>
+
+        <!-- Search Form -->
+        <form id="flight-search-form" novalidate aria-label="Flight search">
+          <div class="search-form-grid cols-4">
+            <div class="form-group">
+              <label class="form-label" for="origin">From</label>
+              <select class="form-control" id="origin" name="origin" aria-label="Departure city">
+                <option value="">Select city</option>
+                <option value="DEL">New Delhi — Indira Gandhi (DEL)</option>
+                <option value="BOM">Mumbai — Chhatrapati Shivaji (BOM)</option>
+                <option value="BLR">Bengaluru — Kempegowda (BLR)</option>
+                <option value="MAA">Chennai — Anna International (MAA)</option>
+                <option value="HYD">Hyderabad — Rajiv Gandhi (HYD)</option>
+                <option value="CCU">Kolkata — Netaji Subhas (CCU)</option>
+                <option value="AMD">Ahmedabad — Sardar Vallabhbhai (AMD)</option>
+                <option value="PNQ">Pune — Pune International (PNQ)</option>
+                <option value="GOI">Goa — Manohar International (GOI)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="destination">To</label>
+              <select class="form-control" id="destination" name="destination" aria-label="Arrival city">
+                <option value="">Select destination</option>
+                <optgroup label="Domestic">
+                  <option value="DEL">New Delhi (DEL)</option>
+                  <option value="BOM">Mumbai (BOM)</option>
+                  <option value="BLR">Bengaluru (BLR)</option>
+                  <option value="MAA">Chennai (MAA)</option>
+                  <option value="GOI">Goa (GOI)</option>
+                  <option value="JAI">Jaipur (JAI)</option>
+                </optgroup>
+                <optgroup label="International">
+                  <option value="DXB">Dubai (DXB)</option>
+                  <option value="SIN">Singapore (SIN)</option>
+                  <option value="BKK">Bangkok (BKK)</option>
+                  <option value="LHR">London Heathrow (LHR)</option>
+                  <option value="JFK">New York JFK (JFK)</option>
+                  <option value="CDG">Paris CDG (CDG)</option>
+                  <option value="NRT">Tokyo Narita (NRT)</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="depart-date">Depart</label>
+              <input type="date" class="form-control" id="depart-date" name="depart" aria-label="Departure date">
+            </div>
+            <div class="form-group" id="return-date-group">
+              <label class="form-label" for="return-date">Return</label>
+              <input type="date" class="form-control" id="return-date" name="return" aria-label="Return date">
+            </div>
+          </div>
+
+          <!-- Passengers & Class Row -->
+          <div class="search-form-grid" style="margin-top:1rem;grid-template-columns:1fr 1fr 1fr auto">
+            <div class="form-group">
+              <label class="form-label" for="passengers-adults">Adults</label>
+              <select class="form-control" id="passengers-adults" name="adults">
+                <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="passengers-children">Children</label>
+              <select class="form-control" id="passengers-children" name="children">
+                <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cabin-class">Cabin</label>
+              <select class="form-control" id="cabin-class" name="cabin">
+                <option>Economy</option>
+                <option>Premium Economy</option>
+                <option>Business</option>
+                <option>First</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button type="submit" class="btn btn-primary" id="search-btn" style="height:42px;padding:0 1.5rem">
+                Search flights
+              </button>
+            </div>
+          </div>
+        </form>
+      </div><!-- /search card -->
+
+      <!-- Results Section (hidden until search) -->
+      <section class="results-section" id="results-section" hidden aria-live="polite" aria-label="Search results">
+        <div class="results-header">
+          <div>
+            <h2 style="font-size:1.125rem;font-weight:700;margin-bottom:0.25rem" id="results-heading">Flights found</h2>
+            <p class="results-count" id="results-count">Showing results</p>
+          </div>
+          <div class="sort-bar" role="group" aria-label="Sort results">
+            <button class="sort-btn active" data-sort="price" id="sort-price">Cheapest</button>
+            <button class="sort-btn" data-sort="duration" id="sort-duration">Shortest</button>
+            <button class="sort-btn" data-sort="depart" id="sort-depart">Earliest</button>
+          </div>
+        </div>
+
+        <div class="flight-grid" id="flight-results" role="list"></div>
+      </section>
+
+    </div><!-- /container -->
+  </main>
+
+  <!-- ─── Booking Confirmation Modal ────────────────────────── -->
+  <div id="booking-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="booking-title">
+    <div class="modal" style="max-width:500px;text-align:left">
+      <h2 class="modal__title" id="booking-title" style="text-align:center;margin-bottom:1.5rem">Booking summary</h2>
+      <div id="booking-details"></div>
+      <div class="modal__actions" style="margin-top:1.5rem">
+        <button id="booking-cancel-btn" class="btn btn-secondary" style="flex:1">Back</button>
+        <button id="booking-confirm-btn" class="btn btn-primary" style="flex:1">Confirm booking →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Booking Success Modal ─────────────────────────────── -->
+  <div id="booking-success-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="bsuccess-title">
+    <div class="modal">
+      <div class="modal__icon" aria-hidden="true">✓</div>
+      <h2 class="modal__title" id="bsuccess-title">Booking confirmed</h2>
+      <p class="modal__body">Your booking reference is <strong id="booking-ref"></strong>. A confirmation will be sent to your email address.</p>
+      <div class="modal__actions">
+        <button onclick="window.location.reload()" class="btn btn-secondary" style="flex:1">New search</button>
+        <a href="/visitor/forum" class="btn btn-primary" style="flex:1">Community →</a>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ─── Consent Banner ─────────────────────────────────────── -->
+  <footer class="meridian-footer">
+    <div class="container">
+      <div class="meridian-footer__inner">
+        <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:1rem">
+          <a href="/" class="meridian-logo">
+            <div class="meridian-logo__mark">M</div>
+            <span>Meridian</span>
+          </a>
+          <nav class="meridian-footer__links">
+            <a href="/about" class="meridian-footer__link">About</a>
+            <a href="#" class="meridian-footer__link">Privacy</a>
+            <a href="#" class="meridian-footer__link">Baggage policy</a>
+            <a href="#" class="meridian-footer__link">Contact</a>
+          </nav>
+        </div>
+        <p class="meridian-footer__copy">© 2026 Meridian Ltd. Prices shown are indicative and may change.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── Telemetry & Logic ──────────────────────────────────── -->
+  <script>
+  (function() {
+    'use strict';
+
+    // Set default dates
+    const today = new Date();
+    const depart = new Date(today); depart.setDate(today.getDate() + 14);
+    const ret = new Date(today); ret.setDate(today.getDate() + 21);
+    document.getElementById('depart-date').value = depart.toISOString().split('T')[0];
+    document.getElementById('return-date').value = ret.toISOString().split('T')[0];
+
+    // Trip type tabs
+    document.querySelectorAll('.travel-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.travel-tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        this.classList.add('active');
+        this.setAttribute('aria-selected', 'true');
+        const isReturn = this.dataset.trip === 'return';
+        document.getElementById('return-date-group').style.display = isReturn ? '' : 'none';
+        window.WebSense && window.WebSense.logAction('trip_type_selected', { type: this.dataset.trip });
+      });
+    });
+
+    // Flight data generator
+    function generateFlights(origin, destination) {
+      const airlines = [
+        { name: 'IndiGo',        code: '6E', icon: '✈️' },
+        { name: 'Air India',     code: 'AI', icon: '🛫' },
+        { name: 'Vistara',       code: 'UK', icon: '🌐' },
+        { name: 'SpiceJet',      code: 'SG', icon: '🌶️' },
+        { name: 'Akasa Air',     code: 'QP', icon: '☀️' },
+      ];
+      // Domestic base ₹3,499 – ₹9,999 | International ₹18,000 – ₹85,000
+      const intlDests = ['DXB','SIN','BKK','LHR','JFK','CDG','NRT'];
+      const isIntl = intlDests.includes(destination);
+      const basePrice = isIntl
+        ? 18000 + Math.floor(Math.random() * 45000)
+        : 3499 + Math.floor(Math.random() * 6500);
+      return airlines.map((a, i) => ({
+        id: 'fl_' + i,
+        airline: a,
+        depart: `${7 + i*2}:${i % 2 === 0 ? '00' : '30'}`,
+        arrive: `${10 + i*2}:${i % 2 === 0 ? '20' : '50'}`,
+        duration: `${2 + i}h ${15 + i * 10}m`,
+        stops: i === 2 ? '1 stop' : 'Non-stop',
+        price: basePrice + i * 23,
+        origin, destination
+      }));
+    }
+
+    let currentFlights = [];
+    let selectedFlight = null;
+
+    function renderFlights(flights) {
+      const container = document.getElementById('flight-results');
+      container.innerHTML = flights.map(f => `
+        <div class="flight-card" data-flight-id="${f.id}" role="listitem" tabindex="0">
+          <div class="airline-logo" aria-hidden="true">${f.airline.icon}</div>
+          <div style="min-width:90px">
+            <div style="font-size:0.75rem;color:var(--color-text-tertiary)">${f.airline.name}</div>
+            <div style="font-size:1.125rem;font-weight:700">${f.depart}</div>
+            <div style="font-size:0.8125rem;color:var(--color-text-secondary)">${f.origin}</div>
+          </div>
+          <div class="route-line">
+            <div class="route-stop-dot"></div>
+            <hr>
+            <div style="font-size:0.75rem;color:var(--color-text-tertiary);white-space:nowrap;text-align:center">
+              ${f.duration}<br>${f.stops}
+            </div>
+            <hr>
+            <div class="route-stop-dot"></div>
+          </div>
+          <div style="min-width:90px">
+            <div style="font-size:0.75rem;color:var(--color-text-tertiary)">&nbsp;</div>
+            <div style="font-size:1.125rem;font-weight:700">${f.arrive}</div>
+            <div style="font-size:0.8125rem;color:var(--color-text-secondary)">${f.destination}</div>
+          </div>
+        <div class="flight-card__price">
+            <div class="flight-card__price-amount">₹${f.price.toLocaleString('en-IN')}</div>
+            <div class="flight-card__price-label">per person</div>
+            <button class="btn btn-primary btn-sm select-flight-btn" data-id="${f.id}" style="margin-top:0.5rem">Select</button>
+          </div>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.select-flight-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const flight = currentFlights.find(f => f.id === this.dataset.id);
+          if (flight) openBookingModal(flight);
+        });
+      });
+    }
+
+    // Sort buttons
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const sort = this.dataset.sort;
+        const sorted = [...currentFlights].sort((a, b) => {
+          if (sort === 'price') return a.price - b.price;
+          if (sort === 'duration') return a.duration.localeCompare(b.duration);
+          if (sort === 'depart') return a.depart.localeCompare(b.depart);
+          return 0;
+        });
+        renderFlights(sorted);
+        window.WebSense && window.WebSense.logAction('results_sorted', { sort });
+      });
+    });
+
+    // Search form
+    document.getElementById('flight-search-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const origin = document.getElementById('origin').value;
+      const destination = document.getElementById('destination').value;
+      const depart = document.getElementById('depart-date').value;
+      if (!origin || !destination) return;
+
+      const btn = document.getElementById('search-btn');
+      btn.textContent = 'Searching…';
+      btn.disabled = true;
+
+      window.WebSense && window.WebSense.logAction('flight_search', {
+        origin, destination,
+        adults: document.getElementById('passengers-adults').value,
+        cabin: document.getElementById('cabin-class').value
+      });
+
+      setTimeout(() => {
+        currentFlights = generateFlights(origin, destination);
+        renderFlights(currentFlights);
+
+        const section = document.getElementById('results-section');
+        section.hidden = false;
+        document.getElementById('results-heading').textContent =
+          origin + ' → ' + destination + ' · ' + new Date(depart).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+        document.getElementById('results-count').textContent =
+          currentFlights.length + ' flights found';
+
+        btn.textContent = 'Search flights';
+        btn.disabled = false;
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 900);
+    });
+
+    // Booking modal
+    function openBookingModal(flight) {
+      selectedFlight = flight;
+      const adults = parseInt(document.getElementById('passengers-adults').value);
+      const total = flight.price * adults;
+      document.getElementById('booking-details').innerHTML = `
+        <div class="booking-detail-row"><span class="label">Route</span><span class="value">${flight.origin} → ${flight.destination}</span></div>
+        <div class="booking-detail-row"><span class="label">Airline</span><span class="value">${flight.airline.name}</span></div>
+        <div class="booking-detail-row"><span class="label">Depart</span><span class="value">${flight.depart} · ${document.getElementById('depart-date').value}</span></div>
+        <div class="booking-detail-row"><span class="label">Duration</span><span class="value">${flight.duration} · ${flight.stops}</span></div>
+        <div class="booking-detail-row"><span class="label">Passengers</span><span class="value">${adults} adult${adults > 1 ? 's' : ''}</span></div>
+        <div class="booking-detail-row"><span class="label">Cabin</span><span class="value">${document.getElementById('cabin-class').value}</span></div>
+        <div class="booking-detail-row" style="border-top:2px solid var(--color-border);margin-top:0.5rem;padding-top:0.75rem"><span class="label" style="font-weight:700">Total</span><span class="value" style="font-size:1.125rem">₹${total.toLocaleString('en-IN')}</span></div>
+      `;
+      document.getElementById('booking-modal').classList.add('open');
+      window.WebSense && window.WebSense.logAction('booking_modal_opened', { flight_id: flight.id });
+    }
+
+    document.getElementById('booking-cancel-btn').addEventListener('click', () => {
+      document.getElementById('booking-modal').classList.remove('open');
+    });
+
+    document.getElementById('booking-confirm-btn').addEventListener('click', () => {
+      document.getElementById('booking-modal').classList.remove('open');
+      const ref = 'MER' + Math.random().toString(36).toUpperCase().slice(2, 8);
+      document.getElementById('booking-ref').textContent = ref;
+      window.WebSense && window.WebSense.logAction('booking_confirmed', { ref, flight_id: selectedFlight?.id });
+      const flush = window.WebSense ? window.WebSense.flush('travel') : Promise.resolve();
+      flush.then ? flush.then(showBookingSuccess) : showBookingSuccess();
+    });
+
+    function showBookingSuccess() {
+      document.getElementById('booking-success-modal').classList.add('open');
+    }
+
+    [document.getElementById('booking-modal'), document.getElementById('booking-success-modal')].forEach(m => {
+      m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+    });
+
+  })();
+  </script>
+
+  <!-- ─── Consent Banner ─────────────────────────────── -->
+  <div id="consent-banner" role="dialog" aria-live="polite" aria-label="Cookie and analytics consent">
+    <p>
+      <strong>Cookie &amp; Analytics Notice</strong>
+      &ensp;Meridian uses anonymous interaction analytics to improve your experience.
+      No personal data is collected. You can opt out at any time.
+    </p>
+    <div class="consent-actions">
+      <button class="consent-btn consent-btn--decline" id="consent-decline">Decline</button>
+      <button class="consent-btn consent-btn--accept" id="consent-accept">Accept &amp; Continue</button>
+    </div>
+  </div>
+
+  <!-- Telemetry: injected only after consent -->
+  <script>
+  (function() {
+    var CONSENT_KEY = 'meridian_consent';
+    var banner = document.getElementById('consent-banner');
+    function loadTelemetry() {
+      var s = document.createElement('script');
+      s.src = '/static/collector.js'; document.body.appendChild(s);
+    }
+    function hideBanner() {
+      if (banner) { banner.classList.remove('visible'); setTimeout(function() { banner.style.display='none'; }, 400); }
+    }
+    var consent = localStorage.getItem(CONSENT_KEY);
+    if (consent === 'granted') { loadTelemetry(); }
+    else if (!consent) {
+      setTimeout(function() { if (banner) banner.classList.add('visible'); }, 800);
+      document.getElementById('consent-accept').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'granted'); hideBanner(); loadTelemetry();
+      });
+      document.getElementById('consent-decline').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'declined'); hideBanner();
+      });
+    }
+  })();
+  </script>
+
+</body>
+</html>

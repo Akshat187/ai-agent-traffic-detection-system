@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinel External Site Embed Demo</title>
+  <meta name="description" content="Independent demo page demonstrating the embeddable WebSense Sentinel SDK.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .demo-container {
+      width: 100%;
+      max-width: 680px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 9999px;
+      color: #60a5fa;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+    p.subtitle { color: var(--text-muted); font-size: 0.9375rem; margin-bottom: 2rem; }
+    
+    .code-box {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin-bottom: 2rem;
+    }
+
+    .form-group { margin-bottom: 1.25rem; }
+    label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; color: #cbd5e1; }
+    input[type="text"], input[type="email"], textarea, select {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9375rem;
+      transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    
+    .rating-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .rating-btn {
+      flex: 1;
+      padding: 0.625rem;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .rating-btn.active, .rating-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 0.875rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 1rem;
+    }
+    .btn-submit:hover { background: var(--accent-hover); }
+
+    .status-card {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 0.875rem;
+      display: none;
+    }
+    .footer-links {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.875rem;
+    }
+    .footer-links a { color: #60a5fa; text-decoration: none; margin: 0 0.75rem; }
+    .footer-links a:hover { text-decoration: underline; }
+  </style>
+
+  <!-- ─── Sentinel Embed Script ──────────────────────────────── -->
+  <script src="/sentinel.js" data-site-id="site_meridian_prod" data-task="lead_form" async></script>
+</head>
+<body data-task="lead_form">
+
+  <div class="demo-container">
+    <div class="badge">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8"></span>
+      Sentinel Embeddable SDK v1.2
+    </div>
+    <h1>External Website Integration</h1>
+    <p class="subtitle">This external page instruments user kinematics via a single drop-in script tag.</p>
+
+    <div class="code-box">
+      &lt;script src="https://traffic-engine.internal/sentinel.js" data-site-id="site_meridian_prod" data-task="lead_form" async&gt;&lt;/script&gt;
+    </div>
+
+    <form id="lead-form">
+      <div class="form-group">
+        <label for="lead-name">Full Name</label>
+        <input type="text" id="lead-name" placeholder="Alex Morgan" required autocomplete="name">
+      </div>
+
+      <div class="form-group">
+        <label for="lead-email">Business Email</label>
+        <input type="email" id="lead-email" placeholder="alex@company.com" required autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label>Urgency Level</label>
+        <div class="rating-row" role="group" aria-label="Urgency">
+          <button type="button" class="rating-btn" data-val="Low">Low</button>
+          <button type="button" class="rating-btn active" data-val="Medium">Medium</button>
+          <button type="button" class="rating-btn" data-val="High">High</button>
+          <button type="button" class="rating-btn" data-val="Critical">Critical</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="lead-notes">Project Scope / Inquiries</label>
+        <textarea id="lead-notes" rows="3" placeholder="Tell us about your traffic intelligence and bot protection requirements..."></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-lead-btn">Submit Telemetry & Inquire →</button>
+    </form>
+
+    <div id="status-card" class="status-card">
+      ✓ Telemetry successfully captured and classified by Sentinel Engine. Verdict persisted to database.
+    </div>
+
+    <div class="footer-links">
+      <a href="/dashboard">View Real-Time Analyst Dashboard →</a>
+      <a href="/visitor/shop">Browse Meridian Shop →</a>
+    </div>
+  </div>
+
+  <script>
+    // Rating buttons
+    document.querySelectorAll('.rating-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        if (window.Sentinel && window.Sentinel.logAction) {
+          window.Sentinel.logAction('rating_selected', { value: this.dataset.val });
+        }
+      });
+    });
+
+    // Form submission
+    document.getElementById('lead-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (window.Sentinel && window.Sentinel.logAction) {
+        window.Sentinel.logAction('lead_form_submitted', {
+          urgency: document.querySelector('.rating-btn.active')?.dataset.val || 'Medium'
+        });
+      }
+
+      const submitBtn = document.getElementById('submit-lead-btn');
+      submitBtn.textContent = 'Transmitting Telemetry...';
+      submitBtn.disabled = true;
+
+      const flushPromise = window.Sentinel && window.Sentinel.flush ? window.Sentinel.flush('lead_form') : Promise.resolve();
+      
+      flushPromise.then(res => {
+        submitBtn.textContent = 'Submitted ✓';
+        const card = document.getElementById('status-card');
+        card.style.display = 'block';
+        if (res && res.predicted_label) {
+          card.textContent = `✓ Ingestion Success! Classifier Verdict: ${res.predicted_label} (Confidence: ${(res.confidence * 100).toFixed(1)}%, Risk: ${res.risk_score}/100)`;
+        }
+      }).catch(err => {
+        submitBtn.textContent = 'Submitted ✓';
+        document.getElementById('status-card').style.display = 'block';
+      });
+    });
+  </script>
+
+</body>
+</html>

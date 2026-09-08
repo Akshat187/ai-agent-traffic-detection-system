@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinel Inspector</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      width: 340px;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 16px;
+      font-size: 13px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-icon {
+      width: 20px;
+      height: 20px;
+      background: #4f46e5;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 11px;
+      color: #fff;
+    }
+    .title {
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+    .site-pill {
+      font-size: 11px;
+      color: #94a3b8;
+      background: rgba(255,255,255,0.06);
+      padding: 3px 8px;
+      border-radius: 9999px;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .verdict-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .verdict-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .verdict-badge {
+      display: inline-block;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.1);
+      color: #cbd5e1;
+    }
+    .verdict-badge.HUMAN { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .verdict-badge.AGENTIC_AI { background: rgba(139,92,246,0.2); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+    .verdict-badge.TRADITIONAL_AUTOMATION { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .verdict-badge.UNCERTAIN { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .metric-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .metric-name { font-size: 10px; color: #64748b; margin-bottom: 2px; }
+    .metric-val { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+
+    .telemetry-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .btn-dashboard {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: #4f46e5;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 8px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .btn-dashboard:hover { background: #4338ca; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-row">
+      <div class="logo-icon">W</div>
+      <div class="title">Sentinel</div>
+    </div>
+    <div class="site-pill" id="site-pill">Loading...</div>
+  </div>
+
+  <div class="verdict-card">
+    <div class="verdict-label">Real-Time Actor Verdict</div>
+    <div class="verdict-badge" id="verdict-badge">ANALYZING...</div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:6px;" id="confidence-text">Waiting for interactions</div>
+  </div>
+
+  <div class="metrics-grid">
+    <div class="metric-box">
+      <div class="metric-name">Risk Score</div>
+      <div class="metric-val" id="risk-val">— / 100</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-name">Session ID</div>
+      <div class="metric-val" id="session-val" style="font-size:10px;font-family:monospace;">—</div>
+    </div>
+  </div>
+
+  <div class="telemetry-row">
+    <span>Events: <strong id="evt-mouse" style="color:#94a3b8;">0</strong>m, <strong id="evt-keys" style="color:#94a3b8;">0</strong>k, <strong id="evt-clicks" style="color:#94a3b8;">0</strong>c</span>
+    <span>Status: <strong style="color:#34d399;">Streaming</strong></span>
+  </div>
+
+  <a href="http://localhost:8000/dashboard" target="_blank" class="btn-dashboard">Open WebSense Dashboard ↗</a>
+
+  <script src="popup.js"></script>
+</body>
+</html>

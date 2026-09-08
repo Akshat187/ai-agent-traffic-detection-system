@@ -1,0 +1,233 @@
+/* WebSense — Modern High-End SaaS (Stripe/Linear Style) Design System */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-secondary: #f1f5f9;
+  --bg-surface-tertiary: #e2e8f0;
+
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-accent: #6366f1;
+
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-subtle: #94a3b8;
+
+  /* Verdict Colors */
+  --color-human: #059669;
+  --color-human-bg: #ecfdf5;
+  --color-human-border: #a7f3d0;
+
+  --color-bot: #e11d48;
+  --color-bot-bg: #fff1f2;
+  --color-bot-border: #fecdd3;
+
+  --color-agent: #d97706;
+  --color-agent-bg: #fffbeb;
+  --color-agent-border: #fde68a;
+
+  --color-uncertain: #64748b;
+  --color-uncertain-bg: #f8fafc;
+  --color-uncertain-border: #e2e8f0;
+
+  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 24px -4px rgba(0, 0, 0, 0.06);
+  --shadow-glow-indigo: 0 0 20px -4px rgba(99, 102, 241, 0.35);
+  --shadow-glow-emerald: 0 0 20px -4px rgba(16, 185, 129, 0.35);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Header Glass */
+.header-glass {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Segmented Navigation Pills */
+.nav-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 0.75rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.nav-tab-pill:hover {
+  color: #0f172a;
+  background-color: #f1f5f9;
+}
+
+.nav-tab-pill.active {
+  color: #4f46e5;
+  background-color: #eef2ff;
+  border-color: #c7d2fe;
+  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.08);
+}
+
+/* Premium Card Container */
+.saas-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.saas-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Metric Cards */
+.metric-card-top {
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4f46e5, #818cf8);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.metric-card-top:hover::before {
+  opacity: 1;
+}
+
+.metric-card-human::before { background: linear-gradient(90deg, #059669, #34d399); }
+.metric-card-bot::before { background: linear-gradient(90deg, #e11d48, #f43f5e); }
+.metric-card-agent::before { background: linear-gradient(90deg, #d97706, #fbbf24); }
+
+/* Standardized Verdict Badges */
+.badge-human {
+  background-color: var(--color-human-bg);
+  color: var(--color-human);
+  border: 1px solid var(--color-human-border);
+}
+
+.badge-bot {
+  background-color: var(--color-bot-bg);
+  color: var(--color-bot);
+  border: 1px solid var(--color-bot-border);
+}
+
+.badge-agent {
+  background-color: var(--color-agent-bg);
+  color: var(--color-agent);
+  border: 1px solid var(--color-agent-border);
+}
+
+.badge-uncertain {
+  background-color: var(--color-uncertain-bg);
+  color: var(--color-uncertain);
+  border: 1px solid var(--color-uncertain-border);
+}
+
+/* Studio Canvas Trajectory Box */
+.studio-canvas-container {
+  background: #090d16;
+  border: 1px solid #1e293b;
+  border-radius: 0.875rem;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Table Styles */
+.saas-table th {
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  font-size: 0.6875rem;
+}
+
+.saas-table tr {
+  transition: background-color 0.15s ease;
+}
+
+.saas-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Pulse Dot */
+.pulse-dot {
+  position: relative;
+  display: inline-flex;
+  height: 8px;
+  width: 8px;
+}
+.pulse-dot::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  background-color: inherit;
+  opacity: 0.6;
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
+

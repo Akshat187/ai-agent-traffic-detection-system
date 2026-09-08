@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meridian — Modern Web Interaction Environment</title>
+  <meta name="description" content="Welcome to Meridian. Explore our Shop, Travel booking, and Community discussions.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/static/meridian.css">
+  <style>
+    .home-hero {
+      background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 100%);
+      border-bottom: 1px solid var(--color-border);
+      padding: 5rem 0 4rem;
+      text-align: center;
+    }
+    .home-hero__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      background: var(--color-accent-light);
+      border: 1px solid var(--color-accent-border);
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-full);
+      margin-bottom: 1.5rem;
+    }
+    .home-hero__title {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--color-text-primary);
+      margin-bottom: 1.25rem;
+      line-height: 1.15;
+    }
+    .home-hero__sub {
+      font-size: 1.125rem;
+      color: var(--color-text-secondary);
+      max-width: 620px;
+      margin: 0 auto 2rem;
+      line-height: 1.6;
+    }
+    .environment-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      padding: 3.5rem 0;
+    }
+    @media (min-width: 768px) {
+      .environment-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    .env-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 2.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all var(--transition-base);
+      text-decoration: none;
+      color: inherit;
+      box-shadow: var(--shadow-sm);
+    }
+    .env-card:hover {
+      border-color: var(--color-accent-border);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+    .env-card__icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--color-bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .env-card__tag {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 0.5rem;
+    }
+    .env-card__title {
+      font-size: 1.375rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+      margin-bottom: 0.75rem;
+    }
+    .env-card__desc {
+      font-size: 0.9375rem;
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1.75rem;
+      flex-grow: 1;
+    }
+    .env-card__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .notice-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 1.75rem 2rem;
+      margin: 2rem 0;
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      box-shadow: var(--shadow-xs);
+    }
+    .notice-card__icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      margin-top: 0.125rem;
+    }
+    .notice-card__body h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+      color: var(--color-text-primary);
+    }
+    .notice-card__body p {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* ─── Consent Banner ─────────────────────────────────── */
+    #consent-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 600;
+      background: rgba(15, 23, 42, 0.97);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      color: #e2e8f0;
+      padding: 1.1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #consent-banner.visible { transform: translateY(0); }
+    #consent-banner p { margin: 0; flex: 1; min-width: 240px; color: #94a3b8; }
+    #consent-banner p strong { color: #f1f5f9; font-weight: 600; }
+    .consent-actions { display: flex; gap: 0.625rem; flex-shrink: 0; align-items: center; }
+    .consent-btn {
+      padding: 0.45rem 1.1rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .consent-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .consent-btn--accept { background: #4f46e5; color: #fff; }
+    .consent-btn--decline { background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.12); }
+  </style>
+</head>
+<body>
+
+  <!-- Site Navigation -->
+  <header class="meridian-header">
+    <div class="container">
+      <div class="meridian-header__inner">
+        <a href="/visitor" class="meridian-logo">
+          <div class="meridian-logo__mark">M</div>
+          <span>Meridian</span>
+        </a>
+        <nav class="meridian-nav" aria-label="Main navigation">
+          <a href="/visitor" class="meridian-nav__link active">Home</a>
+          <a href="/visitor/shop" class="meridian-nav__link">Shop</a>
+          <a href="/visitor/travel" class="meridian-nav__link">Travel</a>
+          <a href="/visitor/forum" class="meridian-nav__link">Community</a>
+        </nav>
+        <div class="meridian-header__actions">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="home-hero">
+    <div class="container">
+      <span class="home-hero__badge">
+        <span>✨</span>
+        <span>New arrivals &amp; exclusive offers</span>
+      </span>
+      <h1 class="home-hero__title">Welcome to Meridian</h1>
+      <p class="home-hero__sub">
+        Shop curated products, book your next trip, and connect with a community of like-minded people — all in one place.
+      </p>
+    </div>
+  </section>
+
+  <!-- Main Domains Grid -->
+  <main class="page-main">
+    <div class="container">
+      <div class="environment-grid">
+        <!-- Domain 1: Shop -->
+        <a href="/visitor/shop" class="env-card">
+          <div>
+            <div class="env-card__icon">🛍️</div>
+            <div class="env-card__tag">Shop — Curated Lifestyle Goods</div>
+            <h2 class="env-card__title">Meridian Shop</h2>
+            <p class="env-card__desc">
+              Discover thoughtfully curated homeware, books, apparel, and technology. Browse, filter, and add your favourites to the basket.
+            </p>
+          </div>
+          <div class="env-card__footer">
+            <span>Browse the Shop</span>
+            <span>&rarr;</span>
+          </div>
+        </a>
+
+        <!-- Domain 2: Travel -->
+        <a href="/visitor/travel" class="env-card">
+          <div>
+            <div class="env-card__icon">✈️</div>
+            <div class="env-card__tag">Travel — Flights &amp; Bookings</div>
+            <h2 class="env-card__title">Meridian Travel</h2>
+            <p class="env-card__desc">
+              Search flights across India and beyond. Compare airlines, choose your cabin, and book in seconds — no booking fees.
+            </p>
+          </div>
+          <div class="env-card__footer">
+            <span>Search Flights</span>
+            <span>&rarr;</span>
+          </div>
+        </a>
+
+        <!-- Domain 3: Forum -->
+        <a href="/visitor/forum" class="env-card">
+          <div>
+            <div class="env-card__icon">💬</div>
+            <div class="env-card__tag">Community — Discussions &amp; Ideas</div>
+            <h2 class="env-card__title">Meridian Community</h2>
+            <p class="env-card__desc">
+              Join the conversation. Browse threads, share tips, ask questions, and connect with fellow Meridian members.
+            </p>
+          </div>
+          <div class="env-card__footer">
+            <span>Join Community</span>
+            <span>&rarr;</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Trust & Quality Notice -->
+      <div class="notice-card">
+        <div class="notice-card__icon">🌟</div>
+        <div class="notice-card__body">
+          <h4>Thoughtfully curated, every day</h4>
+          <p>
+            Every product, flight, and discussion on Meridian is hand-selected for quality and relevance. We believe in simple, honest design and a shopping experience that respects your time.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="meridian-footer">
+    <div class="container">
+      <div class="meridian-footer__inner">
+        <div>
+          <div class="meridian-logo" style="margin-bottom: 0.25rem;">
+            <div class="meridian-logo__mark" style="width: 28px; height: 28px; font-size: 0.75rem;">M</div>
+            <span style="font-size: 1rem;">Meridian</span>
+          </div>
+          <p style="font-size: 0.8125rem; color: var(--color-text-tertiary);">
+            &copy; 2026 Meridian &mdash; Curated goods, travel &amp; community.
+          </p>
+        </div>
+        <div style="font-size: 0.875rem;">
+          <a href="/visitor/shop" class="btn btn-secondary btn-sm">Shop Now &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── Consent Banner ──────────────────────────────── -->
+  <div id="consent-banner" role="dialog" aria-live="polite" aria-label="Cookie and analytics consent">
+    <p>
+      <strong>Cookie &amp; Analytics Notice</strong>
+      &ensp;Meridian uses anonymous interaction analytics to improve your experience.
+      No personal data is collected. You can opt out at any time.
+    </p>
+    <div class="consent-actions">
+      <button class="consent-btn consent-btn--decline" id="consent-decline">Decline</button>
+      <button class="consent-btn consent-btn--accept" id="consent-accept">Accept &amp; Continue</button>
+    </div>
+  </div>
+
+  <!-- ─── Telemetry — loaded only after consent ─────────── -->
+  <script>
+  (function() {
+    var CONSENT_KEY = 'meridian_consent';
+    var banner = document.getElementById('consent-banner');
+    function loadTelemetry() {
+      var s = document.createElement('script');
+      s.src = '/static/collector.js';
+      document.body.appendChild(s);
+    }
+    function hideBanner() {
+      if (banner) {
+        banner.classList.remove('visible');
+        setTimeout(function() { banner.style.display = 'none'; }, 400);
+      }
+    }
+    var consent = localStorage.getItem(CONSENT_KEY);
+    if (consent === 'granted') {
+      loadTelemetry();
+    } else if (!consent) {
+      setTimeout(function() { if (banner) banner.classList.add('visible'); }, 800);
+      document.getElementById('consent-accept').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'granted');
+        hideBanner();
+        loadTelemetry();
+      });
+      document.getElementById('consent-decline').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'declined');
+        hideBanner();
+      });
+    }
+  })();
+  </script>
+
+</body>
+</html>
+

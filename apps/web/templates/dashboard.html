@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSense — Behavioral Intelligence Platform</title>
+  
+  <!-- CSS & Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top App Header (Stripe / Linear Glassmorphism) -->
+  <header class="header-glass sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Status -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-800 flex items-center justify-center text-white font-extrabold text-base shadow-md shadow-indigo-500/20">
+            WS
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-base font-extrabold text-slate-900 tracking-tight">WebSense</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">v1.2.0</span>
+            </div>
+            <p class="text-[11px] text-slate-500 hidden sm:block font-medium">Behavioral Intelligence &amp; AI Agent Defense</p>
+          </div>
+        </div>
+
+        <div class="h-5 w-px bg-slate-200 hidden md:block"></div>
+
+        <!-- Live Status Pill -->
+        <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-emerald-800 font-semibold text-[11px]">Engine Active (5-Layer Inference)</span>
+        </div>
+      </div>
+
+      <!-- Quick Actions & Links -->
+      <div class="flex items-center space-x-3">
+        <!-- Global Site Selector -->
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+          <span class="text-slate-500 font-medium px-1.5">Site:</span>
+          <select id="global-site-select" class="bg-white border-0 rounded-lg px-2.5 py-1 text-xs text-slate-800 font-semibold focus:ring-1 focus:ring-indigo-500 shadow-xs">
+            <option value="ALL">All Registered Sites</option>
+            <option value="site_meridian_prod">Meridian Honey-Suite</option>
+          </select>
+        </div>
+
+        <!-- Offline Demo Seeding Button -->
+        <button id="seed-demo-btn" 
+                title="Seeds synthetic training sessions for offline evaluation (marked DEMO)"
+                class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]">
+          <span>⚡</span>
+          <span>Load Sample Data (Offline Demo)</span>
+        </button>
+
+        <!-- Honey Sites Dropdown / Links -->
+        <div class="relative group">
+          <button class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold shadow-sm transition">
+            <span>🌐 Honey Sites</span>
+            <span class="text-[10px] text-slate-400">▼</span>
+          </button>
+          <div class="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-2xl shadow-xl py-1.5 hidden group-hover:block z-50 animate-fade-in">
+            <a href="/visitor/shop" target="_blank" class="flex items-center gap-2 px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-indigo-600 font-medium">
+              <span>🛍️</span><span>E-Commerce Shop (20 Items)</span>
+            </a>
+            <a href="/visitor/travel" target="_blank" class="flex items-center gap-2 px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-indigo-600 font-medium">
+              <span>✈️</span><span>Travel Booking</span>
+            </a>
+            <a href="/visitor/forum" target="_blank" class="flex items-center gap-2 px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-indigo-600 font-medium">
+              <span>💬</span><span>Community Forum</span>
+            </a>
+            <div class="border-t border-slate-100 my-1"></div>
+            <a href="/standalone_demo" target="_blank" class="flex items-center gap-2 px-4 py-2 text-xs text-indigo-600 font-semibold hover:bg-indigo-50">
+              <span>🚀</span><span>External Embed Demo</span>
+            </a>
+            <a href="/visitor" target="_blank" class="flex items-center gap-2 px-4 py-2 text-xs text-slate-500 hover:text-slate-800">
+              <span>🚪</span><span>Portal Home</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="/docs" target="_blank" class="text-xs text-slate-500 hover:text-slate-800 font-mono font-medium hidden lg:block px-2 py-1 rounded-lg hover:bg-slate-100">API Docs ↗</a>
+      </div>
+
+    </div>
+
+    <!-- Segmented Navigation Pills -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-2 border-t border-slate-100 overflow-x-auto py-2">
+      <button class="nav-tab-pill nav-tab active" data-target="tab-overview">
+        <span>📊</span><span>Overview</span>
+      </button>
+      <button class="nav-tab-pill nav-tab" data-target="tab-sessions">
+        <span>📋</span><span>Live Sessions</span>
+      </button>
+      <button class="nav-tab-pill nav-tab" data-target="tab-explorer">
+        <span>🔍</span><span>Session Explorer &amp; 2D Replay</span>
+      </button>
+      <button class="nav-tab-pill nav-tab" data-target="tab-experiments">
+        <span>🧪</span><span>Experiment Lab</span>
+      </button>
+      <button class="nav-tab-pill nav-tab" data-target="tab-adversarial">
+        <span>🛡️</span><span>Adversarial Simulator</span>
+      </button>
+      <button class="nav-tab-pill nav-tab" data-target="tab-health">
+        <span>⚙️</span><span>System Health</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+
+    <!-- ================================================================= -->
+    <!-- TAB 1: OVERVIEW -->
+    <!-- ================================================================= -->
+    <section id="tab-overview" class="tab-content space-y-6">
+      
+      <!-- Metric Cards Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        
+        <div class="saas-card metric-card-top p-5">
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Analyzed</div>
+          <div class="text-3xl font-extrabold text-slate-900 mt-1 font-mono tracking-tight" id="stat-total">0</div>
+          <div class="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5 font-medium">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            <span>Real-time session stream</span>
+          </div>
+        </div>
+
+        <div class="saas-card metric-card-top metric-card-human p-5">
+          <div class="text-xs font-bold text-emerald-700 flex items-center justify-between">
+            <span>Human Visitors</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">ORGANIC</span>
+          </div>
+          <div class="text-3xl font-extrabold text-emerald-600 mt-1 font-mono tracking-tight" id="stat-human">0 (0%)</div>
+          <div class="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5 font-medium">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>Normal motor dynamics</span>
+          </div>
+        </div>
+
+        <div class="saas-card metric-card-top metric-card-bot p-5">
+          <div class="text-xs font-bold text-rose-700 flex items-center justify-between">
+            <span>Traditional Automation</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold">SCRIPTED</span>
+          </div>
+          <div class="text-3xl font-extrabold text-rose-600 mt-1 font-mono tracking-tight" id="stat-bot">0 (0%)</div>
+          <div class="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5 font-medium">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+            <span>Deterministic zero-jitter</span>
+          </div>
+        </div>
+
+        <div class="saas-card metric-card-top metric-card-agent p-5">
+          <div class="text-xs font-bold text-amber-700 flex items-center justify-between">
+            <span>Agentic AI</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold">AGENTIC</span>
+          </div>
+          <div class="text-3xl font-extrabold text-amber-600 mt-1 font-mono tracking-tight" id="stat-agent">0 (0%)</div>
+          <div class="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5 font-medium">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span>Planning-pause cadence</span>
+          </div>
+        </div>
+
+        <div class="saas-card metric-card-top p-5 col-span-2 lg:col-span-1">
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Mean Confidence</div>
+          <div class="text-3xl font-extrabold text-indigo-600 mt-1 font-mono tracking-tight" id="stat-conf">92.4%</div>
+          <div class="text-[11px] text-slate-500 mt-2 font-medium" id="stat-risk">Avg Risk: 34 / 100</div>
+        </div>
+
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Detection Timeline Chart -->
+        <div class="lg:col-span-2 saas-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Actor Classification Trend</h3>
+              <p class="text-xs text-slate-500">Volume distribution: Human vs Traditional Automation vs Agentic AI</p>
+            </div>
+            <span class="text-xs font-mono font-semibold px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg border border-slate-200">Live Window</span>
+          </div>
+          <div class="h-64">
+            <canvas id="chart-timeline"></canvas>
+          </div>
+        </div>
+
+        <!-- Class Distribution Doughnut Chart -->
+        <div class="saas-card p-6 flex flex-col">
+          <div class="mb-4">
+            <h3 class="text-sm font-bold text-slate-900">Traffic Composition</h3>
+            <p class="text-xs text-slate-500">Proportions across current dataset</p>
+          </div>
+          <div class="h-52 my-auto">
+            <canvas id="chart-distribution"></canvas>
+          </div>
+          <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-center text-xs">
+            <div><span class="text-emerald-700 font-bold" id="dist-human-val">0%</span><br><span class="text-slate-500 text-[10px]">Human</span></div>
+            <div><span class="text-rose-700 font-bold" id="dist-bot-val">0%</span><br><span class="text-slate-500 text-[10px]">Automation</span></div>
+            <div><span class="text-amber-700 font-bold" id="dist-agent-val">0%</span><br><span class="text-slate-500 text-[10px]">Agentic AI</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Recent Sessions Preview Table -->
+      <div class="saas-card p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Recent Ingested Sessions</h3>
+            <p class="text-xs text-slate-500">Real-time incoming telemetry evaluated by the 5-Layer detection engine</p>
+          </div>
+          <button onclick="document.querySelector('[data-target=\'tab-sessions\']').click()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
+            <span>View All Sessions</span><span>→</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left text-xs saas-table">
+            <thead class="bg-slate-50 text-slate-600 font-mono uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-3.5">Session ID</th>
+                <th class="py-3 px-3.5">Task</th>
+                <th class="py-3 px-3.5">Verdict</th>
+                <th class="py-3 px-3.5">Confidence</th>
+                <th class="py-3 px-3.5">Risk Score</th>
+                <th class="py-3 px-3.5">WebDriver</th>
+                <th class="py-3 px-3.5">Signals / Explanation</th>
+                <th class="py-3 px-3.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="overview-recent-tbody" class="divide-y divide-slate-100 font-normal text-slate-700">
+              <tr><td colspan="8" class="py-8 text-center text-slate-400">Loading incoming telemetry...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================= -->
+    <!-- TAB 2: LIVE SESSIONS TABLE -->
+    <!-- ================================================================= -->
+    <section id="tab-sessions" class="tab-content space-y-4 hidden">
+      <div class="saas-card p-6 space-y-4">
+        
+        <!-- Controls & Filters -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Live Session Telemetry Log</h2>
+            <p class="text-xs text-slate-500">Search, filter, and inspect detailed behavioral fingerprints.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Filter Dropdown -->
+            <select id="session-filter-class" class="bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
+              <option value="ALL">All Classifications</option>
+              <option value="HUMAN">Human Only</option>
+              <option value="TRADITIONAL_AUTOMATION">Traditional Automation Only</option>
+              <option value="AGENTIC_AI">Agentic AI Only</option>
+              <option value="UNCERTAIN">Uncertain Only</option>
+            </select>
+
+            <!-- Search input -->
+            <input type="text" id="session-search-input" placeholder="Search Session ID / Task..." 
+                   class="bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-700 placeholder-slate-400 w-56 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
+
+            <button id="refresh-sessions-btn" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-semibold text-slate-700 transition shadow-sm">
+              ↻ Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Sessions Table -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left text-xs saas-table">
+            <thead class="bg-slate-50 text-slate-600 font-mono uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-3.5">Session ID</th>
+                <th class="py-3 px-3.5">Site / Source</th>
+                <th class="py-3 px-3.5">Task</th>
+                <th class="py-3 px-3.5">Duration</th>
+                <th class="py-3 px-3.5">Ground Truth</th>
+                <th class="py-3 px-3.5">Final Verdict</th>
+                <th class="py-3 px-3.5">Confidence</th>
+                <th class="py-3 px-3.5">Risk</th>
+                <th class="py-3 px-3.5">Explainability Snippet</th>
+                <th class="py-3 px-3.5 text-right">Inspect</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-table-tbody" class="divide-y divide-slate-100 text-slate-700">
+              <tr><td colspan="10" class="py-8 text-center text-slate-400">No session telemetry found.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================================================================= -->
+    <!-- TAB 3: SESSION EXPLORER & 2D TRAJECTORY VISUALIZER -->
+    <!-- ================================================================= -->
+    <section id="tab-explorer" class="tab-content space-y-6 hidden">
+      
+      <!-- Session Selector Banner -->
+      <div class="saas-card p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Inspecting Session:</span>
+          <span id="explorer-session-id" class="font-mono text-sm font-bold text-indigo-600">No session selected</span>
+          <span id="explorer-verdict-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold badge-uncertain">UNCERTAIN</span>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <select id="explorer-session-select" class="bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-700 w-full sm:w-72 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm font-medium">
+            <option value="">Choose session to explore...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Visualizer & Metrics Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- 2D Trajectory Visualizer (Canvas) -->
+        <div class="lg:col-span-7 saas-card p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">2D Mouse Trajectory &amp; Kinematics Replay</h3>
+              <p class="text-xs text-slate-500">Color-mapped by velocity (Sky: Low, Emerald: Cruise, Rose: Spike)</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="trajectory-play-btn" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition">▶ Play</button>
+              <button id="trajectory-reset-btn" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">Reset</button>
+            </div>
+          </div>
+
+          <!-- Canvas Container -->
+          <div class="relative w-full aspect-video studio-canvas-container overflow-hidden">
+            <canvas id="trajectory-canvas" class="w-full h-full block"></canvas>
+            <div id="trajectory-overlay-stats" class="absolute bottom-3 left-3 px-3 py-1.5 bg-slate-900/90 backdrop-blur border border-slate-700/80 rounded-lg text-[11px] font-mono text-slate-200 shadow-lg">
+              Points: <span id="canvas-point-count">0</span> | Path: <span id="canvas-path-len">0px</span> | Straightness: <span id="canvas-straightness">1.00</span>
+            </div>
+          </div>
+
+          <!-- Keystroke Cadence Bar Chart -->
+          <div class="pt-2">
+            <h4 class="text-xs font-bold text-slate-700 mb-2">Inter-Keystroke Latency Profile (ms)</h4>
+            <div class="h-28">
+              <canvas id="chart-keystrokes"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Defense-in-Depth 5-Layer Verdict & Explainability -->
+        <div class="lg:col-span-5 saas-card p-6 space-y-5">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Defense-in-Depth Analysis</h3>
+            <p class="text-xs text-slate-500">Independent verdicts from all 5 detection layers</p>
+          </div>
+
+          <!-- Layer 1-5 Cards -->
+          <div class="space-y-2.5 text-xs font-mono">
+            <!-- Layer 1 -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-700">Layer 1: Rule Engine</span>
+                <div class="text-[10px] text-slate-500 font-sans mt-0.5" id="l1-summary">Heuristic triggers &amp; penalties</div>
+              </div>
+              <span id="l1-badge" class="font-bold text-emerald-700 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200">Score: 0</span>
+            </div>
+
+            <!-- Layer 2 -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-700">Layer 2: Behavioral ML</span>
+                <div class="text-[10px] text-slate-500 font-sans mt-0.5" id="l2-summary">Random Forest Kinematics</div>
+              </div>
+              <span id="l2-badge" class="font-bold text-indigo-700 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200">Pred: HUMAN</span>
+            </div>
+
+            <!-- Layer 3 -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-700">Layer 3: Anomaly Isolation</span>
+                <div class="text-[10px] text-slate-500 font-sans mt-0.5" id="l3-summary">Mahalanobis baseline deviation</div>
+              </div>
+              <span id="l3-badge" class="font-bold text-slate-700 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200">Normal (+0.62)</span>
+            </div>
+
+            <!-- Layer 4 -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-700">Layer 4: Replay (DTW)</span>
+                <div class="text-[10px] text-slate-500 font-sans mt-0.5" id="l4-summary">Trajectory duplication check</div>
+              </div>
+              <span id="l4-badge" class="font-bold text-emerald-700 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200">No Replay</span>
+            </div>
+
+            <!-- Layer 5 -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-700">Layer 5: Context Integrity</span>
+                <div class="text-[10px] text-slate-500 font-sans mt-0.5" id="l5-summary">DOM workflow sequence logic</div>
+              </div>
+              <span id="l5-badge" class="font-bold text-emerald-700 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200">Valid ✓</span>
+            </div>
+          </div>
+
+          <!-- Explainability Box -->
+          <div class="p-4 bg-indigo-50/60 border border-indigo-100 rounded-2xl space-y-2">
+            <h4 class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+              <span>💡</span><span>Plain English Explainability</span>
+            </h4>
+            <p id="explorer-explanation-text" class="text-xs text-slate-700 leading-relaxed font-medium">
+              Select a session to see detailed model rationale and kinematic indicators.
+            </p>
+
+            <div class="pt-2 border-t border-indigo-100 text-[11px] space-y-1 font-mono text-indigo-950" id="explorer-signals-list">
+              <!-- Contributing signal bullets will render here -->
+            </div>
+          </div>
+
+          <!-- Numeric Features Grid -->
+          <div>
+            <h4 class="text-xs font-bold text-slate-700 mb-2">Kinematic Feature Values</h4>
+            <div class="grid grid-cols-2 gap-2 text-[11px] font-mono bg-slate-50 p-3.5 rounded-xl border border-slate-200" id="explorer-features-grid">
+              <div><span class="text-slate-500">mean_vel:</span> <span class="text-slate-800 font-semibold" id="f-mean-vel">-</span></div>
+              <div><span class="text-slate-500">straightness:</span> <span class="text-slate-800 font-semibold" id="f-straightness">-</span></div>
+              <div><span class="text-slate-500">micro_corr:</span> <span class="text-slate-800 font-semibold" id="f-micro-corr">-</span></div>
+              <div><span class="text-slate-500">key_cv:</span> <span class="text-slate-800 font-semibold" id="f-key-cv">-</span></div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================================================================= -->
+    <!-- TAB 4: EXPERIMENT LAB -->
+    <!-- ================================================================= -->
+    <section id="tab-experiments" class="tab-content space-y-6 hidden">
+      
+      <div class="saas-card p-6 space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">FP-Agent Empirical Benchmark Suite</h2>
+            <p class="text-xs text-slate-500 mt-1">
+              Empirical evaluation demonstrating that <strong>Behavioral Fingerprints consistently outperform Browser Fingerprints alone</strong> against AI browsing agents.
+            </p>
+          </div>
+          <button id="run-benchmark-btn" 
+                  class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            ⚡ Run Full Benchmark
+          </button>
+        </div>
+
+        <!-- Experiment Comparisons Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="experiments-cards-container">
+          
+          <!-- Experiment A -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800">Exp A: Browser Only</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold">WEAK SIGNAL</span>
+            </div>
+            <p class="text-[11px] text-slate-500">UserAgent, Screen Dims, Webdriver flag only</p>
+            <div class="space-y-1 text-xs font-mono pt-2 border-t border-slate-200">
+              <div class="flex justify-between"><span class="text-slate-500">Accuracy:</span><span class="font-bold text-slate-900" id="exp-a-acc">62.5%</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Macro F1:</span><span class="font-bold text-slate-900" id="exp-a-f1">0.58</span></div>
+            </div>
+          </div>
+
+          <!-- Experiment B -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800">Exp B: Behavioral Only</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold">STRONG</span>
+            </div>
+            <p class="text-[11px] text-slate-500">Mouse kinematics, typing CV, scroll cadence</p>
+            <div class="space-y-1 text-xs font-mono pt-2 border-t border-slate-200">
+              <div class="flex justify-between"><span class="text-slate-500">Accuracy:</span><span class="font-bold text-amber-700" id="exp-b-acc">91.8%</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Macro F1:</span><span class="font-bold text-amber-700" id="exp-b-f1">0.91</span></div>
+            </div>
+          </div>
+
+          <!-- Experiment C -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800">Exp C: Combined ML</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">VERY HIGH</span>
+            </div>
+            <p class="text-[11px] text-slate-500">Browser + Behavioral Kinematic features</p>
+            <div class="space-y-1 text-xs font-mono pt-2 border-t border-slate-200">
+              <div class="flex justify-between"><span class="text-slate-500">Accuracy:</span><span class="font-bold text-indigo-700" id="exp-c-acc">95.4%</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Macro F1:</span><span class="font-bold text-indigo-700" id="exp-c-f1">0.95</span></div>
+            </div>
+          </div>
+
+          <!-- Experiment D -->
+          <div class="bg-gradient-to-b from-indigo-50 to-white border-2 border-indigo-300 rounded-2xl p-5 space-y-3 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-900">Exp D: Full 5-Layer</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">STATE OF ART</span>
+            </div>
+            <p class="text-[11px] text-indigo-950 font-medium">ML + Anomaly + DTW Replay + Context</p>
+            <div class="space-y-1 text-xs font-mono pt-2 border-t border-indigo-200">
+              <div class="flex justify-between"><span class="text-slate-600">Accuracy:</span><span class="font-bold text-emerald-700" id="exp-d-acc">98.2%</span></div>
+              <div class="flex justify-between"><span class="text-slate-600">Macro F1:</span><span class="font-bold text-emerald-700" id="exp-d-f1">0.98</span></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Confusion Matrix & Feature Importance -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+          <!-- Confusion Matrix Card -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+            <h4 class="text-xs font-bold text-slate-900 mb-4 uppercase tracking-wider">Confusion Matrix (3-Class Multi-Classification)</h4>
+            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-center text-xs font-mono">
+                <thead>
+                  <tr class="text-slate-500 text-[10px] bg-slate-50">
+                    <th class="p-3"></th>
+                    <th class="p-3">Pred Human</th>
+                    <th class="p-3">Pred Bot</th>
+                    <th class="p-3">Pred AI Agent</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-800" id="confusion-matrix-tbody">
+                  <tr>
+                    <td class="p-3 font-bold text-slate-600 text-left bg-slate-50/50">True Human</td>
+                    <td class="p-3 bg-emerald-50 text-emerald-700 font-bold" id="cm-hh">30</td>
+                    <td class="p-3" id="cm-hb">0</td>
+                    <td class="p-3" id="cm-ha">0</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-bold text-slate-600 text-left bg-slate-50/50">True Bot</td>
+                    <td class="p-3" id="cm-bh">0</td>
+                    <td class="p-3 bg-rose-50 text-rose-700 font-bold" id="cm-bb">30</td>
+                    <td class="p-3" id="cm-ba">0</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-bold text-slate-600 text-left bg-slate-50/50">True AI Agent</td>
+                    <td class="p-3" id="cm-ah">0</td>
+                    <td class="p-3" id="cm-ab">0</td>
+                    <td class="p-3 bg-amber-50 text-amber-700 font-bold" id="cm-aa">30</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Feature Importance Rankings -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+            <h4 class="text-xs font-bold text-slate-900 mb-4 uppercase tracking-wider">Feature Importance Weights (Gini Impurity)</h4>
+            <div class="space-y-3 text-xs font-mono" id="feature-importance-bars">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================= -->
+    <!-- TAB 5: ADVERSARIAL ATTACK SIMULATOR -->
+    <!-- ================================================================= -->
+    <section id="tab-adversarial" class="tab-content space-y-6 hidden">
+      
+      <div class="saas-card p-6 space-y-5">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Adversarial Attack &amp; Evasion Simulator</h2>
+          <p class="text-xs text-slate-500 mt-1">
+            Simulate increasingly sophisticated web automation attacks to test multi-layer defense resilience.
+          </p>
+        </div>
+
+        <!-- Attack Vectors Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <!-- Attack 1 -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="text-xs font-bold text-rose-700 flex items-center justify-between">
+                <span>Attack 1: Simple Bot</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">LEVEL 1</span>
+              </div>
+              <p class="text-[11px] text-slate-600 mt-2 leading-relaxed">Headless script, webdriver=true, zero mouse motion, instant form submission.</p>
+            </div>
+            <button onclick="runAdversarialSimulation('simple_bot')" 
+                    class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-all hover:scale-[1.02]">
+              Simulate Attack 1
+            </button>
+          </div>
+
+          <!-- Attack 2 -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="text-xs font-bold text-amber-700 flex items-center justify-between">
+                <span>Attack 2: Synthetic Jitter</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">LEVEL 2</span>
+              </div>
+              <p class="text-[11px] text-slate-600 mt-2 leading-relaxed">Injects Gaussian noise and Bézier curves onto straight lines to evade kinematics.</p>
+            </div>
+            <button onclick="runAdversarialSimulation('synthetic_jitter')" 
+                    class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-all hover:scale-[1.02]">
+              Simulate Attack 2
+            </button>
+          </div>
+
+          <!-- Attack 3 -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="text-xs font-bold text-sky-700 flex items-center justify-between">
+                <span>Attack 3: Session Replay</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-800">LEVEL 3</span>
+              </div>
+              <p class="text-[11px] text-slate-600 mt-2 leading-relaxed">Replays an exact recorded human mouse trajectory to bypass Layer 2 ML.</p>
+            </div>
+            <button onclick="runAdversarialSimulation('trajectory_replay')" 
+                    class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-all hover:scale-[1.02]">
+              Simulate Attack 3
+            </button>
+          </div>
+
+          <!-- Attack 4 -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="text-xs font-bold text-indigo-700 flex items-center justify-between">
+                <span>Attack 4: Cross-Context Replay</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">LEVEL 4</span>
+              </div>
+              <p class="text-[11px] text-slate-600 mt-2 leading-relaxed">Replays human mouse movement from one page onto a different task workflow.</p>
+            </div>
+            <button onclick="runAdversarialSimulation('cross_context')" 
+                    class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-all hover:scale-[1.02]">
+              Simulate Attack 4
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Attack Results Display Box -->
+        <div id="adversarial-results-box" class="bg-slate-50 border border-slate-200 rounded-2xl p-6 hidden animate-fade-in space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div>
+              <span class="text-xs font-mono text-slate-500">Simulated Attack Execution:</span>
+              <span id="adv-attack-name" class="font-bold text-slate-900 text-sm ml-2">Attack 1: Simple Bot</span>
+            </div>
+            <span id="adv-final-badge" class="px-3 py-1 rounded-full text-xs font-bold badge-bot">MITIGATED: BOT</span>
+          </div>
+
+          <!-- Defense Pipeline Layer Results -->
+          <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 text-xs font-mono text-center">
+            <div class="p-3.5 bg-white border border-slate-200 rounded-xl">
+              <div class="text-slate-500 text-[10px]">Layer 1 (Rules)</div>
+              <div id="adv-l1" class="font-bold text-rose-700 mt-1">TRIGGERED</div>
+            </div>
+            <div class="p-3.5 bg-white border border-slate-200 rounded-xl">
+              <div class="text-slate-500 text-[10px]">Layer 2 (ML)</div>
+              <div id="adv-l2" class="font-bold text-rose-700 mt-1">FLAGGED (AUTOMATION)</div>
+            </div>
+            <div class="p-3.5 bg-white border border-slate-200 rounded-xl">
+              <div class="text-slate-500 text-[10px]">Layer 3 (Anomaly)</div>
+              <div id="adv-l3" class="font-bold text-rose-700 mt-1">OUTLIER</div>
+            </div>
+            <div class="p-3.5 bg-white border border-slate-200 rounded-xl">
+              <div class="text-slate-500 text-[10px]">Layer 4 (DTW Replay)</div>
+              <div id="adv-l4" class="font-bold text-slate-400 mt-1">PASS</div>
+            </div>
+            <div class="p-3.5 bg-white border border-slate-200 rounded-xl">
+              <div class="text-slate-500 text-[10px]">Layer 5 (Context)</div>
+              <div id="adv-l5" class="font-bold text-slate-400 mt-1">PASS</div>
+            </div>
+          </div>
+
+          <!-- Explanation -->
+          <div class="p-4 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 leading-relaxed font-medium" id="adv-explanation">
+            Mitigation details will appear here.
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================= -->
+    <!-- TAB 6: SYSTEM HEALTH & CONFIG -->
+    <!-- ================================================================= -->
+    <section id="tab-health" class="tab-content space-y-6 hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- System Status Card -->
+        <div class="saas-card p-6 space-y-4">
+          <h3 class="text-sm font-bold text-slate-900">Platform Health &amp; Telemetry Status</h3>
+          <div class="space-y-3 text-xs font-mono">
+            <div class="flex justify-between py-2 border-b border-slate-100">
+              <span class="text-slate-500">API Gateway:</span>
+              <span class="text-emerald-700 font-bold">ONLINE (FastAPI v0.124)</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-slate-100">
+              <span class="text-slate-500">Database Engine:</span>
+              <span class="text-indigo-600 font-bold" id="health-db-status">SQLite (Active)</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-slate-100">
+              <span class="text-slate-500">Active ML Model:</span>
+              <span class="text-slate-800 font-semibold">RandomForest Ensemble v1.2.0</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-slate-100">
+              <span class="text-slate-500">Replay Cache Size:</span>
+              <span class="text-slate-800 font-semibold">50 Trajectories</span>
+            </div>
+            <div class="flex justify-between py-2">
+              <span class="text-slate-500">Client Telemetry Collector:</span>
+              <span class="text-emerald-700 font-semibold">Enabled (Throttled 25ms)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Classifier Configuration Card -->
+        <div class="saas-card p-6 space-y-4">
+          <h3 class="text-sm font-bold text-slate-900">Detection Threshold Parameters</h3>
+          <div class="space-y-4 text-xs">
+            <div>
+              <div class="flex justify-between text-slate-700 mb-1.5 font-medium">
+                <span>Straightness Ratio Threshold (Automation Flag)</span>
+                <span class="font-mono text-indigo-600 font-bold">0.95</span>
+              </div>
+              <input type="range" min="0.80" max="0.99" step="0.01" value="0.95" class="w-full accent-indigo-600">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-700 mb-1.5 font-medium">
+                <span>DTW Replay Similarity Sensitivity</span>
+                <span class="font-mono text-indigo-600 font-bold">0.94</span>
+              </div>
+              <input type="range" min="0.85" max="0.99" step="0.01" value="0.94" class="w-full accent-indigo-600">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-700 mb-1.5 font-medium">
+                <span>Keystroke CV Uniformity Threshold</span>
+                <span class="font-mono text-indigo-600 font-bold">0.05</span>
+              </div>
+              <input type="range" min="0.02" max="0.15" step="0.01" value="0.05" class="w-full accent-indigo-600">
+            </div>
+
+            <div class="pt-2">
+              <button class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition">
+                Save &amp; Retrain Classifiers
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Dashboard JavaScript -->
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>
+
+
