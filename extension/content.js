@@ -1,6 +1,9 @@
 ﻿/**
  * WebSense Sentinel Content Script (Chrome Extension Manifest V3)
  * Runs on any visited web page to capture telemetry and report AI/Bot classifications.
+ *
+ * Collection and transmission are gated to the active (visible) tab only.
+ * Background tabs do not record events or flush telemetry to the backend.
  */
 
 (function () {
@@ -37,7 +40,37 @@
   let lastEventTime  = null;  // performance.now() of most recent user event
   let accumulatedIdleMs = 0;  // total idle-gap time subtracted from active window
 
+  // --- Active-Tab Gating ---
+  // Only the foreground tab collects events and sends telemetry.
+  let isCollecting = document.visibilityState === 'visible';
+
+  function isTabVisible() {
+    return document.visibilityState === 'visible';
+  }
+
+  function onTabHidden() {
+    isCollecting = false;
+    // Exclude time spent in the background from active engagement metrics.
+    if (lastEventTime !== null) {
+      accumulatedIdleMs += performance.now() - lastEventTime;
+      lastEventTime = null;
+    }
+  }
+
+  function onTabVisible() {
+    isCollecting = true;
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (isTabVisible()) {
+      onTabVisible();
+    } else {
+      onTabHidden();
+    }
+  });
+
   function recordActivity() {
+    if (!isCollecting) return;
     const now = performance.now();
     if (firstEventTime === null) {
       firstEventTime = now;
@@ -57,6 +90,7 @@
 
   // --- Mouse Movement ---
   window.addEventListener('mousemove', function (e) {
+    if (!isCollecting) return;
     const now = performance.now();
     if (now - lastMouseMoveTime < 25) return;
     lastMouseMoveTime = now;
@@ -73,6 +107,7 @@
 
   // --- Click Events ---
   window.addEventListener('click', function (e) {
+    if (!isCollecting) return;
     recordActivity();
     const tag = (e.target.tagName || '').toLowerCase();
     let category = 'other';
@@ -89,6 +124,7 @@
 
   // --- Keyboard Timing (Zero text / characters) ---
   window.addEventListener('keydown', function (e) {
+    if (!isCollecting) return;
     if (e.target && (e.target.type === 'password' || e.target.dataset.private === 'true')) return;
     recordActivity();
     const now = performance.now();
@@ -107,6 +143,7 @@
   }, { passive: true });
 
   window.addEventListener('keyup', function (e) {
+    if (!isCollecting) return;
     if (activeKeys.has(e.code)) {
       const downTime = activeKeys.get(e.code);
       const hold = Math.round(performance.now() - downTime);
@@ -119,6 +156,7 @@
 
   // --- Scroll Dynamics ---
   window.addEventListener('scroll', function () {
+    if (!isCollecting) return;
     const now = performance.now();
     if (now - lastScrollTime < 50) return;
     recordActivity();
@@ -165,7 +203,8 @@
     };
   }
 
-  async function flushTelemetry() {
+  async function flushTelemetry(force) {
+    if (!force && !isTabVisible()) return;
     if (mouseEvents.length < 2 && keyboardEvents.length === 0 && clickEvents.length === 0) return;
     try {
       const response = await fetch(DEFAULT_ENDPOINT, {
@@ -193,9 +232,9 @@
     }
   }
 
-  // Periodic flush every 5 seconds & on unload
-  setInterval(flushTelemetry, 5000);
-  window.addEventListener('pagehide', flushTelemetry);
+  // Periodic flush every 5 seconds (active tab only) & on unload
+  setInterval(function () { flushTelemetry(false); }, 5000);
+  window.addEventListener('pagehide', function () { flushTelemetry(true); });
 
   // Message listener for popup requests
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -212,6 +251,7 @@
           clicks: clickEvents.length
         },
         activeDurationMs: getActiveDurationMs(),
+        isCollecting: isCollecting,
         verdict: latestVerdict
       });
     }
