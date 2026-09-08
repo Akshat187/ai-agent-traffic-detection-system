@@ -16,6 +16,7 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
 sentineltrace.db
 WebSense.db
 
