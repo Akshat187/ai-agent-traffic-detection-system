@@ -1,17 +1,18 @@
-﻿# WebSense — AI-Agent Traffic Detection & Behavioral Security Intelligence Platform
+# WebSense — AI-Agent Traffic Detection & Behavioral Security Intelligence Platform
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.124%2B-emerald.svg)](https://fastapi.tiangolo.com)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0%2B-red.svg)](https://www.sqlalchemy.org/)
-[![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-28%20Passed-brightgreen.svg)](tests/)
 
 **WebSense** is an end-to-end cybersecurity intelligence platform designed to classify modern web traffic into **Human**, **Traditional Automation**, and **Agentic AI** (plus an internal **Uncertain** state) using high-resolution browser and behavioral fingerprinting.
 
-Inspired by contemporary research (*FP-Agent: Fingerprinting AI Browsing Agents, 2026*) and modern mouse dynamics threat modeling, WebSense implements a **5-Layer Defense-in-Depth Engine** that proves **behavioral dynamics (mouse kinematics, typing jitter, pause cadence) consistently outperform static browser fingerprints alone.**
+Inspired by contemporary research (*FP-Agent: Fingerprinting AI Browsing Agents, 2026*) and modern mouse dynamics threat modeling, WebSense implements a **5-Layer Defense-in-Depth Engine** demonstrating that **behavioral dynamics (mouse kinematics, typing jitter, pause cadence) consistently outperform static browser fingerprints alone.**
 
 ---
 
-## ðŸŒŸ Key Capabilities
+## ✨ Key Capabilities
 
 1. **5-Layer Multi-Defense Engine**:
    - **Layer 1: Rule-Based Heuristics** — Rapid detection of `navigator.webdriver`, zero-movement click events, and impossible sub-second form completion.
@@ -21,42 +22,44 @@ Inspired by contemporary research (*FP-Agent: Fingerprinting AI Browsing Agents,
    - **Layer 5: Contextual Task Validation** — Finite-state workflow validation catching out-of-order interactions and clicks landing on non-interactive regions.
 
 2. **Dual Integrated Experiences**:
-   - **Instrumented Honey Website** (`/visitor/shop`, `/visitor/travel`, `/visitor/forum`) — Realistic E-commerce, Flight Booking, and Community Forum tasks with privacy-preserving telemetry (`collector.js`).
+   - **Instrumented Honey Websites** (`/visitor/shop`, `/visitor/travel`, `/visitor/forum`) — Realistic E-commerce, Flight Booking, and Community Forum tasks with privacy-preserving client telemetry (`collector.js`).
    - **Enterprise Security Intelligence Dashboard** (`/dashboard`) — Real-time telemetry log, 2D Canvas mouse trajectory replay with velocity color-mapping, FP-Agent comparative benchmark lab, and interactive adversarial simulator.
+   - **Chrome Extension (Manifest V3)** — Standalone browser extension that injects background passive telemetry capture across any external site.
 
 3. **Privacy-Preserving Telemetry**:
-   - Zero keylogging. WebSense captures keystroke *intervals and hold timing* without recording raw text, password characters, or personal information.
+   - **Zero Keylogging**: WebSense captures keystroke *intervals and hold timing* without recording raw text, password characters, or personal information.
+   - Input fields of type `password` are completely bypassed.
 
 ---
 
-## ðŸ“ Architecture Overview
+## 📐 Architecture Overview
 
-```
-Visitor Interactions (Shop / Travel / Forum)
-                    â”‚
-       [collector.js Telemetry Engine]
-                    â”‚
-            POST /api/v1/sessions
-                    â–¼
-          [FastAPI Gateway & DB]
-                    â”‚
-         [Feature Extraction Engine]
-  (Velocity, Jerk, Straightness, Keystroke CV)
-                    â”‚
-     â”Œ──────────────â”´──────────────â”
-     â–¼                             â–¼
- [Layer 1: Rules]          [Layer 2: Behavioral ML]
- [Layer 3: Anomaly]        [Layer 4: DTW Replay]
- [Layer 5: Context]        [Unified Decision Engine]
-                    â”‚
-                    â–¼
-       [Classification Output]
- (HUMAN | BOT | AI_AGENT | UNCERTAIN)
- (Confidence % | Risk Score | Explainability)
-                    â”‚
-                    â–¼
-     [Security Dashboard (/dashboard)]
- (Live Feed | 2D Visualizer | Benchmark Lab)
+```text
+Visitor Interactions (Shop / Travel / Forum / External via Extension)
+                                │
+                  [collector.js Telemetry Engine]
+                                │
+                      POST /api/v1/sessions
+                                ▼
+                      [FastAPI Gateway & DB]
+                                │
+                    [Feature Extraction Engine]
+             (Velocity, Jerk, Straightness, Keystroke CV)
+                                │
+         ┌──────────────────────┴──────────────────────┐
+         ▼                                             ▼
+  [Layer 1: Rules]                            [Layer 2: Behavioral ML]
+  [Layer 3: Anomaly]                          [Layer 4: DTW Replay]
+  [Layer 5: Context]                          [Decision Engine Synthesis]
+                                │
+                                ▼
+                     [Classification Output]
+               (HUMAN | TRADITIONAL_AUTOMATION | AGENTIC_AI | UNCERTAIN)
+               (Confidence % | Risk Score | Explainability Signals)
+                                │
+                                ▼
+                 [Security Dashboard (/dashboard)]
+             (Live Feed | 2D Visualizer | Benchmark Lab)
 ```
 
 ---
@@ -65,27 +68,29 @@ Visitor Interactions (Shop / Travel / Forum)
 
 ### 1. Prerequisites
 - Python 3.8+
-- Node.js (optional, for browser automation)
+- Git
 
 ### 2. Installation
 ```bash
 # Clone repository
-git clone https://github.com/your-org/WebSense.git
-cd WebSense
+git clone https://github.com/Akshat187/ai-agent-traffic-detection-system.git
+cd ai-agent-traffic-detection-system
 
 # Create & activate virtual environment
-python -m venv venv
-# On Windows:
-.\venv\Scripts\activate
+python -m venv .venv
+
+# On Windows (PowerShell):
+.\.venv\Scripts\activate
+
 # On Linux/macOS:
-source venv/bin/activate
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
 ### 3. Seed Demo Dataset
-Populates the database with 36 reproducible, ground-truth-labeled sessions across Human, Bot, and AI Agent categories:
+Populates the database with reproducible, ground-truth-labeled sessions across Human, Bot, and AI Agent categories:
 ```bash
 python demo_seed.py
 ```
@@ -104,62 +109,64 @@ Open your browser:
 
 ---
 
-## ðŸ§ª Testing & Verification
+## 🧪 Testing & Verification
 
 Run the comprehensive unit and integration test suite:
 ```bash
-python -m pytest tests/ -v
+pytest tests/ -v
 ```
 
-All 15 test suites validate:
+The 28 test suites validate:
 - Kinematics & mathematical feature extraction
 - Rule engine penalties & bonuses
 - Multi-layer decision engine synthesis
 - Trajectory Dynamic Time Warping (DTW) similarity
+- Privacy guarantees (zero text/password keylogging)
 - REST API endpoints and web template rendering
 
 ---
 
-## ðŸ”¬ Research Grounding & Honest Framing
+## 🔬 Research Grounding & Honest Framing
 
 > [!NOTE]
-> WebSense is a student-scale, open-source engineering implementation and extension of concepts established in recent cybersecurity research:
+> WebSense is an open-source engineering implementation and extension of concepts established in recent cybersecurity research:
 > - **FP-Agent: Fingerprinting AI Browsing Agents (2026)**
 > - **Research on Mouse Dynamics against Sophisticated Web Automation**
 > 
-> WebSense does not claim to invent AI-agent detection. Its core contribution is an **integrated, explainable 5-layer defense architecture, a reproducible empirical benchmark lab, and real-time 2D trajectory visualization.**
+> WebSense's core contribution is an **integrated, explainable 5-layer defense architecture, a reproducible empirical benchmark lab, and real-time 2D trajectory visualization.**
 
 ---
 
-## ðŸ“‚ Repository Structure
+## 📁 Repository Structure
 
-```
-WebSense/
-â”œ── apps/
-â”‚   â”œ── api/                  # FastAPI Application & REST Routers
-â”‚   â”‚   â”œ── main.py           # App lifecycle, routing, static mounting
-â”‚   â”‚   â”œ── config.py         # Centralized configuration & thresholds
-â”‚   â”‚   â”œ── dependencies.py   # DB & Engine singletons
-â”‚   â”‚   â””── routes/           # Session, stats, experiment, adversarial APIs
-â”‚   â””── web/                  # Web Experiences
-â”‚       â”œ── public/           # Assets, collector.js, dashboard.js, dashboard.css
-â”‚       â””── templates/        # dashboard.html, visitor_shop.html, etc.
-â”œ── packages/
-â”‚   â”œ── core/                 # Kinematics, feature extraction, DTW algorithms
-â”‚   â”œ── database/             # SQLAlchemy models, SQLite/Postgres connection, Pydantic schemas
-â”‚   â”œ── detection/            # 5-Layer Defense-in-Depth Engine & Decision Module
-â”‚   â””── generators/           # Synthetic dataset generator, Bot runner, AI Agent adapter
-â”œ── docker/                   # Dockerfile & docker-compose.yml
-â”œ── tests/                    # Pytest test suite (15 tests)
-â”œ── .github/workflows/        # GitHub Actions CI pipeline
-â”œ── Makefile                  # Simple make commands
-â”œ── requirements.txt          # Python dependencies
-â”œ── ARCHITECTURE.md           # Deep architecture & threat model notes
-â””── API.md                    # REST API documentation
+```text
+ai-agent-traffic-detection-system/
+├── apps/
+│   ├── api/                  # FastAPI Application & REST Routers
+│   │   ├── main.py           # App lifecycle, routing, static mounting
+│   │   ├── config.py         # Centralized configuration & thresholds
+│   │   ├── dependencies.py   # DB & Engine singletons
+│   │   └── routes/           # Session, stats, experiment, adversarial APIs
+│   └── web/                  # Web Experiences
+│       ├── public/           # Assets, collector.js, dashboard.js, dashboard.css
+│       └── templates/        # dashboard.html, visitor_shop.html, etc.
+├── packages/
+│   ├── core/                 # Kinematics, feature extraction, DTW algorithms
+│   ├── database/             # SQLAlchemy models, SQLite connection, Pydantic schemas
+│   ├── detection/            # 5-Layer Defense-in-Depth Engine & Decision Module
+│   └── generators/           # Synthetic dataset generator, Bot runner, AI Agent adapter
+├── extension/                # Chrome Extension (Manifest V3) for external sites
+├── docker/                   # Dockerfile & docker-compose.yml
+├── tests/                    # Pytest test suite (28 test cases)
+├── .github/workflows/        # GitHub Actions CI pipeline
+├── Makefile                  # Helper make commands
+├── requirements.txt          # Python dependencies
+├── ARCHITECTURE.md           # Deep architecture & threat model notes
+└── API.md                    # REST API documentation
 ```
 
 ---
 
-## 🛡️ï¸ License
+## 🛡️ License
+
 Released under the [MIT License](LICENSE).
-
