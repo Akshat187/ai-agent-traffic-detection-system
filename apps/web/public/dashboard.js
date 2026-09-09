@@ -133,7 +133,7 @@ function renderRecentOverviewTable(sessions) {
   if (!tbody) return;
 
   if (sessions.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">No sessions recorded yet for this site. Interact with the Honey Sites or embedded pages!</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-400">No sessions recorded yet for this site. Interact with the Honey Sites or embedded pages!</td></tr>`;
     return;
   }
 
@@ -148,6 +148,7 @@ function renderRecentOverviewTable(sessions) {
     return `
       <tr class="hover:bg-slate-50 transition border-b border-slate-100">
         <td class="py-3 px-3.5 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" onclick="inspectSession('${s.session_id}')">${s.session_id.substring(0, 16)}... ${srcTag}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? `${s.created_at} UTC` : '—'}</td>
         <td class="py-3 px-3.5 capitalize font-medium text-slate-800">${s.task}</td>
         <td class="py-3 px-3.5"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeClass}">${s.predicted_label}</span></td>
         <td class="py-3 px-3.5 font-mono text-slate-700">${s.confidence.toFixed(1)}%</td>
