@@ -15,7 +15,78 @@
 
   const DEFAULT_ENDPOINT = 'http://localhost:8000/api/v1/sessions';
   const siteId = 'site_chrome_ext_' + window.location.hostname.replace(/[^a-zA-Z0-9]/g, '_');
-  const sessionId = 'ext_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  const SESSION_KEY = 'ws_ext_session_id';
+  const VISITOR_KEY = 'ws_visitor_id';
+  const LEGACY_VISITOR_KEYS = ['ws_sentinel_visitor_id', 'meridian_visitor_id'];
+  const TAB_KEY = 'ws_tab_id';
+  const SEQ_KEY = 'ws_transmission_seq';
+
+  function generateId(prefix) {
+    return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
+
+  let sessionId = (function () {
+    try {
+      let s = sessionStorage.getItem(SESSION_KEY);
+      if (!s) {
+        s = 'ext_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+        sessionStorage.setItem(SESSION_KEY, s);
+      }
+      return s;
+    } catch (_) {
+      return 'ext_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+    }
+  })();
+
+  let visitorId = (function () {
+    try {
+      let v = localStorage.getItem(VISITOR_KEY);
+      if (!v) {
+        for (let i = 0; i < LEGACY_VISITOR_KEYS.length; i++) {
+          v = localStorage.getItem(LEGACY_VISITOR_KEYS[i]);
+          if (v) break;
+        }
+      }
+      if (!v) v = generateId('vis');
+      localStorage.setItem(VISITOR_KEY, v);
+      return v;
+    } catch (_) {
+      return generateId('vis');
+    }
+  })();
+
+  function getClientContext() {
+    let tabId;
+    try {
+      tabId = sessionStorage.getItem(TAB_KEY);
+      if (!tabId) {
+        tabId = 'tab_' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : generateId('tab').slice(4));
+        sessionStorage.setItem(TAB_KEY, tabId);
+      }
+    } catch (_) {
+      tabId = generateId('tab');
+    }
+    let seq = 1;
+    try {
+      seq = parseInt(sessionStorage.getItem(SEQ_KEY) || '0', 10) + 1;
+      sessionStorage.setItem(SEQ_KEY, String(seq));
+    } catch (_) {}
+    let referrerPath = '';
+    try {
+      if (document.referrer) referrerPath = new URL(document.referrer).pathname;
+    } catch (_) {}
+    return {
+      tab_id: tabId,
+      page_path: location.pathname,
+      page_title: document.title || '',
+      page_url: location.pathname + location.search,
+      referrer_path: referrerPath,
+      visibility_state: document.visibilityState,
+      transmission_seq: seq,
+      sdk_version: 'extension-1.0',
+    };
+  }
+
   const startTime = performance.now();
 
   const mouseEvents = [];
@@ -177,7 +248,9 @@
     return {
       session_id: sessionId,
       site_id: siteId,
+      visitor_id: visitorId,
       task: 'general',
+      client_context: getClientContext(),
       // start_time = approximate page-load unix time in ms
       start_time: Date.now() - Math.round(performance.now() - startTime),
       end_time: Date.now(),

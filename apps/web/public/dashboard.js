@@ -128,12 +128,26 @@ async function fetchOverviewStats() {
   }
 }
 
+function formatTabPageCell(s) {
+  const title = s.page_title || s.page_path || '—';
+  const path = s.page_path && s.page_title ? s.page_path : '';
+  const tabShort = s.tab_id ? s.tab_id.substring(0, 8) : '';
+  const seqBadge = s.transmission_seq > 1
+    ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-50 text-amber-700 border border-amber-200 font-bold">#${s.transmission_seq}</span>`
+    : '';
+  return `
+    <div class="font-medium text-slate-800 truncate max-w-[140px]" title="${escapeHTML(title)}">${escapeHTML(title)}</div>
+    ${path ? `<div class="text-[10px] text-slate-500 font-mono truncate max-w-[140px]">${escapeHTML(path)}</div>` : ''}
+    ${tabShort ? `<div class="text-[10px] text-indigo-500 font-mono">tab:${escapeHTML(tabShort)}${seqBadge}</div>` : ''}
+  `;
+}
+
 function renderRecentOverviewTable(sessions) {
   const tbody = document.getElementById("overview-recent-tbody");
   if (!tbody) return;
 
   if (sessions.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-400">No sessions recorded yet for this site. Interact with the Honey Sites or embedded pages!</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-400">No sessions recorded yet for this site. Interact with the Honey Sites or embedded pages!</td></tr>`;
     return;
   }
 
@@ -148,6 +162,7 @@ function renderRecentOverviewTable(sessions) {
     return `
       <tr class="hover:bg-slate-50 transition border-b border-slate-100">
         <td class="py-3 px-3.5 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" onclick="inspectSession('${s.session_id}')">${s.session_id.substring(0, 16)}... ${srcTag}</td>
+        <td class="py-3 px-3.5">${formatTabPageCell(s)}</td>
         <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? `${s.created_at} UTC` : '—'}</td>
         <td class="py-3 px-3.5 capitalize font-medium text-slate-800">${s.task}</td>
         <td class="py-3 px-3.5"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeClass}">${s.predicted_label}</span></td>
@@ -186,7 +201,9 @@ function applySessionFilters() {
 
   const filtered = allSessions.filter(s => {
     if (filterClass !== "ALL" && s.predicted_label !== filterClass) return false;
-    if (search && !s.session_id.toLowerCase().includes(search) && !s.task.toLowerCase().includes(search)) return false;
+    if (search && !s.session_id.toLowerCase().includes(search) && !s.task.toLowerCase().includes(search)
+        && !(s.page_path || '').toLowerCase().includes(search) && !(s.page_title || '').toLowerCase().includes(search)
+        && !(s.tab_id || '').toLowerCase().includes(search) && !(s.visitor_id || '').toLowerCase().includes(search)) return false;
     return true;
   });
 
@@ -194,7 +211,7 @@ function applySessionFilters() {
   if (!tbody) return;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-400">No matching sessions found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-400">No matching sessions found.</td></tr>`;
     return;
   }
 
@@ -226,6 +243,7 @@ function applySessionFilters() {
     return `
       <tr class="hover:bg-slate-50 transition border-b border-slate-100">
         <td class="py-3 px-3.5 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" onclick="inspectSession('${s.session_id}')">${s.session_id}</td>
+        <td class="py-3 px-3.5">${formatTabPageCell(s)}</td>
         <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600"><span class="font-semibold text-slate-800">${siteDisplay}</span><br>${srcTag}</td>
         <td class="py-3 px-3.5 capitalize font-medium text-slate-800">${s.task}</td>
         <td class="py-3 px-3.5">${durationCell}</td>
@@ -355,6 +373,40 @@ function initCharts() {
 // the explanation text for a given session summary. Logs a warning if they diverge.
 // This is a client-side guard that complements the server-side integrity check added
 // to the ingest endpoint.
+function renderClientContext(session) {
+  const block = document.getElementById("explorer-client-context");
+  const ctx = session.client_context || {};
+  const hasContext = session.tab_id || session.page_path || session.page_title || ctx.tab_id;
+  if (!block) return;
+  if (!hasContext) {
+    block.classList.add("hidden");
+    return;
+  }
+  block.classList.remove("hidden");
+  document.getElementById("ctx-tab-id").textContent = session.tab_id || ctx.tab_id || '—';
+  document.getElementById("ctx-page-title").textContent = session.page_title || ctx.page_title || '—';
+  document.getElementById("ctx-page-path").textContent = session.page_path || ctx.page_url || ctx.page_path || '—';
+  document.getElementById("ctx-transmission-seq").textContent = session.transmission_seq || ctx.transmission_seq || '—';
+  document.getElementById("ctx-visibility").textContent = ctx.visibility_state || '—';
+  document.getElementById("ctx-referrer").textContent = ctx.referrer_path || '—';
+  document.getElementById("ctx-sdk-version").textContent = ctx.sdk_version || '—';
+  const visitorEl = document.getElementById("ctx-visitor-id");
+  if (visitorEl) {
+    visitorEl.textContent = session.visitor_id || '—';
+    visitorEl.onclick = session.visitor_id ? () => filterByVisitor(session.visitor_id) : null;
+  }
+}
+
+function filterByVisitor(visitorId) {
+  const searchInput = document.getElementById("session-search-input");
+  const sessionsTab = document.querySelector("[data-target='tab-sessions']");
+  if (sessionsTab) sessionsTab.click();
+  if (searchInput) {
+    searchInput.value = visitorId;
+    applySessionFilters();
+  }
+}
+
 function assertVerdictConsistency(session) {
   const label = (session.predicted_label || '').toUpperCase();
   const explanation = (session.explanation_snippet || '').toLowerCase();
@@ -402,6 +454,7 @@ async function loadSessionDetails(sessionId) {
     selectedSession = detail;
 
     document.getElementById("explorer-session-id").textContent = detail.session.session_id;
+    renderClientContext(detail.session);
     const badge = document.getElementById("explorer-verdict-badge");
     if (badge) {
       badge.textContent = detail.session.predicted_label;

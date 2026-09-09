@@ -14,6 +14,7 @@ from sqlalchemy import func
 from packages.database.db import get_db
 from packages.database.models import SessionRecord
 from packages.database.schemas import OverviewStatsResponse, SessionSummary
+from packages.database.repository import build_session_summary
 
 router = APIRouter(prefix="/api/v1/stats", tags=["Statistics"])
 
@@ -59,25 +60,7 @@ def get_overview_stats(
 
     # Recent activity (latest 10 sessions)
     recent = base_query.order_by(SessionRecord.created_at.desc()).limit(10).all()
-    recent_summaries = []
-    for s in recent:
-        exp = s.verdict.human_explanation if s.verdict else ""
-        wf = s.features.webdriver_flag if s.features else False
-        recent_summaries.append(SessionSummary(
-            session_id=s.session_id,
-            visitor_id=s.visitor_id,
-            task=s.task,
-            start_time=s.start_time or 0.0,
-            duration_ms=s.duration_ms,
-            ground_truth_label=s.ground_truth_label,
-            predicted_label=s.predicted_label,
-            confidence=s.confidence,
-            risk_score=s.risk_score,
-            is_synthetic=s.is_synthetic,
-            created_at=s.created_at.strftime("%Y-%m-%d %H:%M:%S") if s.created_at else "",
-            webdriver_flag=wf,
-            explanation_snippet=exp
-        ))
+    recent_summaries = [build_session_summary(s) for s in recent]
 
     # Timeline buckets (cumulative session counts over rolling window)
     timeline = [

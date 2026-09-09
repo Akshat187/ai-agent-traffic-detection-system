@@ -47,6 +47,16 @@ def init_db():
                 cursor.execute("ALTER TABLE sessions ADD COLUMN site_id VARCHAR(64)")
             if "data_source" not in columns:
                 cursor.execute("ALTER TABLE sessions ADD COLUMN data_source VARCHAR(64) DEFAULT 'realtime_sdk'")
+            if "tab_id" not in columns:
+                cursor.execute("ALTER TABLE sessions ADD COLUMN tab_id VARCHAR(64)")
+            if "page_path" not in columns:
+                cursor.execute("ALTER TABLE sessions ADD COLUMN page_path VARCHAR(256)")
+            if "page_title" not in columns:
+                cursor.execute("ALTER TABLE sessions ADD COLUMN page_title VARCHAR(256)")
+            if "transmission_seq" not in columns:
+                cursor.execute("ALTER TABLE sessions ADD COLUMN transmission_seq INTEGER DEFAULT 1")
+            if "client_context" not in columns:
+                cursor.execute("ALTER TABLE sessions ADD COLUMN client_context JSON")
             raw_conn.commit()
             cursor.close()
         except Exception as e:
