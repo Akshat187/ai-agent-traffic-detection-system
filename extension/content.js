@@ -1,4 +1,4 @@
-﻿/**
+/**
  * WebSense Sentinel Content Script (Chrome Extension Manifest V3)
  * Runs on any visited web page to capture telemetry and report AI/Bot classifications.
  *
@@ -9,9 +9,18 @@
 (function () {
   'use strict';
 
-  // Prevent multiple injections
+  // Guard 1: Only run in the top-level browsing context (never in iframes/subframes)
+  if (window.top !== window.self) return;
+
+  // Guard 2: Prevent multiple injections into the same window context
   if (window.__WEBSENSE_SENTINEL_INJECTED__) return;
   window.__WEBSENSE_SENTINEL_INJECTED__ = true;
+
+  // Guard 3: If this page already runs native WebSense/Sentinel collector telemetry,
+  // do not duplicate session tracking from the extension.
+  if (document.querySelector('script[src*="collector.js"], script[src*="sentinel.js"]') || window.__WEBSENSE_COLLECTOR_ACTIVE__) {
+    return;
+  }
 
   const DEFAULT_ENDPOINT = 'http://localhost:8000/api/v1/sessions';
   const siteId = 'site_chrome_ext_' + window.location.hostname.replace(/[^a-zA-Z0-9]/g, '_');
@@ -276,9 +285,39 @@
     };
   }
 
+  // --- Minimum Interaction Gating ---
+  // A session represents one real, continuous visit with actual human interaction.
+  // Idle tabs with zero interaction (or mere layout-shift / sensor noise) never transmit.
+  const MIN_MOUSE_EVENTS = 5;
+  const MIN_MOUSE_DISPLACEMENT_PX = 15;
+  const MIN_TOTAL_EVENTS = 5;
+
+  function hasMinimumInteraction() {
+    // 1. Deliberate click interaction
+    if (clickEvents.length > 0) return true;
+    // 2. Keyboard interaction
+    if (keyboardEvents.length > 0) return true;
+    // 3. Multi-point scroll interaction
+    if (scrollEvents.length >= 2) return true;
+    // 4. Mouse movement with measurable trajectory (>15px displacement across >= 5 points)
+    // Filters out stationary cursor landing on load, trackpad jitter, and 1-pixel sensor drift
+    if (mouseEvents.length >= MIN_MOUSE_EVENTS) {
+      const first = mouseEvents[0];
+      const last = mouseEvents[mouseEvents.length - 1];
+      const dx = last.x - first.x;
+      const dy = last.y - first.y;
+      if (Math.sqrt(dx * dx + dy * dy) >= MIN_MOUSE_DISPLACEMENT_PX) {
+        return true;
+      }
+    }
+    // 5. Total combined interactions threshold
+    const total = mouseEvents.length + keyboardEvents.length + scrollEvents.length + clickEvents.length;
+    return total >= MIN_TOTAL_EVENTS;
+  }
+
   async function flushTelemetry(force) {
     if (!force && !isTabVisible()) return;
-    if (mouseEvents.length < 2 && keyboardEvents.length === 0 && clickEvents.length === 0) return;
+    if (!hasMinimumInteraction()) return;
     try {
       const response = await fetch(DEFAULT_ENDPOINT, {
         method: 'POST',

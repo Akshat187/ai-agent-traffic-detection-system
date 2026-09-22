@@ -155,6 +155,9 @@ def ingest_session(
         existing.risk_score = verdict["risk_score"]
         existing.model_version = settings.MODEL_VERSION
         existing.feature_schema_version = settings.FEATURE_SCHEMA_VERSION
+        tot_ev = len(payload.mouse_events) + len(payload.keyboard_events) + len(payload.scroll_events) + len(payload.click_events)
+        has_sig = (len(payload.click_events) > 0 or len(payload.keyboard_events) > 0 or len(payload.scroll_events) >= 2 or len(payload.mouse_events) >= 5 or payload.is_synthetic)
+        existing.data_quality = "standard" if (has_sig and tot_ev >= 5) or payload.is_synthetic else "low_signal"
         apply_client_context(existing, session_dict)
 
         # CRITICAL: Also update the DetectionVerdict so it stays in sync with SessionRecord.
@@ -244,6 +247,12 @@ def ingest_session(
             risk_score=verdict["risk_score"],
             model_version=settings.MODEL_VERSION,
             feature_schema_version=settings.FEATURE_SCHEMA_VERSION,
+            data_quality="standard" if (
+                payload.is_synthetic or (
+                    (len(payload.click_events) > 0 or len(payload.keyboard_events) > 0 or len(payload.scroll_events) >= 2 or len(payload.mouse_events) >= 5) and
+                    (len(payload.mouse_events) + len(payload.keyboard_events) + len(payload.scroll_events) + len(payload.click_events)) >= 5
+                )
+            ) else "low_signal",
         )
         apply_client_context(session_rec, session_dict)
         db.add(session_rec)

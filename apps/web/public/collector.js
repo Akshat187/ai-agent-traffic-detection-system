@@ -21,6 +21,10 @@
 (function () {
   'use strict';
 
+  // Guard: Only run in top-level context
+  if (window.top !== window.self) return;
+  window.__WEBSENSE_COLLECTOR_ACTIVE__ = true;
+
   // ─── Configuration ──────────────────────────────────────────────────────
   const API_ENDPOINT       = '/api/v1/sessions';
   const CONSENT_STORAGE_KEY = 'meridian_telemetry_consent';   // 'granted' | 'declined'
@@ -389,11 +393,32 @@
     window.Sentinel = window.WebSense;
   }
 
+  // ─── Minimum Interaction Gating ──────────────────────────────────────────
+  const MIN_MOUSE_EVENTS = 5;
+  const MIN_MOUSE_DISPLACEMENT_PX = 15;
+  const MIN_TOTAL_EVENTS = 5;
+
+  function hasMinimumInteraction() {
+    if (clickEvents.length > 0) return true;
+    if (keyboardEvents.length > 0) return true;
+    if (scrollEvents.length >= 2) return true;
+    if (mouseEvents.length >= MIN_MOUSE_EVENTS) {
+      const first = mouseEvents[0];
+      const last = mouseEvents[mouseEvents.length - 1];
+      const dx = last.x - first.x;
+      const dy = last.y - first.y;
+      if (Math.sqrt(dx * dx + dy * dy) >= MIN_MOUSE_DISPLACEMENT_PX) {
+        return true;
+      }
+    }
+    const total = mouseEvents.length + keyboardEvents.length + scrollEvents.length + clickEvents.length;
+    return total >= MIN_TOTAL_EVENTS;
+  }
+
   // ─── Auto-flush on page unload ────────────────────────────────────────────
   window.addEventListener('pagehide', function () {
     if (!consentGiven || isTransmitted) return;
-    const hasData = mouseEvents.length > 0 || clickEvents.length > 0 || keyboardEvents.length > 0;
-    if (!hasData) return;
+    if (!hasMinimumInteraction()) return;
     isTransmitted = true;
     sendBeaconFallback(buildPayload(null));
   });

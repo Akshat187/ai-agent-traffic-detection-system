@@ -1,4 +1,4 @@
-﻿"""
+"""
 Repository layer for WebSense.
 Centralizes all database write/read logic so route handlers stay thin.
 This eliminates the duplication between sessions.py and seed.py.
@@ -41,6 +41,7 @@ def build_session_summary(s: SessionRecord) -> SessionSummary:
         page_title=s.page_title,
         transmission_seq=s.transmission_seq,
         client_context=s.client_context,
+        data_quality=getattr(s, "data_quality", "standard") or "standard",
     )
 
 

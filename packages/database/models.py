@@ -83,6 +83,8 @@ class SessionRecord(Base):
     client_context = Column(JSON, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    # Data quality flag: 'standard' | 'low_signal' (e.g. near-empty sessions with insufficient events)
+    data_quality = Column(String(32), default="standard", index=True)
 
     # Relationships
     site = relationship("SiteRecord", back_populates="sessions")

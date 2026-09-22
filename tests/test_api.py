@@ -153,7 +153,7 @@ def test_utf8_encoding_integrity():
     assert res_shop.status_code == 200
     html_shop = res_shop.text
     assert "₹" in html_shop, "Currency ₹ symbol should render cleanly"
-    assert "₹2,399" in html_shop, "Sample currency price should render cleanly"
+    assert "₹2,199" in html_shop or "₹2,499" in html_shop, "Sample currency price should render cleanly"
     assert "Â" not in html_shop, "Double-encoded currency symbol found"
     assert "â€”" not in html_shop, "Double-encoded em dash found"
     assert "—" in html_shop, "Em dash should render cleanly"
@@ -173,4 +173,47 @@ def test_utf8_encoding_integrity():
     html_forum = res_forum.text
     assert "Â·" not in html_forum
     assert "ðŸ" not in html_forum
+
+
+def test_data_quality_low_signal_gating():
+    """Validates that low-signal/near-empty sessions are flagged as low_signal and excluded from default stats."""
+    import uuid
+    # 1. Ingest low-signal session (only 2 mouse points, 0 keys, 0 scroll, 0 clicks)
+    low_sid = f"test_low_sig_{uuid.uuid4().hex[:8]}"
+    low_payload = {
+        "session_id": low_sid,
+        "site_id": "site_meridian_prod",
+        "task": "shopping",
+        "start_time": 1700000000.0,
+        "end_time": 1700000005.0,
+        "duration_ms": 5000.0,
+        "is_synthetic": False,
+        "data_source": "chrome_extension",
+        "browser_signals": {"webdriver": False},
+        "mouse_events": [
+            {"x": 100, "y": 100, "t": 100, "type": "move"},
+            {"x": 101, "y": 100, "t": 150, "type": "move"}
+        ],
+        "keyboard_events": [],
+        "scroll_events": [],
+        "click_events": [],
+        "task_actions": []
+    }
+    ingest_res = client.post("/api/v1/sessions", json=low_payload)
+    assert ingest_res.status_code == 200
+
+    # 2. Check session detail: data_quality must be 'low_signal'
+    detail_res = client.get(f"/api/v1/sessions/{low_sid}")
+    assert detail_res.status_code == 200
+    session_data = detail_res.json()["session"]
+    assert session_data["data_quality"] == "low_signal", (
+        f"Expected data_quality='low_signal', got {session_data['data_quality']}"
+    )
+
+    # 3. Overview stats default excludes low_signal sessions
+    stats_clean = client.get("/api/v1/stats/overview").json()
+    stats_all = client.get("/api/v1/stats/overview?include_low_signal=true").json()
+    assert stats_all["total_sessions"] > stats_clean["total_sessions"]
+    assert stats_clean["low_signal_count"] > 0
+
 

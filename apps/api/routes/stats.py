@@ -23,14 +23,24 @@ router = APIRouter(prefix="/api/v1/stats", tags=["Statistics"])
 def get_overview_stats(
     site_id: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
+    include_low_signal: bool = Query(False, description="Whether to include low-signal/near-empty sessions in overview stats"),
     db: Session = Depends(get_db)
 ):
-    """Computes aggregated dashboard metrics, actor class distribution, and average confidence, with optional site_id filter."""
+    """Computes aggregated dashboard metrics, actor class distribution, and average confidence, filtering out low-signal phantom sessions by default."""
+    low_signal_query = db.query(SessionRecord).filter(SessionRecord.data_quality == "low_signal")
+    if site_id and site_id != "ALL":
+        low_signal_query = low_signal_query.filter(SessionRecord.site_id == site_id)
+    if source and source != "ALL":
+        low_signal_query = low_signal_query.filter(SessionRecord.data_source == source)
+    low_signal_count = low_signal_query.count()
+
     base_query = db.query(SessionRecord)
     if site_id and site_id != "ALL":
         base_query = base_query.filter(SessionRecord.site_id == site_id)
     if source and source != "ALL":
         base_query = base_query.filter(SessionRecord.data_source == source)
+    if not include_low_signal:
+        base_query = base_query.filter(SessionRecord.data_quality != "low_signal")
 
     total = base_query.count()
 
@@ -110,4 +120,5 @@ def get_overview_stats(
         avg_risk_score=round(avg_risk, 1),
         recent_activity=recent_summaries,
         detection_timeline=timeline,
+        low_signal_count=low_signal_count,
     )

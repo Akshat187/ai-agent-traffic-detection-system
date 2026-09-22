@@ -142,6 +142,7 @@ class SessionSummary(BaseModel):
     page_title: Optional[str] = None
     transmission_seq: Optional[int] = None
     client_context: Optional[Dict[str, Any]] = None
+    data_quality: str = "standard"
 
 
 class SessionDetailResponse(BaseModel):
@@ -175,3 +176,4 @@ class OverviewStatsResponse(BaseModel):
     avg_risk_score: float = 0.0
     recent_activity: List[SessionSummary] = Field(default_factory=list)
     detection_timeline: List[Dict[str, Any]] = Field(default_factory=list)
+    low_signal_count: int = 0
