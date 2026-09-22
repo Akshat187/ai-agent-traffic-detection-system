@@ -1,18 +1,101 @@
-﻿/**
+/**
  * WebSense Sentinel Content Script (Chrome Extension Manifest V3)
  * Runs on any visited web page to capture telemetry and report AI/Bot classifications.
+ *
+ * Collection and transmission are gated to the active (visible) tab only.
+ * Background tabs do not record events or flush telemetry to the backend.
  */
 
 (function () {
   'use strict';
 
-  // Prevent multiple injections
+  // Guard 1: Only run in the top-level browsing context (never in iframes/subframes)
+  if (window.top !== window.self) return;
+
+  // Guard 2: Prevent multiple injections into the same window context
   if (window.__WEBSENSE_SENTINEL_INJECTED__) return;
   window.__WEBSENSE_SENTINEL_INJECTED__ = true;
 
+  // Guard 3: If this page already runs native WebSense/Sentinel collector telemetry,
+  // do not duplicate session tracking from the extension.
+  if (document.querySelector('script[src*="collector.js"], script[src*="sentinel.js"]') || window.__WEBSENSE_COLLECTOR_ACTIVE__) {
+    return;
+  }
+
   const DEFAULT_ENDPOINT = 'http://localhost:8000/api/v1/sessions';
   const siteId = 'site_chrome_ext_' + window.location.hostname.replace(/[^a-zA-Z0-9]/g, '_');
-  const sessionId = 'ext_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  const SESSION_KEY = 'ws_ext_session_id';
+  const VISITOR_KEY = 'ws_visitor_id';
+  const LEGACY_VISITOR_KEYS = ['ws_sentinel_visitor_id', 'meridian_visitor_id'];
+  const TAB_KEY = 'ws_tab_id';
+  const SEQ_KEY = 'ws_transmission_seq';
+
+  function generateId(prefix) {
+    return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
+
+  let sessionId = (function () {
+    try {
+      let s = sessionStorage.getItem(SESSION_KEY);
+      if (!s) {
+        s = 'ext_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+        sessionStorage.setItem(SESSION_KEY, s);
+      }
+      return s;
+    } catch (_) {
+      return 'ext_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+    }
+  })();
+
+  let visitorId = (function () {
+    try {
+      let v = localStorage.getItem(VISITOR_KEY);
+      if (!v) {
+        for (let i = 0; i < LEGACY_VISITOR_KEYS.length; i++) {
+          v = localStorage.getItem(LEGACY_VISITOR_KEYS[i]);
+          if (v) break;
+        }
+      }
+      if (!v) v = generateId('vis');
+      localStorage.setItem(VISITOR_KEY, v);
+      return v;
+    } catch (_) {
+      return generateId('vis');
+    }
+  })();
+
+  function getClientContext() {
+    let tabId;
+    try {
+      tabId = sessionStorage.getItem(TAB_KEY);
+      if (!tabId) {
+        tabId = 'tab_' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : generateId('tab').slice(4));
+        sessionStorage.setItem(TAB_KEY, tabId);
+      }
+    } catch (_) {
+      tabId = generateId('tab');
+    }
+    let seq = 1;
+    try {
+      seq = parseInt(sessionStorage.getItem(SEQ_KEY) || '0', 10) + 1;
+      sessionStorage.setItem(SEQ_KEY, String(seq));
+    } catch (_) {}
+    let referrerPath = '';
+    try {
+      if (document.referrer) referrerPath = new URL(document.referrer).pathname;
+    } catch (_) {}
+    return {
+      tab_id: tabId,
+      page_path: location.pathname,
+      page_title: document.title || '',
+      page_url: location.pathname + location.search,
+      referrer_path: referrerPath,
+      visibility_state: document.visibilityState,
+      transmission_seq: seq,
+      sdk_version: 'extension-1.0',
+    };
+  }
+
   const startTime = performance.now();
 
   const mouseEvents = [];
@@ -37,7 +120,37 @@
   let lastEventTime  = null;  // performance.now() of most recent user event
   let accumulatedIdleMs = 0;  // total idle-gap time subtracted from active window
 
+  // --- Active-Tab Gating ---
+  // Only the foreground tab collects events and sends telemetry.
+  let isCollecting = document.visibilityState === 'visible';
+
+  function isTabVisible() {
+    return document.visibilityState === 'visible';
+  }
+
+  function onTabHidden() {
+    isCollecting = false;
+    // Exclude time spent in the background from active engagement metrics.
+    if (lastEventTime !== null) {
+      accumulatedIdleMs += performance.now() - lastEventTime;
+      lastEventTime = null;
+    }
+  }
+
+  function onTabVisible() {
+    isCollecting = true;
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (isTabVisible()) {
+      onTabVisible();
+    } else {
+      onTabHidden();
+    }
+  });
+
   function recordActivity() {
+    if (!isCollecting) return;
     const now = performance.now();
     if (firstEventTime === null) {
       firstEventTime = now;
@@ -57,6 +170,7 @@
 
   // --- Mouse Movement ---
   window.addEventListener('mousemove', function (e) {
+    if (!isCollecting) return;
     const now = performance.now();
     if (now - lastMouseMoveTime < 25) return;
     lastMouseMoveTime = now;
@@ -73,6 +187,7 @@
 
   // --- Click Events ---
   window.addEventListener('click', function (e) {
+    if (!isCollecting) return;
     recordActivity();
     const tag = (e.target.tagName || '').toLowerCase();
     let category = 'other';
@@ -89,6 +204,7 @@
 
   // --- Keyboard Timing (Zero text / characters) ---
   window.addEventListener('keydown', function (e) {
+    if (!isCollecting) return;
     if (e.target && (e.target.type === 'password' || e.target.dataset.private === 'true')) return;
     recordActivity();
     const now = performance.now();
@@ -107,6 +223,7 @@
   }, { passive: true });
 
   window.addEventListener('keyup', function (e) {
+    if (!isCollecting) return;
     if (activeKeys.has(e.code)) {
       const downTime = activeKeys.get(e.code);
       const hold = Math.round(performance.now() - downTime);
@@ -119,6 +236,7 @@
 
   // --- Scroll Dynamics ---
   window.addEventListener('scroll', function () {
+    if (!isCollecting) return;
     const now = performance.now();
     if (now - lastScrollTime < 50) return;
     recordActivity();
@@ -139,7 +257,9 @@
     return {
       session_id: sessionId,
       site_id: siteId,
+      visitor_id: visitorId,
       task: 'general',
+      client_context: getClientContext(),
       // start_time = approximate page-load unix time in ms
       start_time: Date.now() - Math.round(performance.now() - startTime),
       end_time: Date.now(),
@@ -165,8 +285,39 @@
     };
   }
 
-  async function flushTelemetry() {
-    if (mouseEvents.length < 2 && keyboardEvents.length === 0 && clickEvents.length === 0) return;
+  // --- Minimum Interaction Gating ---
+  // A session represents one real, continuous visit with actual human interaction.
+  // Idle tabs with zero interaction (or mere layout-shift / sensor noise) never transmit.
+  const MIN_MOUSE_EVENTS = 5;
+  const MIN_MOUSE_DISPLACEMENT_PX = 15;
+  const MIN_TOTAL_EVENTS = 5;
+
+  function hasMinimumInteraction() {
+    // 1. Deliberate click interaction
+    if (clickEvents.length > 0) return true;
+    // 2. Keyboard interaction
+    if (keyboardEvents.length > 0) return true;
+    // 3. Multi-point scroll interaction
+    if (scrollEvents.length >= 2) return true;
+    // 4. Mouse movement with measurable trajectory (>15px displacement across >= 5 points)
+    // Filters out stationary cursor landing on load, trackpad jitter, and 1-pixel sensor drift
+    if (mouseEvents.length >= MIN_MOUSE_EVENTS) {
+      const first = mouseEvents[0];
+      const last = mouseEvents[mouseEvents.length - 1];
+      const dx = last.x - first.x;
+      const dy = last.y - first.y;
+      if (Math.sqrt(dx * dx + dy * dy) >= MIN_MOUSE_DISPLACEMENT_PX) {
+        return true;
+      }
+    }
+    // 5. Total combined interactions threshold
+    const total = mouseEvents.length + keyboardEvents.length + scrollEvents.length + clickEvents.length;
+    return total >= MIN_TOTAL_EVENTS;
+  }
+
+  async function flushTelemetry(force) {
+    if (!force && !isTabVisible()) return;
+    if (!hasMinimumInteraction()) return;
     try {
       const response = await fetch(DEFAULT_ENDPOINT, {
         method: 'POST',
@@ -193,9 +344,9 @@
     }
   }
 
-  // Periodic flush every 5 seconds & on unload
-  setInterval(flushTelemetry, 5000);
-  window.addEventListener('pagehide', flushTelemetry);
+  // Periodic flush every 5 seconds (active tab only) & on unload
+  setInterval(function () { flushTelemetry(false); }, 5000);
+  window.addEventListener('pagehide', function () { flushTelemetry(true); });
 
   // Message listener for popup requests
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -212,6 +363,7 @@
           clicks: clickEvents.length
         },
         activeDurationMs: getActiveDurationMs(),
+        isCollecting: isCollecting,
         verdict: latestVerdict
       });
     }

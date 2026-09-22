@@ -1,4 +1,4 @@
-﻿"""
+"""
 Repository layer for WebSense.
 Centralizes all database write/read logic so route handlers stay thin.
 This eliminates the duplication between sessions.py and seed.py.
@@ -13,7 +13,52 @@ from packages.database.models import (
     FeatureRecord,
     DetectionVerdict,
 )
+from packages.database.schemas import SessionSummary
 from apps.api.config import settings
+
+
+def build_session_summary(s: SessionRecord) -> SessionSummary:
+    explanation = s.verdict.human_explanation if s.verdict else "Analysis pending"
+    wf = s.features.webdriver_flag if s.features else False
+    return SessionSummary(
+        session_id=s.session_id,
+        site_id=s.site_id,
+        visitor_id=s.visitor_id,
+        task=s.task,
+        start_time=s.start_time or 0.0,
+        duration_ms=s.duration_ms,
+        data_source=s.data_source or "realtime_sdk",
+        ground_truth_label=s.ground_truth_label,
+        predicted_label=s.predicted_label,
+        confidence=s.confidence,
+        risk_score=s.risk_score,
+        is_synthetic=s.is_synthetic,
+        created_at=s.created_at.strftime("%Y-%m-%d %H:%M:%S") if s.created_at else "",
+        webdriver_flag=wf,
+        explanation_snippet=explanation,
+        tab_id=s.tab_id,
+        page_path=s.page_path,
+        page_title=s.page_title,
+        transmission_seq=s.transmission_seq,
+        client_context=s.client_context,
+        data_quality=getattr(s, "data_quality", "standard") or "standard",
+    )
+
+
+def apply_client_context(session_rec: SessionRecord, session_dict: Dict[str, Any]) -> None:
+    """Populate tab/page identification fields from client_context payload."""
+    ctx = session_dict.get("client_context")
+    if not ctx:
+        return
+    if hasattr(ctx, "model_dump"):
+        ctx = ctx.model_dump()
+    if not isinstance(ctx, dict):
+        return
+    session_rec.tab_id = ctx.get("tab_id")
+    session_rec.page_path = ctx.get("page_path")
+    session_rec.page_title = ctx.get("page_title")
+    session_rec.transmission_seq = ctx.get("transmission_seq", 1)
+    session_rec.client_context = ctx
 
 
 def _build_feature_record(session_id: str, features: Dict[str, Any]) -> FeatureRecord:
@@ -103,6 +148,7 @@ def create_session(
         model_version=verdict.get("model_version", settings.MODEL_VERSION),
         feature_schema_version=settings.FEATURE_SCHEMA_VERSION,
     )
+    apply_client_context(session_rec, session_dict)
     db.add(session_rec)
 
     raw = RawTelemetry(
@@ -134,4 +180,5 @@ def update_session_verdict(
     existing.confidence = verdict["confidence"]
     existing.risk_score = verdict["risk_score"]
     existing.model_version = verdict.get("model_version", settings.MODEL_VERSION)
+    apply_client_context(existing, session_dict)
 

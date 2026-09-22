@@ -54,6 +54,17 @@ class TaskActionSchema(BaseModel):
     details: Dict[str, Any] = Field(default_factory=dict)
 
 
+class ClientContextSchema(BaseModel):
+    tab_id: str
+    page_path: str = ""
+    page_title: str = ""
+    page_url: str = ""
+    referrer_path: str = ""
+    visibility_state: str = "visible"
+    transmission_seq: int = 1
+    sdk_version: str = ""
+
+
 class SiteCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=128)
     allowed_origins: str = Field(default="*", description="Comma-separated allowed domains e.g. https://example.com,http://localhost:3000")
@@ -84,7 +95,8 @@ class IngestSessionRequest(BaseModel):
     ground_truth_label: Optional[str] = None  # Optional for synthetic generation
     is_synthetic: bool = False
     data_source: str = "realtime_sdk"
-    
+    client_context: Optional[ClientContextSchema] = None
+
     browser_signals: BrowserSignalsSchema = Field(default_factory=BrowserSignalsSchema)
     mouse_events: List[MouseEventSchema] = Field(default_factory=list)
     keyboard_events: List[KeyboardEventSchema] = Field(default_factory=list)
@@ -125,6 +137,12 @@ class SessionSummary(BaseModel):
     created_at: str
     webdriver_flag: bool
     explanation_snippet: str
+    tab_id: Optional[str] = None
+    page_path: Optional[str] = None
+    page_title: Optional[str] = None
+    transmission_seq: Optional[int] = None
+    client_context: Optional[Dict[str, Any]] = None
+    data_quality: str = "standard"
 
 
 class SessionDetailResponse(BaseModel):
@@ -158,3 +176,4 @@ class OverviewStatsResponse(BaseModel):
     avg_risk_score: float = 0.0
     recent_activity: List[SessionSummary] = Field(default_factory=list)
     detection_timeline: List[Dict[str, Any]] = Field(default_factory=list)
+    low_signal_count: int = 0
