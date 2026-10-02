@@ -1,160 +1,116 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meridian Community — Conversations &amp; Ideas</title>
-  <meta name="description" content="Join the Meridian Community to discuss travel, books, homeware, and everyday life.">
+  <title>Community — Meridian</title>
+  <meta name="description" content="Join the Meridian community. Discuss travel, share finds, get recommendations, and connect with like-minded people.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/static/meridian.css">
   <style>
+    /* Community-specific layout */
+    .community-hero {
+      padding: 3.5rem 0 3rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .community-hero__title {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1.1;
+      margin-bottom: 0.5rem;
+    }
     .community-layout {
       display: grid;
+      grid-template-columns: 1fr 280px;
       gap: 2rem;
-      grid-template-columns: 1fr;
+      padding: 2.5rem 0 4rem;
+      align-items: start;
     }
-    @media (min-width: 900px) {
-      .community-layout { grid-template-columns: 1fr 280px; }
+    @media (max-width: 768px) {
+      .community-layout { grid-template-columns: 1fr; }
+      .community-sidebar { order: -1; }
+    }
+    .community-main {}
+    .community-sidebar {}
+
+    /* Spotlight section */
+    .spotlight-section {
+      padding: 4rem 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
 
-    .sidebar-card {
-      background: var(--color-bg-card);
-      border: 1px solid var(--color-border);
+    /* New post form */
+    .new-post-form {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 1.25rem;
-      margin-bottom: 1rem;
+      padding: 1.375rem;
+      margin-bottom: 1.5rem;
     }
-    .sidebar-card__title {
-      font-size: 0.8125rem;
+    .new-post-form__title {
+      font-size: 0.875rem;
       font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--color-text-tertiary);
+      color: var(--text-primary);
       margin-bottom: 0.875rem;
     }
+    .new-post-form textarea {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 0.9375rem;
+      padding: 0.75rem;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border-color var(--t-fast), box-shadow var(--t-fast);
+      margin-bottom: 0.75rem;
+    }
+    .new-post-form textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+    .new-post-form textarea::placeholder { color: var(--text-tertiary); }
+    .new-post-form__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
 
-    .topic-tag {
+    /* Vote buttons */
+    .vote-btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem 0.625rem;
+      gap: 0.3rem;
+      padding: 0.3rem 0.625rem;
       border-radius: var(--radius-full);
-      font-size: 0.75rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
       font-weight: 500;
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      color: var(--color-text-secondary);
       cursor: pointer;
-      transition: all var(--transition-fast);
-      margin: 0 0.25rem 0.375rem 0;
+      font-family: var(--font-sans);
+      transition: all var(--t-fast);
     }
-    .topic-tag:hover { border-color: var(--color-border-hover); color: var(--color-text-primary); }
-    .topic-tag.active { background: var(--color-text-primary); color: #fff; border-color: var(--color-text-primary); }
-
-    /* Reply composer */
-    .reply-composer {
-      background: var(--color-bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      padding: 1.25rem;
-      margin-top: 1.5rem;
-    }
-    .reply-composer__title { font-size: 0.9375rem; font-weight: 700; margin-bottom: 1rem; }
-
-    .char-count {
-      font-size: 0.75rem;
-      color: var(--color-text-tertiary);
-      text-align: right;
-      margin-top: 0.25rem;
-    }
-
-    /* Thread detail inline view */
-    .thread-detail {
-      background: var(--color-bg-secondary);
-      border-radius: var(--radius-md);
-      padding: 1rem 1.25rem;
-      margin: 0.5rem 0 1rem;
-      border-left: 3px solid var(--color-border-hover);
-    }
-    .thread-detail__body {
-      font-size: 0.9rem;
-      line-height: 1.6;
-      color: var(--color-text-primary);
-    }
-
-    .reply-item {
-      padding: 0.875rem 0;
-      border-bottom: 1px solid var(--color-border);
-      display: flex;
-      gap: 0.875rem;
-    }
-    .reply-item:last-child { border-bottom: none; }
-    .reply-meta { font-size: 0.8125rem; color: var(--color-text-tertiary); margin-bottom: 0.25rem; }
-    .reply-body { font-size: 0.9rem; color: var(--color-text-primary); line-height: 1.5; }
-
-    .tab-bar-simple {
-      display: flex;
-      gap: 0.25rem;
-      border-bottom: 1px solid var(--color-border);
-      margin-bottom: 1.25rem;
-    }
-    .tab-simple {
-      padding: 0.5rem 1rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--color-text-secondary);
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-      background: none;
-      border-top: none;
-      border-left: none;
-      border-right: none;
-      margin-bottom: -1px;
-      transition: color var(--transition-fast), border-color var(--transition-fast);
-    }
-    .tab-simple.active { color: var(--color-text-primary); border-bottom-color: var(--color-text-primary); }
-    .tab-simple:hover { color: var(--color-text-primary); }
-
-    /* ─── Consent Banner ─────────────────────────────────── */
-    #consent-banner {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      z-index: 600;
-      background: rgba(15, 23, 42, 0.97);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(255,255,255,0.08);
-      color: #e2e8f0;
-      padding: 1.1rem 1.5rem;
-      display: flex; align-items: center;
-      justify-content: space-between;
-      gap: 1.5rem; flex-wrap: wrap;
-      font-size: 0.8125rem; line-height: 1.5;
-      transform: translateY(100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    #consent-banner.visible { transform: translateY(0); }
-    #consent-banner p { margin: 0; flex: 1; min-width: 240px; color: #94a3b8; }
-    #consent-banner p strong { color: #f1f5f9; font-weight: 600; }
-    .consent-actions { display: flex; gap: 0.625rem; flex-shrink: 0; align-items: center; }
-    .consent-btn {
-      padding: 0.45rem 1.1rem; border-radius: 9999px; font-size: 0.8rem;
-      font-weight: 600; cursor: pointer; border: none;
-      transition: opacity 0.15s, transform 0.1s;
-    }
-    .consent-btn:hover { opacity: 0.85; transform: translateY(-1px); }
-    .consent-btn--accept { background: #4f46e5; color: #fff; }
-    .consent-btn--decline { background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.12); }
+    .vote-btn:hover { border-color: var(--accent-border); color: var(--accent); }
+    .vote-btn.voted { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
   </style>
 </head>
-<body data-task="community">
+<body>
 
-  <!-- ─── Navigation ─────────────────────────────────────────── -->
+  <!-- Navigation -->
   <header class="meridian-header">
     <div class="container">
       <div class="meridian-header__inner">
-        <a href="/" class="meridian-logo">
+        <a href="/visitor" class="meridian-logo">
           <div class="meridian-logo__mark">M</div>
           <span>Meridian</span>
         </a>
@@ -162,530 +118,424 @@
           <a href="/visitor" class="meridian-nav__link">Home</a>
           <a href="/visitor/shop" class="meridian-nav__link">Shop</a>
           <a href="/visitor/travel" class="meridian-nav__link">Travel</a>
-          <a href="/visitor/forum" class="meridian-nav__link active" aria-current="page">Community</a>
+          <a href="/visitor/forum" class="meridian-nav__link active">Community</a>
         </nav>
         <div class="meridian-header__actions">
+          <div class="theme-toggle" id="themeToggle" role="group" aria-label="Theme selector">
+            <button class="theme-toggle__btn" data-theme-val="system" title="System theme">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </button>
+            <button class="theme-toggle__btn" data-theme-val="light" title="Light theme">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </button>
+            <button class="theme-toggle__btn" data-theme-val="dark" title="Dark theme">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+          </div>
+          <a href="/visitor/shop" class="btn btn-primary btn-sm">Shop Now</a>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- ─── Main Content ───────────────────────────────────────── -->
+  <!-- Community Hero -->
+  <section class="community-hero">
+    <div class="container">
+      <div class="flex-between">
+        <div>
+          <span class="pill-badge">💬 Community · 2,400+ members</span>
+          <h1 class="community-hero__title">Meridian Community</h1>
+          <p class="subhead" style="max-width:500px;margin-top:0.5rem;">Discuss your finds, share travel stories, get recommendations, and connect with people who share your taste.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
   <main class="page-main">
     <div class="container">
 
-      <div class="page-header-row" style="display:flex;flex-direction:column;gap:1rem;padding-bottom:1.5rem;border-bottom:1px solid var(--color-border);margin-bottom:1.75rem">
-        <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:1rem">
-          <div>
-            <h1 class="page-title">Community</h1>
-            <p class="page-subtitle">Conversations from people who love the way they live.</p>
-          </div>
-          <button id="new-post-btn" class="btn btn-primary">+ New post</button>
-        </div>
-        <!-- Topic filter -->
-        <div id="topic-filters" role="group" aria-label="Filter by topic">
-          <button class="topic-tag active" data-topic="all">All topics</button>
-          <button class="topic-tag" data-topic="travel">Travel</button>
-          <button class="topic-tag" data-topic="homeware">Homeware</button>
-          <button class="topic-tag" data-topic="books">Books &amp; reading</button>
-          <button class="topic-tag" data-topic="food">Food &amp; drink</button>
-          <button class="topic-tag" data-topic="outdoors">Outdoors</button>
-          <button class="topic-tag" data-topic="general">General</button>
-        </div>
+      <!-- Filter row -->
+      <div class="filter-row">
+        <button class="filter-chip active" data-topic="all">All</button>
+        <button class="filter-chip" data-topic="travel">✈ Travel</button>
+        <button class="filter-chip" data-topic="homeware">🏠 Homeware</button>
+        <button class="filter-chip" data-topic="books">📚 Books</button>
+        <button class="filter-chip" data-topic="lifestyle">🌿 Lifestyle</button>
+        <button class="filter-chip" data-topic="tech">💻 Technology</button>
+        <button class="filter-chip" data-topic="food">☕ Food</button>
       </div>
 
       <div class="community-layout">
-
-        <!-- ─── Main thread list ──────────────────────────────── -->
-        <section aria-label="Discussion threads">
-
-          <!-- Tabs -->
-          <div class="tab-bar-simple" role="tablist">
-            <button class="tab-simple active" role="tab" aria-selected="true" data-tab="latest">Latest</button>
-            <button class="tab-simple" role="tab" aria-selected="false" data-tab="trending">Trending</button>
-            <button class="tab-simple" role="tab" aria-selected="false" data-tab="unanswered">Unanswered</button>
+        <!-- Thread list -->
+        <div class="community-main">
+          <!-- New post form -->
+          <div class="new-post-form">
+            <div class="new-post-form__title">Start a discussion</div>
+            <textarea id="newPostInput" placeholder="What's on your mind? Share a tip, ask a question, or start a conversation…" rows="3"></textarea>
+            <div class="new-post-form__footer">
+              <div class="select-wrap" style="width:180px;">
+                <select class="form-select" id="newPostTopic">
+                  <option value="lifestyle">🌿 Lifestyle</option>
+                  <option value="travel">✈ Travel</option>
+                  <option value="homeware">🏠 Homeware</option>
+                  <option value="books">📚 Books</option>
+                  <option value="tech">💻 Technology</option>
+                  <option value="food">☕ Food</option>
+                </select>
+              </div>
+              <button class="btn btn-primary btn-sm" id="postBtn">Post →</button>
+            </div>
           </div>
 
-          <!-- Thread List -->
-          <div id="thread-list" role="list">
+          <!-- Thread cards -->
+          <div id="threadList">
 
-            <article class="thread-item" data-topic="travel" role="listitem">
-              <div class="thread-vote">
-                <button class="thread-vote__btn upvote-btn" aria-label="Upvote">&#9650;</button>
-                <span class="thread-vote__count">47</span>
+            <div class="thread-card" data-topic="travel">
+              <div class="thread-card__header">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                  <div class="avatar">AK</div>
+                  <div>
+                    <div class="thread-card__title">Best time to visit Rajasthan? Planning a 2-week trip</div>
+                    <div class="thread-card__meta" style="margin-top:0.25rem;">
+                      <span class="thread-card__meta-item">Ananya K.</span>
+                      <span class="thread-card__meta-item">· 3h ago</span>
+                    </div>
+                  </div>
+                </div>
+                <span class="topic-tag">✈ Travel</span>
               </div>
-              <div style="flex:1">
-                <div class="thread-meta">
-                  <span class="avatar" style="width:22px;height:22px;font-size:0.6875rem">JE</span>
-                  <span>Josie E.</span>
-                  <span>·</span><span>3 h ago</span>
-                  <span class="badge badge-accent" style="font-size:0.6875rem">travel</span>
+              <div class="thread-card__excerpt">October to March is ideal — the heat is manageable and most festivals happen then. Jaisalmer in December is magical. Anyone been during Diwali?</div>
+              <div class="thread-card__footer">
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="vote-btn" data-vote>▲ 42</button>
+                  <button class="vote-btn">💬 18</button>
                 </div>
-                <h2 class="thread-title">Hidden gems in Lisbon — what are yours?</h2>
-                <p class="thread-excerpt">I'm spending three weeks in Lisbon in October and I've already done the usual spots. Looking specifically for neighbourhood restaurants that locals actually go to, quiet viewpoints away from Miradouro de Santa Luzia, and any day trips that aren't on every travel blog.</p>
-                <div class="flex gap-3 mt-2">
-                  <button class="btn btn-ghost btn-sm open-thread-btn" data-thread-id="t1" aria-expanded="false">12 replies</button>
-                  <button class="btn btn-ghost btn-sm">Share</button>
-                </div>
-                <div id="thread-t1" class="hidden">
-                  <div class="thread-detail">
-                    <p class="thread-detail__body">I lived there for two years. Avoid Alfama for dinner — it's all tourist trap. Head to Mouraria instead. Tasca do Chico is excellent but book weeks ahead. For viewpoints, Miradouro da Gra&ccedil;a is stunning and almost never crowded in the mornings. For day trips: Set&uacute;bal peninsula, not Sintra.</p>
-                  </div>
-                  <div id="replies-t1">
-                    <div class="reply-item">
-                      <div class="avatar">MR</div>
-                      <div>
-                        <p class="reply-meta">Marco R. · 2 h ago</p>
-                        <p class="reply-body">Completely agree on Mouraria. Also try Taberna da Rua das Flores for petiscos. They don't take reservations so go early or late.</p>
-                      </div>
-                    </div>
-                    <div class="reply-item">
-                      <div class="avatar">AL</div>
-                      <div>
-                        <p class="reply-meta">Ana L. · 1 h ago</p>
-                        <p class="reply-body">Arr&aacute;bida is the day trip of a lifetime if you have a car. The water is as blue as any in the Mediterranean.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <!-- Reply form -->
-                  <div class="reply-composer" id="composer-t1">
-                    <p class="reply-composer__title">Add a reply</p>
-                    <textarea class="form-control reply-textarea" id="reply-t1" rows="3" maxlength="600" placeholder="Share your thoughts…" aria-label="Write your reply"></textarea>
-                    <p class="char-count"><span class="char-remaining">600</span> characters remaining</p>
-                    <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
-                      <button class="btn btn-primary btn-sm submit-reply-btn" data-thread="t1">Post reply</button>
-                      <button class="btn btn-ghost btn-sm cancel-reply-btn" data-thread="t1">Cancel</button>
-                    </div>
-                  </div>
-                </div>
+                <span class="thread-card__meta-item">18 replies</span>
               </div>
-            </article>
+            </div>
 
-            <article class="thread-item" data-topic="homeware" role="listitem">
-              <div class="thread-vote">
-                <button class="thread-vote__btn upvote-btn" aria-label="Upvote">&#9650;</button>
-                <span class="thread-vote__count">34</span>
-              </div>
-              <div style="flex:1">
-                <div class="thread-meta">
-                  <span class="avatar" style="width:22px;height:22px;font-size:0.6875rem">CH</span>
-                  <span>Clara H.</span>
-                  <span>·</span><span>Yesterday</span>
-                  <span class="badge badge-neutral" style="font-size:0.6875rem">homeware</span>
-                </div>
-                <h2 class="thread-title">How do you store fresh herbs without them dying in two days?</h2>
-                <p class="thread-excerpt">Every week I buy a big bunch of basil and flat-leaf parsley from the market and within two days they're wilting in the fridge. I've tried damp paper towels, sealed bags, everything. What actually works for you?</p>
-                <div class="flex gap-3 mt-2">
-                  <button class="btn btn-ghost btn-sm open-thread-btn" data-thread-id="t2" aria-expanded="false">8 replies</button>
-                  <button class="btn btn-ghost btn-sm">Share</button>
-                </div>
-                <div id="thread-t2" class="hidden">
-                  <div class="thread-detail">
-                    <p class="thread-detail__body">Stand them in a glass of water on the counter like flowers — don't refrigerate basil at all, it goes black in the cold. For parsley and coriander, jar of water, loose plastic bag over the top, fridge. Changes the water every two days. They last two weeks easily this way.</p>
-                  </div>
-                  <div id="replies-t2">
-                    <div class="reply-item">
-                      <div class="avatar">PK</div>
-                      <div>
-                        <p class="reply-meta">Priya K. · 18 h ago</p>
-                        <p class="reply-body">This is the way. I also freeze pesto in ice cube trays when I have excess basil. Perfect single portions for pasta.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="reply-composer" id="composer-t2">
-                    <p class="reply-composer__title">Add a reply</p>
-                    <textarea class="form-control reply-textarea" id="reply-t2" rows="3" maxlength="600" placeholder="Share your thoughts…" aria-label="Write your reply"></textarea>
-                    <p class="char-count"><span class="char-remaining">600</span> characters remaining</p>
-                    <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
-                      <button class="btn btn-primary btn-sm submit-reply-btn" data-thread="t2">Post reply</button>
-                      <button class="btn btn-ghost btn-sm cancel-reply-btn" data-thread="t2">Cancel</button>
+            <div class="thread-card" data-topic="homeware">
+              <div class="thread-card__header">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                  <div class="avatar" style="background:rgba(251,191,36,0.12);color:#f59e0b;border-color:rgba(245,158,11,0.3);">RV</div>
+                  <div>
+                    <div class="thread-card__title">Finally found a ceramic bowl set I actually love — sharing my review</div>
+                    <div class="thread-card__meta" style="margin-top:0.25rem;">
+                      <span class="thread-card__meta-item">Rohan V.</span>
+                      <span class="thread-card__meta-item">· 1d ago</span>
                     </div>
                   </div>
                 </div>
+                <span class="topic-tag">🏠 Homeware</span>
               </div>
-            </article>
+              <div class="thread-card__excerpt">Ordered the Sage Ceramic Bowl from the shop last month. It's been on my table every single day since. The glaze doesn't stain and it's genuinely oven-safe.</div>
+              <div class="thread-card__footer">
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="vote-btn" data-vote>▲ 87</button>
+                  <button class="vote-btn">💬 31</button>
+                </div>
+                <span class="thread-card__meta-item">31 replies</span>
+              </div>
+            </div>
 
-            <article class="thread-item" data-topic="books" role="listitem">
-              <div class="thread-vote">
-                <button class="thread-vote__btn upvote-btn" aria-label="Upvote">&#9650;</button>
-                <span class="thread-vote__count">61</span>
+            <div class="thread-card" data-topic="books">
+              <div class="thread-card__header">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                  <div class="avatar" style="background:rgba(168,85,247,0.12);color:#a855f7;border-color:rgba(168,85,247,0.3);">PS</div>
+                  <div>
+                    <div class="thread-card__title">The Design Essentials Set — what's actually in the box?</div>
+                    <div class="thread-card__meta" style="margin-top:0.25rem;">
+                      <span class="thread-card__meta-item">Priya S.</span>
+                      <span class="thread-card__meta-item">· 2d ago</span>
+                    </div>
+                  </div>
+                </div>
+                <span class="topic-tag">📚 Books</span>
               </div>
-              <div style="flex:1">
-                <div class="thread-meta">
-                  <span class="avatar" style="width:22px;height:22px;font-size:0.6875rem">TB</span>
-                  <span>Tom B.</span>
-                  <span>·</span><span>2 d ago</span>
-                  <span class="badge badge-neutral" style="font-size:0.6875rem">books</span>
+              <div class="thread-card__excerpt">Unboxed mine today. The curation is genuinely thoughtful — one on typography systems, one on Japanese interior design, and a third on graphic art history. All hardcover.</div>
+              <div class="thread-card__footer">
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="vote-btn" data-vote>▲ 55</button>
+                  <button class="vote-btn">💬 24</button>
                 </div>
-                <h2 class="thread-title">Books that changed how you see the world — genuinely</h2>
-                <p class="thread-excerpt">Not asking for "books you liked". I mean books where you finished them and your understanding of something fundamental shifted. What's yours?</p>
-                <div class="flex gap-3 mt-2">
-                  <button class="btn btn-ghost btn-sm open-thread-btn" data-thread-id="t3" aria-expanded="false">29 replies</button>
-                  <button class="btn btn-ghost btn-sm">Share</button>
-                </div>
-                <div id="thread-t3" class="hidden">
-                  <div class="thread-detail">
-                    <p class="thread-detail__body">Thinking, Fast and Slow by Kahneman. I thought I understood my own decision-making before reading it. I was badly wrong. It's not a comfortable read — it makes you aware of how irrational you are in ways you can't now unsee.</p>
-                  </div>
-                  <div id="replies-t3">
-                    <div class="reply-item">
-                      <div class="avatar">SF</div>
-                      <div>
-                        <p class="reply-meta">Sofia F. · 1 d ago</p>
-                        <p class="reply-body">The Body Keeps the Score changed my understanding of trauma. I work in healthcare and it genuinely altered how I interact with patients.</p>
-                      </div>
-                    </div>
-                    <div class="reply-item">
-                      <div class="avatar">LW</div>
-                      <div>
-                        <p class="reply-meta">Liam W. · 22 h ago</p>
-                        <p class="reply-body">Sapiens. Controversial in some details but as a sweeping frame for human history — nothing else comes close.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="reply-composer" id="composer-t3">
-                    <p class="reply-composer__title">Add a reply</p>
-                    <textarea class="form-control reply-textarea" id="reply-t3" rows="3" maxlength="600" placeholder="Share your thoughts…" aria-label="Write your reply"></textarea>
-                    <p class="char-count"><span class="char-remaining">600</span> characters remaining</p>
-                    <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
-                      <button class="btn btn-primary btn-sm submit-reply-btn" data-thread="t3">Post reply</button>
-                      <button class="btn btn-ghost btn-sm cancel-reply-btn" data-thread="t3">Cancel</button>
-                    </div>
-                  </div>
-                </div>
+                <span class="thread-card__meta-item">24 replies</span>
               </div>
-            </article>
+            </div>
 
-            <article class="thread-item" data-topic="food" role="listitem">
-              <div class="thread-vote">
-                <button class="thread-vote__btn upvote-btn" aria-label="Upvote">&#9650;</button>
-                <span class="thread-vote__count">22</span>
-              </div>
-              <div style="flex:1">
-                <div class="thread-meta">
-                  <span class="avatar" style="width:22px;height:22px;font-size:0.6875rem">NK</span>
-                  <span>Nadia K.</span>
-                  <span>·</span><span>4 h ago</span>
-                  <span class="badge badge-neutral" style="font-size:0.6875rem">food</span>
-                </div>
-                <h2 class="thread-title">The simplest meal you reliably cook when you have no energy</h2>
-                <p class="thread-excerpt">Late nights, long weeks. What's the one thing you can make in 15 minutes that still feels like a proper meal? I'll start: pasta aglio e olio — six ingredients, twenty minutes, genuinely good.</p>
-                <div class="flex gap-3 mt-2">
-                  <button class="btn btn-ghost btn-sm open-thread-btn" data-thread-id="t4" aria-expanded="false">17 replies</button>
-                  <button class="btn btn-ghost btn-sm">Share</button>
-                </div>
-                <div id="thread-t4" class="hidden">
-                  <div class="thread-detail">
-                    <p class="thread-detail__body">Fried rice. Use yesterday's rice (essential — fresh rice is too wet), whatever vegetables are wilting in the fridge, an egg, soy sauce, sesame oil. Ten minutes and better than most takeaways.</p>
-                  </div>
-                  <div id="replies-t4">
-                    <div class="reply-item">
-                      <div class="avatar">RS</div>
-                      <div>
-                        <p class="reply-meta">Ravi S. · 3 h ago</p>
-                        <p class="reply-body">Dal. Can't be beaten. Lentils, one onion, three spices, half an hour. Feeds four for almost nothing.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="reply-composer" id="composer-t4">
-                    <p class="reply-composer__title">Add a reply</p>
-                    <textarea class="form-control reply-textarea" id="reply-t4" rows="3" maxlength="600" placeholder="Share your thoughts…" aria-label="Write your reply"></textarea>
-                    <p class="char-count"><span class="char-remaining">600</span> characters remaining</p>
-                    <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
-                      <button class="btn btn-primary btn-sm submit-reply-btn" data-thread="t4">Post reply</button>
-                      <button class="btn btn-ghost btn-sm cancel-reply-btn" data-thread="t4">Cancel</button>
+            <div class="thread-card" data-topic="lifestyle">
+              <div class="thread-card__header">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                  <div class="avatar" style="background:rgba(52,211,153,0.12);color:#34d399;border-color:rgba(52,211,153,0.3);">MN</div>
+                  <div>
+                    <div class="thread-card__title">Morning routine thread — what's your ideal desk setup?</div>
+                    <div class="thread-card__meta" style="margin-top:0.25rem;">
+                      <span class="thread-card__meta-item">Meera N.</span>
+                      <span class="thread-card__meta-item">· 3d ago</span>
                     </div>
                   </div>
                 </div>
+                <span class="topic-tag">🌿 Lifestyle</span>
               </div>
-            </article>
+              <div class="thread-card__excerpt">Arc Desk Lamp + the linen journal from last month's drop + an Aeropress. That's the setup I've settled into. What does your morning corner look like?</div>
+              <div class="thread-card__footer">
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="vote-btn" data-vote>▲ 123</button>
+                  <button class="vote-btn">💬 67</button>
+                </div>
+                <span class="thread-card__meta-item">67 replies</span>
+              </div>
+            </div>
 
-          </div><!-- /thread-list -->
-        </section>
+            <div class="thread-card" data-topic="travel">
+              <div class="thread-card__header">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                  <div class="avatar" style="background:rgba(251,113,133,0.12);color:#fb7185;border-color:rgba(251,113,133,0.3);">SD</div>
+                  <div>
+                    <div class="thread-card__title">Solo travel in Goa — tips and hidden beaches?</div>
+                    <div class="thread-card__meta" style="margin-top:0.25rem;">
+                      <span class="thread-card__meta-item">Siddharth D.</span>
+                      <span class="thread-card__meta-item">· 4d ago</span>
+                    </div>
+                  </div>
+                </div>
+                <span class="topic-tag">✈ Travel</span>
+              </div>
+              <div class="thread-card__excerpt">Planning a solo trip to Goa in November. Found a great deal on the travel page (Bengaluru → Goa, ₹2,899). Looking for quieter spots away from the tourist crowds.</div>
+              <div class="thread-card__footer">
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="vote-btn" data-vote>▲ 64</button>
+                  <button class="vote-btn">💬 38</button>
+                </div>
+                <span class="thread-card__meta-item">38 replies</span>
+              </div>
+            </div>
 
-        <!-- ─── Sidebar ─────────────────────────────────────────── -->
-        <aside aria-label="Community sidebar">
-          <div class="sidebar-card">
-            <p class="sidebar-card__title">About Meridian Community</p>
-            <p class="text-sm text-secondary" style="line-height:1.6">A thoughtful space for conversations about everyday life — what you buy, where you go, and what you read.</p>
-            <button id="sidebar-post-btn" class="btn btn-primary btn-sm w-full" style="margin-top:1rem">Start a conversation</button>
           </div>
 
+          <div class="empty-state" id="forumEmpty" style="display:none;">
+            <div class="empty-state__icon">💬</div>
+            <div class="empty-state__title">No discussions in this topic yet</div>
+            <p class="text-secondary">Be the first to start one.</p>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="community-sidebar">
           <div class="sidebar-card">
-            <p class="sidebar-card__title">Active topics</p>
-            <div>
-              <button class="topic-tag" data-topic-sidebar="travel">✈️ Travel tips</button>
-              <button class="topic-tag" data-topic-sidebar="homeware">🏡 Homeware</button>
-              <button class="topic-tag" data-topic-sidebar="books">📖 Books</button>
-              <button class="topic-tag" data-topic-sidebar="food">🍳 Food</button>
-              <button class="topic-tag" data-topic-sidebar="outdoors">🌿 Outdoors</button>
-              <button class="topic-tag" data-topic-sidebar="general">💬 General</button>
+            <div class="sidebar-card__title">Community Stats</div>
+            <div style="display:flex;flex-direction:column;gap:0.625rem;">
+              <div style="display:flex;justify-content:space-between;font-size:0.875rem;">
+                <span class="text-secondary">Members</span>
+                <span style="font-weight:700;">2,418</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.875rem;">
+                <span class="text-secondary">Discussions</span>
+                <span style="font-weight:700;">634</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.875rem;">
+                <span class="text-secondary">Online now</span>
+                <span style="font-weight:700;color:var(--success);">38</span>
+              </div>
             </div>
           </div>
 
           <div class="sidebar-card">
-            <p class="sidebar-card__title">Community stats</p>
-            <div style="display:flex;flex-direction:column;gap:0.5rem">
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-secondary">Members</span>
-                <span class="font-semibold">12,841</span>
+            <div class="sidebar-card__title">Popular Topics</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.375rem;">
+              <span class="topic-tag active">✈ Travel</span>
+              <span class="topic-tag">🏠 Homeware</span>
+              <span class="topic-tag">📚 Books</span>
+              <span class="topic-tag">🌿 Lifestyle</span>
+              <span class="topic-tag">💻 Technology</span>
+              <span class="topic-tag">☕ Food</span>
+            </div>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="sidebar-card__title">Top Contributors</div>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+              <div style="display:flex;align-items:center;gap:0.75rem;">
+                <div class="avatar" style="background:rgba(251,191,36,0.12);color:#f59e0b;border-color:rgba(245,158,11,0.3);">RV</div>
+                <div><div style="font-size:0.875rem;font-weight:600;">Rohan V.</div><div style="font-size:0.75rem;color:var(--text-secondary);">87 posts</div></div>
               </div>
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-secondary">Threads</span>
-                <span class="font-semibold">3,204</span>
+              <div style="display:flex;align-items:center;gap:0.75rem;">
+                <div class="avatar" style="background:rgba(52,211,153,0.12);color:#34d399;border-color:rgba(52,211,153,0.3);">MN</div>
+                <div><div style="font-size:0.875rem;font-weight:600;">Meera N.</div><div style="font-size:0.75rem;color:var(--text-secondary);">62 posts</div></div>
               </div>
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-secondary">Online now</span>
-                <span class="font-semibold" style="color:var(--color-success)">247</span>
+              <div style="display:flex;align-items:center;gap:0.75rem;">
+                <div class="avatar">AK</div>
+                <div><div style="font-size:0.875rem;font-weight:600;">Ananya K.</div><div style="font-size:0.75rem;color:var(--text-secondary);">54 posts</div></div>
               </div>
             </div>
           </div>
         </aside>
-
-      </div><!-- /community-layout -->
-    </div><!-- /container -->
-  </main>
-
-  <!-- ─── New Post Modal ─────────────────────────────────────── -->
-  <div id="new-post-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="new-post-title">
-    <div class="modal" style="max-width:520px;text-align:left">
-      <h2 class="modal__title" id="new-post-title" style="text-align:left;margin-bottom:1rem">Start a conversation</h2>
-      <div class="form-group" style="margin-bottom:1rem">
-        <label class="form-label" for="new-post-title-input">Title</label>
-        <input type="text" class="form-control" id="new-post-title-input" maxlength="160" placeholder="Ask a question or share something…" aria-label="Post title">
-      </div>
-      <div class="form-group" style="margin-bottom:0.5rem">
-        <label class="form-label" for="new-post-body">Body</label>
-        <textarea class="form-control" id="new-post-body" rows="5" maxlength="2000" placeholder="Add context, details, or just start the conversation…" aria-label="Post body"></textarea>
-      </div>
-      <p class="char-count" style="margin-bottom:1rem"><span id="new-post-chars">2000</span> characters remaining</p>
-      <div class="form-group" style="margin-bottom:1.25rem">
-        <label class="form-label" for="new-post-topic">Topic</label>
-        <select class="form-control" id="new-post-topic" aria-label="Select topic">
-          <option value="travel">Travel</option>
-          <option value="homeware">Homeware</option>
-          <option value="books">Books &amp; reading</option>
-          <option value="food">Food &amp; drink</option>
-          <option value="outdoors">Outdoors</option>
-          <option value="general">General</option>
-        </select>
-      </div>
-      <div class="modal__actions">
-        <button id="new-post-cancel" class="btn btn-secondary" style="flex:1">Cancel</button>
-        <button id="new-post-submit" class="btn btn-primary" style="flex:1">Post</button>
       </div>
     </div>
-  </div>
 
+    <!-- Community Spotlight -->
+    <section class="spotlight-section">
+      <div class="container">
+        <div class="section-label">
+          <span class="section-label__num">02</span>
+          <span>Community Spotlight</span>
+        </div>
+        <div class="community-spotlight">
+          <img class="spotlight-img" src="/static/images/community_hero.jpg" alt="Meridian community members at a café meetup" loading="lazy">
+          <div class="spotlight-body">
+            <span class="pill-badge">📍 Monthly Meetups</span>
+            <h2 class="headline">We gather in person, too</h2>
+            <p class="subhead">Every month, Meridian community members meet in Bangalore, Mumbai, and Delhi to share their finds, travel stories, and ideas. Anyone is welcome.</p>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
+              <a href="#" class="btn btn-primary" onclick="return false;">Join a Meetup →</a>
+              <a href="#" class="btn btn-secondary" onclick="return false;">View Schedule</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-
-
-  <!-- ─── Footer ─────────────────────────────────────────────── -->
+  <!-- Footer -->
   <footer class="meridian-footer">
     <div class="container">
-      <div class="meridian-footer__inner">
-        <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:1rem">
-          <a href="/" class="meridian-logo">
-            <div class="meridian-logo__mark">M</div>
-            <span>Meridian</span>
-          </a>
-          <nav class="meridian-footer__links">
-            <a href="/about" class="meridian-footer__link">About</a>
-            <a href="#" class="meridian-footer__link">Community guidelines</a>
-            <a href="#" class="meridian-footer__link">Privacy</a>
-            <a href="#" class="meridian-footer__link">Contact</a>
-          </nav>
+      <div class="meridian-footer__grid">
+        <div class="footer-brand">
+          <div class="meridian-logo">
+            <div class="meridian-logo__mark" style="width:28px;height:28px;font-size:0.75rem;">M</div>
+            <span style="font-size:0.9375rem;">Meridian</span>
+          </div>
+          <p class="footer-brand__blurb">Curated goods, real travel, and a community worth joining — all in one place.</p>
+          <div class="theme-toggle" id="themeToggleFooter" role="group" aria-label="Theme selector">
+            <button class="theme-toggle__btn" data-theme-val="system" title="System theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+            <button class="theme-toggle__btn" data-theme-val="light" title="Light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+            <button class="theme-toggle__btn" data-theme-val="dark" title="Dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+          </div>
         </div>
-        <p class="meridian-footer__copy">© 2026 Meridian Ltd. All rights reserved.</p>
+        <div><div class="footer-col__title">Shop</div><div class="footer-col__links"><a href="/visitor/shop" class="footer-col__link">All Products</a><a href="/visitor/shop" class="footer-col__link">Homeware</a><a href="/visitor/shop" class="footer-col__link">Books</a></div></div>
+        <div><div class="footer-col__title">Explore</div><div class="footer-col__links"><a href="/visitor/travel" class="footer-col__link">Search Flights</a><a href="/visitor/travel" class="footer-col__link">Top Destinations</a><a href="/visitor/forum" class="footer-col__link">Community</a></div></div>
+        <div><div class="footer-col__title">Company</div><div class="footer-col__links"><a href="/visitor" class="footer-col__link">About</a><a href="/visitor" class="footer-col__link">Careers</a><a href="/visitor" class="footer-col__link">Contact</a></div></div>
+        <div><div class="footer-col__title">Legal</div><div class="footer-col__links"><a href="/visitor" class="footer-col__link">Privacy Policy</a><a href="/visitor" class="footer-col__link">Terms of Service</a><a href="/visitor" class="footer-col__link">Cookie Policy</a></div></div>
+      </div>
+      <div class="meridian-footer__bottom">
+        <p class="footer-copy">© 2026 Meridian — Curated goods, travel & community.</p>
+        <div class="footer-status"><div class="status-dot"></div><span>All systems normal</span></div>
       </div>
     </div>
   </footer>
 
-  <!-- ─── Telemetry & Logic ──────────────────────────────────── -->
-  <script>
-  (function() {
-    'use strict';
-
-    // ─── Thread expand/collapse ────────────────────────────────
-    document.querySelectorAll('.open-thread-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const threadId = this.dataset.threadId;
-        const panel = document.getElementById('thread-' + threadId);
-        if (!panel) return;
-        const isOpen = !panel.classList.contains('hidden');
-        panel.classList.toggle('hidden', isOpen);
-        this.setAttribute('aria-expanded', (!isOpen).toString());
-        window.WebSense && window.WebSense.logAction('thread_opened', { thread_id: threadId });
-      });
-    });
-
-    // ─── Reply composer char count ─────────────────────────────
-    document.querySelectorAll('.reply-textarea').forEach(ta => {
-      ta.addEventListener('input', function() {
-        const rem = 600 - this.value.length;
-        const counter = this.parentElement.querySelector('.char-remaining');
-        if (counter) counter.textContent = rem;
-      });
-    });
-
-    document.getElementById('new-post-body').addEventListener('input', function() {
-      document.getElementById('new-post-chars').textContent = 2000 - this.value.length;
-    });
-
-    // ─── Submit reply ──────────────────────────────────────────
-    document.querySelectorAll('.submit-reply-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const threadId = this.dataset.thread;
-        const ta = document.getElementById('reply-' + threadId);
-        const text = ta ? ta.value.trim() : '';
-        if (!text) return;
-
-        window.WebSense && window.WebSense.logAction('reply_submitted', {
-          thread_id: threadId,
-          length: text.length
-          // NOTE: we never send the actual text content
-        });
-
-        // Add reply to thread visually
-        const repliesContainer = document.getElementById('replies-' + threadId);
-        if (repliesContainer) {
-          const div = document.createElement('div');
-          div.className = 'reply-item';
-          div.innerHTML = `
-            <div class="avatar">You</div>
-            <div>
-              <p class="reply-meta">You · just now</p>
-              <p class="reply-body">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
-            </div>
-          `;
-          repliesContainer.appendChild(div);
-        }
-        if (ta) ta.value = '';
-
-        const flush = window.WebSense ? window.WebSense.flush('community') : Promise.resolve();
-        flush.then ? flush.then(() => {}) : null;
-      });
-    });
-
-    // Cancel reply
-    document.querySelectorAll('.cancel-reply-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const threadId = this.dataset.thread;
-        const ta = document.getElementById('reply-' + threadId);
-        if (ta) ta.value = '';
-      });
-    });
-
-    // ─── Topic filter ──────────────────────────────────────────
-    document.querySelectorAll('[data-topic]').forEach(btn => {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('[data-topic]').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        const topic = this.dataset.topic;
-        window.WebSense && window.WebSense.logAction('topic_filtered', { topic });
-        document.querySelectorAll('.thread-item').forEach(item => {
-          item.style.display = (topic === 'all' || item.dataset.topic === topic) ? '' : 'none';
-        });
-      });
-    });
-
-    // ─── Upvotes ───────────────────────────────────────────────
-    document.querySelectorAll('.upvote-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const countEl = this.parentElement.querySelector('.thread-vote__count');
-        const toggled = this.classList.toggle('active');
-        if (countEl) {
-          countEl.textContent = parseInt(countEl.textContent) + (toggled ? 1 : -1);
-        }
-        this.style.color = toggled ? 'var(--color-accent)' : '';
-        this.style.borderColor = toggled ? 'var(--color-accent)' : '';
-        window.WebSense && window.WebSense.logAction('upvote', { toggled });
-      });
-    });
-
-    // ─── New Post Modal ────────────────────────────────────────
-    function openNewPost() { document.getElementById('new-post-modal').classList.add('open'); }
-    function closeNewPost() { document.getElementById('new-post-modal').classList.remove('open'); }
-
-    document.getElementById('new-post-btn').addEventListener('click', openNewPost);
-    document.getElementById('sidebar-post-btn').addEventListener('click', openNewPost);
-    document.getElementById('new-post-cancel').addEventListener('click', closeNewPost);
-    document.getElementById('new-post-modal').addEventListener('click', function(e) {
-      if (e.target === this) closeNewPost();
-    });
-
-    document.getElementById('new-post-submit').addEventListener('click', function() {
-      const title = document.getElementById('new-post-title-input').value.trim();
-      const body = document.getElementById('new-post-body').value.trim();
-      if (!title) return;
-
-      window.WebSense && window.WebSense.logAction('post_submitted', {
-        topic: document.getElementById('new-post-topic').value,
-        title_length: title.length,
-        body_length: body.length
-        // NOTE: never send title/body text to telemetry
-      });
-
-      closeNewPost();
-      const flush = window.WebSense ? window.WebSense.flush('community') : Promise.resolve();
-      flush.then ? flush.then(() => {}) : null;
-    });
-
-    // ─── Tabs ─────────────────────────────────────────────────
-    document.querySelectorAll('.tab-simple').forEach(tab => {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.tab-simple').forEach(t => {
-          t.classList.remove('active');
-          t.setAttribute('aria-selected', 'false');
-        });
-        this.classList.add('active');
-        this.setAttribute('aria-selected', 'true');
-        window.WebSense && window.WebSense.logAction('tab_changed', { tab: this.dataset.tab });
-      });
-    });
-
-  })();
-  </script>
-
-  <!-- ─── Consent Banner ─────────────────────────────── -->
+  <!-- Consent Banner -->
   <div id="consent-banner" role="dialog" aria-live="polite" aria-label="Cookie and analytics consent">
-    <p>
-      <strong>Cookie &amp; Analytics Notice</strong>
-      &ensp;Meridian uses anonymous interaction analytics to improve your experience.
-      No personal data is collected. You can opt out at any time.
-    </p>
+    <p><strong>Cookie & Analytics Notice</strong>&ensp;Meridian uses anonymous interaction analytics to improve your experience. No personal data is collected.</p>
     <div class="consent-actions">
       <button class="consent-btn consent-btn--decline" id="consent-decline">Decline</button>
-      <button class="consent-btn consent-btn--accept" id="consent-accept">Accept &amp; Continue</button>
+      <button class="consent-btn consent-btn--accept" id="consent-accept">Accept & Continue</button>
     </div>
   </div>
 
-  <!-- Telemetry: injected only after consent -->
   <script>
+  // ── Theme toggle ─────────────────────────────────────────────────────────
+  (function() {
+    var THEME_KEY = 'meridian_theme';
+    var html = document.documentElement;
+    function applyTheme(val) {
+      var resolved = val === 'system' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : val;
+      html.setAttribute('data-theme', resolved);
+      document.querySelectorAll('[data-theme-val]').forEach(function(btn) {
+        var a = btn.getAttribute('data-theme-val') === val;
+        btn.classList.toggle('active', a);
+        btn.setAttribute('aria-pressed', a ? 'true' : 'false');
+      });
+    }
+    function setTheme(val) { localStorage.setItem(THEME_KEY, val); applyTheme(val); }
+    applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+    document.addEventListener('click', function(e) { var b = e.target.closest('[data-theme-val]'); if (b) setTheme(b.getAttribute('data-theme-val')); });
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function() { if (localStorage.getItem(THEME_KEY) === 'system') applyTheme('system'); });
+  })();
+
+  // ── Topic filter ─────────────────────────────────────────────────────────
+  var filterChips = document.querySelectorAll('.filter-chip[data-topic]');
+  var threads = document.querySelectorAll('.thread-card');
+  var forumEmpty = document.getElementById('forumEmpty');
+  var activeTopic = 'all';
+
+  filterChips.forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      filterChips.forEach(function(c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      activeTopic = chip.dataset.topic;
+      var visible = 0;
+      threads.forEach(function(t) {
+        var show = activeTopic === 'all' || t.dataset.topic === activeTopic;
+        t.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      forumEmpty.style.display = visible === 0 ? '' : 'none';
+    });
+  });
+
+  // ── Vote buttons ─────────────────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-vote]');
+    if (!btn) return;
+    btn.classList.toggle('voted');
+    var num = parseInt(btn.textContent.replace(/[^0-9]/g, ''));
+    btn.textContent = btn.classList.contains('voted') ? '▲ ' + (num + 1) : '▲ ' + (num - 1);
+  });
+
+  // ── New post ──────────────────────────────────────────────────────────────
+  var names = ['You', 'A. Kumar', 'S. Sharma', 'R. Mehta', 'P. Singh'];
+  var initials = ['ME', 'AK', 'SS', 'RM', 'PS'];
+  var colours = [
+    'background:var(--accent-dim);color:var(--accent);border-color:var(--accent-border);',
+    'background:rgba(251,191,36,0.12);color:#f59e0b;border-color:rgba(245,158,11,0.3);',
+    'background:rgba(168,85,247,0.12);color:#a855f7;border-color:rgba(168,85,247,0.3);',
+    'background:rgba(52,211,153,0.12);color:#34d399;border-color:rgba(52,211,153,0.3);',
+    'background:rgba(251,113,133,0.12);color:#fb7185;border-color:rgba(251,113,133,0.3);',
+  ];
+  var topicEmoji = { lifestyle:'🌿', travel:'✈', homeware:'🏠', books:'📚', tech:'💻', food:'☕' };
+
+  document.getElementById('postBtn').addEventListener('click', function() {
+    var text = document.getElementById('newPostInput').value.trim();
+    if (!text) return;
+    var topic = document.getElementById('newPostTopic').value;
+    var card = document.createElement('div');
+    card.className = 'thread-card';
+    card.dataset.topic = topic;
+    var now = 'Just now';
+    card.innerHTML =
+      '<div class="thread-card__header">' +
+        '<div style="display:flex;align-items:center;gap:0.75rem;">' +
+          '<div class="avatar" style="' + colours[0] + '">ME</div>' +
+          '<div><div class="thread-card__title">' + text.substring(0,80) + (text.length > 80 ? '…' : '') + '</div>' +
+          '<div class="thread-card__meta" style="margin-top:0.25rem;"><span class="thread-card__meta-item">You</span><span class="thread-card__meta-item">· ' + now + '</span></div></div>' +
+        '</div>' +
+        '<span class="topic-tag">' + (topicEmoji[topic]||'💬') + ' ' + topic.charAt(0).toUpperCase() + topic.slice(1) + '</span>' +
+      '</div>' +
+      '<div class="thread-card__excerpt">' + text + '</div>' +
+      '<div class="thread-card__footer"><div style="display:flex;gap:0.5rem;"><button class="vote-btn" data-vote>▲ 1</button><button class="vote-btn">💬 0</button></div><span class="thread-card__meta-item">0 replies</span></div>';
+    var threadList = document.getElementById('threadList');
+    threadList.insertBefore(card, threadList.firstChild);
+    document.getElementById('newPostInput').value = '';
+    // Make sure empty state is hidden
+    forumEmpty.style.display = 'none';
+  });
+
+  // ── Consent banner ───────────────────────────────────────────────────────
   (function() {
     var CONSENT_KEY = 'meridian_consent';
     var banner = document.getElementById('consent-banner');
-    function loadTelemetry() {
-      var s = document.createElement('script');
-      s.src = '/static/collector.js'; document.body.appendChild(s);
-    }
-    function hideBanner() {
-      if (banner) { banner.classList.remove('visible'); setTimeout(function() { banner.style.display='none'; }, 400); }
-    }
+    function loadTelemetry() { var s = document.createElement('script'); s.src = '/static/collector.js'; document.body.appendChild(s); }
+    function hideBanner() { if (banner) { banner.classList.remove('visible'); setTimeout(function() { banner.style.display='none'; }, 400); } }
     var consent = localStorage.getItem(CONSENT_KEY);
     if (consent === 'granted') { loadTelemetry(); }
     else if (!consent) {
       setTimeout(function() { if (banner) banner.classList.add('visible'); }, 800);
-      document.getElementById('consent-accept').addEventListener('click', function() {
-        localStorage.setItem(CONSENT_KEY, 'granted'); hideBanner(); loadTelemetry();
-      });
-      document.getElementById('consent-decline').addEventListener('click', function() {
-        localStorage.setItem(CONSENT_KEY, 'declined'); hideBanner();
-      });
+      document.getElementById('consent-accept').addEventListener('click', function() { localStorage.setItem(CONSENT_KEY,'granted'); hideBanner(); loadTelemetry(); });
+      document.getElementById('consent-decline').addEventListener('click', function() { localStorage.setItem(CONSENT_KEY,'declined'); hideBanner(); });
     }
   })();
   </script>
 
 </body>
 </html>
-

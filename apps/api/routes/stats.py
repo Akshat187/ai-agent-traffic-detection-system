@@ -6,6 +6,7 @@ Uses new actor terminology: TRADITIONAL_AUTOMATION, AGENTIC_AI.
 Legacy field names (bot_count, ai_agent_count) are preserved for API compatibility.
 """
 
+import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -14,22 +15,32 @@ from sqlalchemy import func
 from packages.database.db import get_db
 from packages.database.models import SessionRecord
 from packages.database.schemas import OverviewStatsResponse, SessionSummary
+from packages.database.repository import build_session_summary, apply_source_filter
 
 router = APIRouter(prefix="/api/v1/stats", tags=["Statistics"])
+logger = logging.getLogger("websense.stats")
 
 
 @router.get("/overview", response_model=OverviewStatsResponse)
 def get_overview_stats(
     site_id: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
+    include_low_signal: bool = Query(False, description="Whether to include low-signal/near-empty sessions in overview stats"),
     db: Session = Depends(get_db)
 ):
-    """Computes aggregated dashboard metrics, actor class distribution, and average confidence, with optional site_id filter."""
+    """Computes aggregated dashboard metrics, actor class distribution, and average confidence, filtering out low-signal phantom sessions by default."""
+    low_signal_query = db.query(SessionRecord).filter(SessionRecord.data_quality == "low_signal")
+    if site_id and site_id != "ALL":
+        low_signal_query = low_signal_query.filter(SessionRecord.site_id == site_id)
+    low_signal_query = apply_source_filter(low_signal_query, source)
+    low_signal_count = low_signal_query.count()
+
     base_query = db.query(SessionRecord)
     if site_id and site_id != "ALL":
         base_query = base_query.filter(SessionRecord.site_id == site_id)
-    if source and source != "ALL":
-        base_query = base_query.filter(SessionRecord.data_source == source)
+    base_query = apply_source_filter(base_query, source)
+    if not include_low_signal:
+        base_query = base_query.filter(SessionRecord.data_quality != "low_signal")
 
     total = base_query.count()
 
@@ -59,25 +70,7 @@ def get_overview_stats(
 
     # Recent activity (latest 10 sessions)
     recent = base_query.order_by(SessionRecord.created_at.desc()).limit(10).all()
-    recent_summaries = []
-    for s in recent:
-        exp = s.verdict.human_explanation if s.verdict else ""
-        wf = s.features.webdriver_flag if s.features else False
-        recent_summaries.append(SessionSummary(
-            session_id=s.session_id,
-            visitor_id=s.visitor_id,
-            task=s.task,
-            start_time=s.start_time or 0.0,
-            duration_ms=s.duration_ms,
-            ground_truth_label=s.ground_truth_label,
-            predicted_label=s.predicted_label,
-            confidence=s.confidence,
-            risk_score=s.risk_score,
-            is_synthetic=s.is_synthetic,
-            created_at=s.created_at.strftime("%Y-%m-%d %H:%M:%S") if s.created_at else "",
-            webdriver_flag=wf,
-            explanation_snippet=exp
-        ))
+    recent_summaries = [build_session_summary(s) for s in recent]
 
     # Timeline buckets (cumulative session counts over rolling window)
     timeline = [
@@ -107,6 +100,18 @@ def get_overview_stats(
          "agentic": agentic_count},
     ]
 
+    logger.info(
+        "stats_overview total=%d human=%d(%.1f%%) automation=%d(%.1f%%) "
+        "agentic=%d(%.1f%%) uncertain=%d(%.1f%%) avg_conf=%.1f avg_risk=%.1f site=%s source=%s",
+        total,
+        human_count, human_pct,
+        automation_count, automation_pct,
+        agentic_count, agentic_pct,
+        uncertain_count, uncertain_pct,
+        avg_conf, avg_risk,
+        site_id or "ALL", source or "ALL",
+    )
+
     return OverviewStatsResponse(
         total_sessions=total,
         human_count=human_count,
@@ -127,4 +132,5 @@ def get_overview_stats(
         avg_risk_score=round(avg_risk, 1),
         recent_activity=recent_summaries,
         detection_timeline=timeline,
+        low_signal_count=low_signal_count,
     )

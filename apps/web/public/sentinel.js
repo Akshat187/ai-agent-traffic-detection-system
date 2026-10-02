@@ -14,6 +14,10 @@
 (function (window, document) {
   'use strict';
 
+  // Guard: Only run in top-level context
+  if (window.top !== window.self) return;
+  window.__WEBSENSE_COLLECTOR_ACTIVE__ = true;
+
   // 1. Discover configuration from script tag
   const currentScript = document.currentScript || (function() {
     const scripts = document.getElementsByTagName('script');
@@ -42,7 +46,10 @@
   // 2. Constants & Storage Keys
   const CONSENT_STORAGE_KEY = 'ws_sentinel_consent_' + siteId;
   const SESSION_KEY = 'ws_sentinel_session_' + siteId;
-  const VISITOR_KEY = 'ws_sentinel_visitor_id';
+  const VISITOR_KEY = 'ws_visitor_id';
+  const LEGACY_VISITOR_KEYS = ['ws_sentinel_visitor_id', 'meridian_visitor_id'];
+  const TAB_KEY = 'ws_tab_id';
+  const SEQ_KEY = 'ws_transmission_seq';
 
   const MOUSE_THROTTLE_MS = 25;
   const SCROLL_THROTTLE_MS = 50;
@@ -119,14 +126,50 @@
     try {
       let v = localStorage.getItem(VISITOR_KEY);
       if (!v) {
-        v = generateId('vis');
-        localStorage.setItem(VISITOR_KEY, v);
+        for (let i = 0; i < LEGACY_VISITOR_KEYS.length; i++) {
+          v = localStorage.getItem(LEGACY_VISITOR_KEYS[i]);
+          if (v) break;
+        }
       }
+      if (!v) v = generateId('vis');
+      localStorage.setItem(VISITOR_KEY, v);
       return v;
     } catch (_) {
       return generateId('vis');
     }
   })();
+
+  function getClientContext() {
+    let tabId;
+    try {
+      tabId = sessionStorage.getItem(TAB_KEY);
+      if (!tabId) {
+        tabId = 'tab_' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : generateId('tab').slice(4));
+        sessionStorage.setItem(TAB_KEY, tabId);
+      }
+    } catch (_) {
+      tabId = generateId('tab');
+    }
+    let seq = 1;
+    try {
+      seq = parseInt(sessionStorage.getItem(SEQ_KEY) || '0', 10) + 1;
+      sessionStorage.setItem(SEQ_KEY, String(seq));
+    } catch (_) {}
+    let referrerPath = '';
+    try {
+      if (document.referrer) referrerPath = new URL(document.referrer).pathname;
+    } catch (_) {}
+    return {
+      tab_id: tabId,
+      page_path: location.pathname,
+      page_title: document.title || '',
+      page_url: location.pathname + location.search,
+      referrer_path: referrerPath,
+      visibility_state: document.visibilityState,
+      transmission_seq: seq,
+      sdk_version: 'sentinel-1.2.0',
+    };
+  }
 
   const startTime = performance.now();
   const absoluteStartTime = Date.now();
@@ -280,6 +323,7 @@
       // The detection engine uses this field for all ratio-based features.
       active_duration_ms: getActiveDurationMs(),
       data_source: 'realtime_sdk',
+      client_context: getClientContext(),
       browser_signals: getBrowserSignals(),
       mouse_events: mouseEvents,
       keyboard_events: keyboardEvents,
@@ -289,9 +333,30 @@
     };
   }
 
+  const MIN_MOUSE_EVENTS = 5;
+  const MIN_MOUSE_DISPLACEMENT_PX = 15;
+  const MIN_TOTAL_EVENTS = 5;
+
+  function hasMinimumInteraction() {
+    if (clickEvents.length > 0) return true;
+    if (keyboardEvents.length > 0) return true;
+    if (scrollEvents.length >= 2) return true;
+    if (mouseEvents.length >= MIN_MOUSE_EVENTS) {
+      const first = mouseEvents[0];
+      const last = mouseEvents[mouseEvents.length - 1];
+      const dx = last.x - first.x;
+      const dy = last.y - first.y;
+      if (Math.sqrt(dx * dx + dy * dy) >= MIN_MOUSE_DISPLACEMENT_PX) {
+        return true;
+      }
+    }
+    const total = mouseEvents.length + keyboardEvents.length + scrollEvents.length + clickEvents.length;
+    return total >= MIN_TOTAL_EVENTS;
+  }
+
   async function flushTelemetry(overrideTask) {
     if (!consentGranted) return Promise.resolve(null);
-    if (mouseEvents.length === 0 && keyboardEvents.length === 0 && scrollEvents.length === 0 && clickEvents.length === 0) {
+    if (!hasMinimumInteraction()) {
       return Promise.resolve(null);
     }
 
@@ -329,7 +394,7 @@
   });
 
   window.addEventListener('beforeunload', function () {
-    if (!isTransmitted && consentGranted) {
+    if (!isTransmitted && consentGranted && hasMinimumInteraction()) {
       const payload = buildPayload();
       const body = JSON.stringify(payload);
       if (navigator.sendBeacon) {
@@ -344,6 +409,19 @@
     siteId: siteId,
     getSessionId: function() { return sessionId; },
     getVisitorId: function() { return visitorId; },
+    getTabId: function() {
+      try {
+        let tabId = sessionStorage.getItem(TAB_KEY);
+        if (!tabId) {
+          tabId = 'tab_' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : generateId('tab').slice(4));
+          sessionStorage.setItem(TAB_KEY, tabId);
+        }
+        return tabId;
+      } catch (_) {
+        return generateId('tab');
+      }
+    },
+    getClientContext: function() { return getClientContext(); },
     
     logAction: function (action, details) {
       if (!consentGranted) return;

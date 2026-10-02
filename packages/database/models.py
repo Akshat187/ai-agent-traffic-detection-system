@@ -75,7 +75,16 @@ class SessionRecord(Base):
     model_version = Column(String(64), default="v1.1.0-defense-in-depth")
     feature_schema_version = Column(String(16), default="v1.1")
 
+    # Tab / page identification metadata from client_context
+    tab_id = Column(String(64), index=True, nullable=True)
+    page_path = Column(String(256), nullable=True)
+    page_title = Column(String(256), nullable=True)
+    transmission_seq = Column(Integer, default=1)
+    client_context = Column(JSON, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    # Data quality flag: 'standard' | 'low_signal' (e.g. near-empty sessions with insufficient events)
+    data_quality = Column(String(32), default="standard", index=True)
 
     # Relationships
     site = relationship("SiteRecord", back_populates="sessions")

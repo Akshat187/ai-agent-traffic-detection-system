@@ -18,12 +18,15 @@ from packages.database.schemas import (
 from packages.core.features import extract_all_features
 from apps.api.dependencies import get_detection_engine, DecisionEngine
 
+import logging
 import time
 import secrets
 from collections import defaultdict
 from apps.api.config import settings
+from packages.database.repository import apply_client_context, build_session_summary, apply_source_filter
 
 router = APIRouter(prefix="/api/v1/sessions", tags=["Sessions"])
+logger = logging.getLogger("websense.ingest")
 
 # In-memory sliding window rate limiter: IP -> list of timestamps
 _RATE_LIMIT_WINDOW_SEC = 60.0
@@ -91,6 +94,8 @@ def ingest_session(
     extracts high-resolution kinematic features, executes the 5-layer detection engine,
     and persists the session verdict.
     """
+    _ingest_start = time.time()
+
     # 1. Apply rate limiting per client IP
     if request and request.client:
         client_ip = request.client.host
@@ -119,6 +124,17 @@ def ingest_session(
             _validate_site_origin(site, request)
 
     session_dict = payload.model_dump()
+    ctx = payload.client_context
+    logger.info(
+        "session_ingest session_id=%s tab_id=%s page_path=%s page_title=%s visitor_id=%s transmission_seq=%s task=%s",
+        payload.session_id,
+        ctx.tab_id if ctx else "-",
+        ctx.page_path if ctx else "-",
+        ctx.page_title if ctx else "-",
+        payload.visitor_id or "-",
+        ctx.transmission_seq if ctx else "-",
+        payload.task,
+    )
     features = extract_all_features(session_dict)
     
     verdict = engine.evaluate_session(
@@ -141,6 +157,10 @@ def ingest_session(
         existing.risk_score = verdict["risk_score"]
         existing.model_version = settings.MODEL_VERSION
         existing.feature_schema_version = settings.FEATURE_SCHEMA_VERSION
+        tot_ev = len(payload.mouse_events) + len(payload.keyboard_events) + len(payload.scroll_events) + len(payload.click_events)
+        has_sig = (len(payload.click_events) > 0 or len(payload.keyboard_events) > 0 or len(payload.scroll_events) >= 2 or len(payload.mouse_events) >= 5 or payload.is_synthetic)
+        existing.data_quality = "standard" if (has_sig and tot_ev >= 5) or payload.is_synthetic else "low_signal"
+        apply_client_context(existing, session_dict)
 
         # CRITICAL: Also update the DetectionVerdict so it stays in sync with SessionRecord.
         # Without this, the badge reads the updated SessionRecord while the explanation text
@@ -229,7 +249,14 @@ def ingest_session(
             risk_score=verdict["risk_score"],
             model_version=settings.MODEL_VERSION,
             feature_schema_version=settings.FEATURE_SCHEMA_VERSION,
+            data_quality="standard" if (
+                payload.is_synthetic or (
+                    (len(payload.click_events) > 0 or len(payload.keyboard_events) > 0 or len(payload.scroll_events) >= 2 or len(payload.mouse_events) >= 5) and
+                    (len(payload.mouse_events) + len(payload.keyboard_events) + len(payload.scroll_events) + len(payload.click_events)) >= 5
+                )
+            ) else "low_signal",
         )
+        apply_client_context(session_rec, session_dict)
         db.add(session_rec)
 
 
@@ -310,6 +337,23 @@ def ingest_session(
 
     db.commit()
 
+    _ingest_duration_ms = round((time.time() - _ingest_start) * 1000)
+    logger.info(
+        "session_verdict session_id=%s verdict=%s confidence=%.1f risk=%.1f "
+        "l1=%.2f l2=%s l3_anomaly=%s l4_replay=%s l5_ctx=%s site=%s duration_ms=%d",
+        payload.session_id,
+        verdict["final_verdict"],
+        verdict["confidence"],
+        verdict["risk_score"],
+        verdict["l1_rule_score"],
+        verdict.get("l2_ml_pred", "-"),
+        verdict["l3_is_anomaly"],
+        verdict["l4_is_replay"],
+        verdict["l5_context_valid"],
+        site_id or "-",
+        _ingest_duration_ms,
+    )
+
     return ClassificationResponse(
         session_id=payload.session_id,
         predicted_label=verdict["final_verdict"],
@@ -336,40 +380,21 @@ def list_sessions(
     source: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Lists recent session summaries with optional site_id and label filters."""
+    """Lists recent session summaries with optional site_id, source, and label filters."""
     query = db.query(SessionRecord).order_by(SessionRecord.created_at.desc())
     if label and label != "ALL":
         query = query.filter(SessionRecord.predicted_label == label)
     if site_id and site_id != "ALL":
         query = query.filter(SessionRecord.site_id == site_id)
-    if source and source != "ALL":
-        query = query.filter(SessionRecord.data_source == source)
+    query = apply_source_filter(query, source)
     
     sessions = query.offset(offset).limit(limit).all()
-    results = []
-
-    for s in sessions:
-        explanation = s.verdict.human_explanation if s.verdict else "Analysis pending"
-        wf = s.features.webdriver_flag if s.features else False
-        results.append(SessionSummary(
-            session_id=s.session_id,
-            site_id=s.site_id,
-            visitor_id=s.visitor_id,
-            task=s.task,
-            start_time=s.start_time or 0.0,
-            duration_ms=s.duration_ms,
-            data_source=s.data_source or "realtime_sdk",
-            ground_truth_label=s.ground_truth_label,
-            predicted_label=s.predicted_label,
-            confidence=s.confidence,
-            risk_score=s.risk_score,
-            is_synthetic=s.is_synthetic,
-            created_at=s.created_at.strftime("%Y-%m-%d %H:%M:%S") if s.created_at else "",
-            webdriver_flag=wf,
-            explanation_snippet=explanation
-        ))
-
-    return results
+    logger.info(
+        "list_sessions returned=%d limit=%d offset=%d label=%s site=%s source=%s",
+        len(sessions), limit, offset,
+        label or "ALL", site_id or "ALL", source or "ALL",
+    )
+    return [build_session_summary(s) for s in sessions]
 
 
 @router.get("/{session_id}", response_model=SessionDetailResponse)
@@ -377,25 +402,18 @@ def get_session_detail(session_id: str, db: Session = Depends(get_db)):
     """Fetches full session details including 2D trajectory coordinates, features, and layer breakdown."""
     session = db.query(SessionRecord).filter(SessionRecord.session_id == session_id).first()
     if not session:
+        logger.warning("session_detail_not_found session_id=%s", session_id)
         raise HTTPException(status_code=404, detail="Session not found")
 
-    summary = SessionSummary(
-        session_id=session.session_id,
-        site_id=session.site_id,
-        visitor_id=session.visitor_id,
-        task=session.task,
-        start_time=session.start_time or 0.0,
-        duration_ms=session.duration_ms,
-        data_source=session.data_source or "realtime_sdk",
-        ground_truth_label=session.ground_truth_label,
-        predicted_label=session.predicted_label,
-        confidence=session.confidence,
-        risk_score=session.risk_score,
-        is_synthetic=session.is_synthetic,
-        created_at=session.created_at.strftime("%Y-%m-%d %H:%M:%S") if session.created_at else "",
-        webdriver_flag=session.features.webdriver_flag if session.features else False,
-        explanation_snippet=session.verdict.human_explanation if session.verdict else ""
+    logger.info(
+        "session_detail session_id=%s verdict=%s confidence=%.1f risk=%.1f site=%s",
+        session_id,
+        session.predicted_label or "-",
+        session.confidence or 0.0,
+        session.risk_score or 0.0,
+        session.site_id or "-",
     )
+    summary = build_session_summary(session)
 
     feat_dict = session.features.all_features_json if session.features and session.features.all_features_json else {}
     
