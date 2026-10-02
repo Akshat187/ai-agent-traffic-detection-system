@@ -13,6 +13,7 @@ let selectedSession = null;
 let animationFrameId = null;
 
 let selectedSite = "ALL";
+let selectedSource = "ALL";
 
 document.addEventListener("DOMContentLoaded", function () {
   initTabs();
@@ -21,19 +22,49 @@ document.addEventListener("DOMContentLoaded", function () {
   fetchOverviewStats();
   fetchSessions();
 
-  // Poll for updates every 4 seconds
+  // Poll for updates every 4 seconds — active tab only
   setInterval(() => {
-    fetchOverviewStats();
-    fetchSessions();
+    if (document.visibilityState === "visible") {
+      fetchOverviewStats();
+      fetchSessions();
+    }
   }, 4000);
+
+  // When the user switches back to this tab, refresh immediately
+  // so data isn't stale from while the tab was hidden
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      fetchOverviewStats();
+      fetchSessions();
+    }
+  });
 
   // Setup Event Listeners
   const siteSelect = document.getElementById("global-site-select");
   if (siteSelect) {
     siteSelect.addEventListener("change", function(e) {
-      selectedSite = e.target.value;
-      fetchOverviewStats();
-      fetchSessions();
+      setSiteFilter(e.target.value);
+    });
+  }
+
+  const sourceSelect = document.getElementById("global-source-select");
+  if (sourceSelect) {
+    sourceSelect.addEventListener("change", function(e) {
+      setSourceFilter(e.target.value);
+    });
+  }
+
+  const sessionSiteFilter = document.getElementById("session-filter-site");
+  if (sessionSiteFilter) {
+    sessionSiteFilter.addEventListener("change", function(e) {
+      setSiteFilter(e.target.value);
+    });
+  }
+
+  const sessionSourceFilter = document.getElementById("session-filter-source");
+  if (sessionSourceFilter) {
+    sessionSourceFilter.addEventListener("change", function(e) {
+      setSourceFilter(e.target.value);
     });
   }
 
@@ -65,26 +96,67 @@ document.addEventListener("DOMContentLoaded", function () {
   loadLabData();
 });
 
+function buildFilterQuery(extra = {}) {
+  const params = new URLSearchParams(extra);
+  if (selectedSite && selectedSite !== "ALL") params.set("site_id", selectedSite);
+  if (selectedSource && selectedSource !== "ALL") params.set("source", selectedSource);
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+function setSiteFilter(value) {
+  selectedSite = value || "ALL";
+  const globalSel = document.getElementById("global-site-select");
+  const sessionSel = document.getElementById("session-filter-site");
+  if (globalSel && globalSel.value !== selectedSite) globalSel.value = selectedSite;
+  if (sessionSel && sessionSel.value !== selectedSite) sessionSel.value = selectedSite;
+  fetchOverviewStats();
+  fetchSessions();
+}
+
+function setSourceFilter(value) {
+  selectedSource = value || "ALL";
+  const globalSel = document.getElementById("global-source-select");
+  const sessionSel = document.getElementById("session-filter-source");
+  if (globalSel && globalSel.value !== selectedSource) globalSel.value = selectedSource;
+  if (sessionSel && sessionSel.value !== selectedSource) sessionSel.value = selectedSource;
+  fetchOverviewStats();
+  fetchSessions();
+}
+
+function isDemoSession(s) {
+  const src = (s.data_source || "").toLowerCase();
+  return !!(s.is_synthetic || src === "synthetic_demo" || src.startsWith("synthetic"));
+}
+
 // Load Registered Sites
 async function fetchSites() {
   try {
     const res = await fetch("/api/v1/sites");
     if (!res.ok) return;
     const data = await res.json();
-    const select = document.getElementById("global-site-select");
-    if (!select) return;
+    const selects = [
+      document.getElementById("global-site-select"),
+      document.getElementById("session-filter-site"),
+    ].filter(Boolean);
 
-    const currentVal = select.value || "ALL";
-    select.innerHTML = '<option value="ALL">All Registered Sites</option>';
+    selects.forEach(select => {
+      const currentVal = select.value || selectedSite || "ALL";
+      select.innerHTML = '<option value="ALL">All Sites</option>';
 
-    (data.sites || []).forEach(site => {
-      const opt = document.createElement("option");
-      opt.value = site.site_id;
-      opt.textContent = `${site.name} (${site.site_id.substring(0, 10)})`;
-      select.appendChild(opt);
+      (data.sites || []).forEach(site => {
+        const opt = document.createElement("option");
+        opt.value = site.site_id;
+        opt.textContent = `${site.name} (${site.site_id.substring(0, 10)})`;
+        select.appendChild(opt);
+      });
+
+      // Preserve selection if still present; otherwise fall back to ALL
+      const hasCurrent = Array.from(select.options).some(o => o.value === currentVal);
+      select.value = hasCurrent ? currentVal : "ALL";
     });
 
-    select.value = currentVal;
+    selectedSite = document.getElementById("global-site-select")?.value || "ALL";
   } catch (err) {
     console.warn("Failed to fetch sites:", err);
   }
@@ -93,9 +165,7 @@ async function fetchSites() {
 // Fetch Overview Stats
 async function fetchOverviewStats() {
   try {
-    const url = selectedSite && selectedSite !== "ALL" 
-      ? `/api/v1/stats/overview?site_id=${encodeURIComponent(selectedSite)}`
-      : "/api/v1/stats/overview";
+    const url = `/api/v1/stats/overview${buildFilterQuery()}`;
 
     const res = await fetch(url);
     if (!res.ok) return;
@@ -154,7 +224,7 @@ function renderRecentOverviewTable(sessions) {
   tbody.innerHTML = sessions.slice(0, 7).map(s => {
     const badgeClass = getBadgeClass(s.predicted_label);
     const riskColor = s.risk_score > 60 ? 'text-rose-600 font-bold' : s.risk_score > 30 ? 'text-amber-600 font-bold' : 'text-emerald-600 font-bold';
-    const isSynthetic = s.is_synthetic || s.data_source === "synthetic_demo";
+    const isSynthetic = isDemoSession(s);
     const srcTag = isSynthetic
       ? `<span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-500 font-bold border border-slate-200">DEMO</span>`
       : `<span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">LIVE SDK</span>`;
@@ -178,21 +248,46 @@ function renderRecentOverviewTable(sessions) {
   }).join("");
 }
 
-// Fetch All Sessions (respects selectedSite global filter)
+// Fetch All Sessions (respects selectedSite / selectedSource global filters)
 async function fetchSessions() {
   try {
-    const url = selectedSite && selectedSite !== "ALL"
-      ? `/api/v1/sessions?limit=100&site_id=${encodeURIComponent(selectedSite)}`
-      : "/api/v1/sessions?limit=100";
-
+    const url = `/api/v1/sessions${buildFilterQuery({ limit: "100" })}`;
     const res = await fetch(url);
     if (!res.ok) return;
     allSessions = await res.json();
     applySessionFilters();
     updateExplorerDropdown(allSessions);
+    syncSourceOptionsFromSessions(allSessions);
   } catch (err) {
     console.warn("Failed to fetch sessions:", err);
   }
+}
+
+function syncSourceOptionsFromSessions(sessions) {
+  const known = new Set(["ALL", "LIVE", "DEMO", "realtime_sdk", "chrome_extension", "synthetic_demo"]);
+  const extras = [...new Set(sessions.map(s => s.data_source).filter(Boolean))]
+    .filter(src => !known.has(src))
+    .sort();
+
+  ["global-source-select", "session-filter-source"].forEach(id => {
+    const select = document.getElementById(id);
+    if (!select) return;
+    const current = select.value || selectedSource || "ALL";
+
+    // Keep the static options; append any newly observed sources
+    extras.forEach(src => {
+      if (![...select.options].some(o => o.value === src)) {
+        const opt = document.createElement("option");
+        opt.value = src;
+        opt.textContent = src;
+        select.appendChild(opt);
+      }
+    });
+
+    if ([...select.options].some(o => o.value === current)) {
+      select.value = current;
+    }
+  });
 }
 
 function applySessionFilters() {
@@ -201,9 +296,20 @@ function applySessionFilters() {
 
   const filtered = allSessions.filter(s => {
     if (filterClass !== "ALL" && s.predicted_label !== filterClass) return false;
+
+    // Site / Source are primarily applied server-side, but keep client guards
+    // so local searches stay consistent if the user changes filters mid-render.
+    if (selectedSite !== "ALL" && s.site_id !== selectedSite) return false;
+    if (selectedSource === "LIVE" && isDemoSession(s)) return false;
+    if (selectedSource === "DEMO" && !isDemoSession(s)) return false;
+    if (selectedSource !== "ALL" && selectedSource !== "LIVE" && selectedSource !== "DEMO"
+        && (s.data_source || "") !== selectedSource) return false;
+
     if (search && !s.session_id.toLowerCase().includes(search) && !s.task.toLowerCase().includes(search)
         && !(s.page_path || '').toLowerCase().includes(search) && !(s.page_title || '').toLowerCase().includes(search)
-        && !(s.tab_id || '').toLowerCase().includes(search) && !(s.visitor_id || '').toLowerCase().includes(search)) return false;
+        && !(s.tab_id || '').toLowerCase().includes(search) && !(s.visitor_id || '').toLowerCase().includes(search)
+        && !(s.site_id || '').toLowerCase().includes(search)
+        && !(s.data_source || '').toLowerCase().includes(search)) return false;
     return true;
   });
 
@@ -211,7 +317,7 @@ function applySessionFilters() {
   if (!tbody) return;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-400">No matching sessions found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-slate-400">No matching sessions found.</td></tr>`;
     return;
   }
 
@@ -223,12 +329,13 @@ function applySessionFilters() {
       ? `<span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-700 border border-slate-200 font-mono font-semibold">${s.ground_truth_label}</span>`
       : `<span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-50 text-amber-700 border border-amber-200 font-semibold" title="Real visitor — no ground-truth label available">LIVE &middot; UNVERIFIED</span>`;
     const riskColor = s.risk_score > 60 ? 'text-rose-600 font-bold' : s.risk_score > 30 ? 'text-amber-600 font-bold' : 'text-emerald-600 font-bold';
-    const isSynthetic = s.is_synthetic || s.data_source === "synthetic_demo";
+    const isSynthetic = isDemoSession(s);
     const srcTag = isSynthetic
       ? `<span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-500 font-bold border border-slate-200">DEMO</span>`
       : `<span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">LIVE SDK</span>`;
 
     const siteDisplay = s.site_id ? s.site_id.substring(0, 14) : "default";
+    const sourceLabel = s.data_source || (isSynthetic ? "synthetic_demo" : "realtime_sdk");
 
     // Duration display: prefer active_duration_ms; show raw tab time in tooltip if it diverges
     const activeSec = s.active_duration_ms != null ? s.active_duration_ms / 1000 : s.duration_ms / 1000;
@@ -244,7 +351,8 @@ function applySessionFilters() {
       <tr class="hover:bg-slate-50 transition border-b border-slate-100">
         <td class="py-3 px-3.5 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" onclick="inspectSession('${s.session_id}')">${s.session_id}</td>
         <td class="py-3 px-3.5">${formatTabPageCell(s)}</td>
-        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600"><span class="font-semibold text-slate-800">${siteDisplay}</span><br>${srcTag}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? `${s.created_at} UTC` : '—'}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600"><span class="font-semibold text-slate-800" title="${escapeHTML(s.site_id || '')}">${escapeHTML(siteDisplay)}</span><br>${srcTag}<br><span class="text-[10px] text-slate-400">${escapeHTML(sourceLabel)}</span></td>
         <td class="py-3 px-3.5 capitalize font-medium text-slate-800">${s.task}</td>
         <td class="py-3 px-3.5">${durationCell}</td>
         <td class="py-3 px-3.5">${gtBadge}</td>
@@ -272,7 +380,14 @@ function initTabs() {
         if (content.id === targetId) {
           content.classList.remove("hidden");
           content.classList.add("animate-fade-in");
-          if (targetId === "tab-experiments") {
+          // Refresh data when entering a tab that depends on live API state
+          if (targetId === "tab-overview") {
+            fetchOverviewStats();
+            fetchSessions();
+          } else if (targetId === "tab-sessions") {
+            fetchSessions();
+            fetchOverviewStats();
+          } else if (targetId === "tab-experiments") {
             loadLabData();
           }
         } else {
@@ -427,12 +542,23 @@ function assertVerdictConsistency(session) {
   return true;
 }
 
+function formatActivityTimestamp(createdAt) {
+  if (!createdAt) return "";
+  // Server already formats as "YYYY-MM-DD HH:MM:SS" UTC; keep display stable.
+  return `${createdAt} UTC`;
+}
+
 function updateExplorerDropdown(sessions) {
   const select = document.getElementById("explorer-session-select");
   if (!select) return;
   const curr = select.value;
   select.innerHTML = '<option value="">Choose session to explore...</option>' +
-    sessions.map(s => `<option value="${s.session_id}">${s.session_id.substring(0, 18)}... (${s.predicted_label} - ${s.task})</option>`).join("");
+    sessions.map(s => {
+      const shortId = s.session_id.length > 16 ? `${s.session_id.substring(0, 16)}…` : s.session_id;
+      const when = s.created_at ? s.created_at.replace(/^\d{4}-/, "") : ""; // MM-DD HH:MM:SS
+      const meta = [s.predicted_label, s.task, when].filter(Boolean).join(" · ");
+      return `<option value="${s.session_id}">${shortId}${meta ? ` — ${meta}` : ""}</option>`;
+    }).join("");
   if (curr) select.value = curr;
 }
 
@@ -458,7 +584,20 @@ async function loadSessionDetails(sessionId) {
     const badge = document.getElementById("explorer-verdict-badge");
     if (badge) {
       badge.textContent = detail.session.predicted_label;
-      badge.className = `px-2.5 py-0.5 rounded-full text-xs font-bold ${getBadgeClass(detail.session.predicted_label)}`;
+      badge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getBadgeClass(detail.session.predicted_label)}`;
+    }
+
+    const timeWrap = document.getElementById("explorer-session-time");
+    const timeVal = document.getElementById("explorer-session-time-value");
+    const activityTs = formatActivityTimestamp(detail.session.created_at);
+    if (timeWrap && timeVal) {
+      if (activityTs) {
+        timeVal.textContent = activityTs;
+        timeWrap.classList.remove("hidden");
+      } else {
+        timeVal.textContent = "—";
+        timeWrap.classList.add("hidden");
+      }
     }
 
     // 5 Layer summary
@@ -667,11 +806,11 @@ async function handleSeedDemo() {
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = `
-      <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <svg class="animate-spin h-3.5 w-3.5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      <span>Synthesizing & Classifying 90 Sessions...</span>
+      <span class="hidden sm:inline">Seeding…</span>
     `;
     btn.classList.add("opacity-80", "cursor-not-allowed");
   }
@@ -694,7 +833,7 @@ async function handleSeedDemo() {
     if (btn) {
       btn.disabled = false;
       btn.classList.remove("opacity-80", "cursor-not-allowed");
-      btn.innerHTML = origHtml || '<span>⚡</span><span>Load Sample Data (Offline Demo)</span>';
+      btn.innerHTML = origHtml || '<span aria-hidden="true">⚡</span><span class="hidden sm:inline">Sample Data</span>';
     }
   }
 }

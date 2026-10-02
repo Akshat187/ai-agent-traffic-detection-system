@@ -6,6 +6,7 @@ This eliminates the duplication between sessions.py and seed.py.
 
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session as DBSession
+from sqlalchemy import or_
 
 from packages.database.models import (
     SessionRecord,
@@ -15,6 +16,36 @@ from packages.database.models import (
 )
 from packages.database.schemas import SessionSummary
 from apps.api.config import settings
+
+
+def apply_source_filter(query, source: Optional[str]):
+    """Filter sessions by data source.
+
+    Accepts:
+      - ALL / None / "" → no filter
+      - LIVE → non-synthetic / non-demo traffic
+      - DEMO → synthetic / demo traffic
+      - any exact data_source value (e.g. realtime_sdk, chrome_extension)
+    """
+    if not source or source == "ALL":
+        return query
+    key = source.upper()
+    if key == "LIVE":
+        return query.filter(
+            SessionRecord.is_synthetic.isnot(True),
+            or_(
+                SessionRecord.data_source.is_(None),
+                ~SessionRecord.data_source.like("synthetic%"),
+            ),
+        )
+    if key == "DEMO":
+        return query.filter(
+            or_(
+                SessionRecord.is_synthetic.is_(True),
+                SessionRecord.data_source.like("synthetic%"),
+            )
+        )
+    return query.filter(SessionRecord.data_source == source)
 
 
 def build_session_summary(s: SessionRecord) -> SessionSummary:

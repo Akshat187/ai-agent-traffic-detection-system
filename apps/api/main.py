@@ -4,6 +4,8 @@ FastAPI Application Entrypoint.
 Serves REST API, static assets, and web honey-site experiences.
 """
 
+import logging
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request
@@ -99,6 +101,9 @@ async def lifespan(app: FastAPI):
     yield
 
 
+http_logger = logging.getLogger("websense.http")
+
+
 # Initialize FastAPI App
 app = FastAPI(
     title=settings.APP_NAME,
@@ -108,6 +113,22 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan
 )
+
+@app.middleware("http")
+async def log_request_timing(request: Request, call_next):
+    """Logs every request with method, path, status code, and wall-clock duration."""
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration_ms = round((time.perf_counter() - start) * 1000, 1)
+    http_logger.info(
+        "%s %s → %s  duration_ms=%s",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
+    return response
+
 
 # CORS Middleware (Supports external embedded sites)
 app.add_middleware(

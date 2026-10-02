@@ -57,6 +57,8 @@ def init_db():
                 cursor.execute("ALTER TABLE sessions ADD COLUMN transmission_seq INTEGER DEFAULT 1")
             if "client_context" not in columns:
                 cursor.execute("ALTER TABLE sessions ADD COLUMN client_context JSON")
+            if "data_quality" not in columns:
+                cursor.execute("ALTER TABLE sessions ADD COLUMN data_quality VARCHAR(32) DEFAULT 'standard'")
             raw_conn.commit()
             cursor.close()
         except Exception as e:

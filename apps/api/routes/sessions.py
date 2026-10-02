@@ -23,7 +23,7 @@ import time
 import secrets
 from collections import defaultdict
 from apps.api.config import settings
-from packages.database.repository import apply_client_context, build_session_summary
+from packages.database.repository import apply_client_context, build_session_summary, apply_source_filter
 
 router = APIRouter(prefix="/api/v1/sessions", tags=["Sessions"])
 logger = logging.getLogger("websense.ingest")
@@ -94,6 +94,8 @@ def ingest_session(
     extracts high-resolution kinematic features, executes the 5-layer detection engine,
     and persists the session verdict.
     """
+    _ingest_start = time.time()
+
     # 1. Apply rate limiting per client IP
     if request and request.client:
         client_ip = request.client.host
@@ -335,6 +337,23 @@ def ingest_session(
 
     db.commit()
 
+    _ingest_duration_ms = round((time.time() - _ingest_start) * 1000)
+    logger.info(
+        "session_verdict session_id=%s verdict=%s confidence=%.1f risk=%.1f "
+        "l1=%.2f l2=%s l3_anomaly=%s l4_replay=%s l5_ctx=%s site=%s duration_ms=%d",
+        payload.session_id,
+        verdict["final_verdict"],
+        verdict["confidence"],
+        verdict["risk_score"],
+        verdict["l1_rule_score"],
+        verdict.get("l2_ml_pred", "-"),
+        verdict["l3_is_anomaly"],
+        verdict["l4_is_replay"],
+        verdict["l5_context_valid"],
+        site_id or "-",
+        _ingest_duration_ms,
+    )
+
     return ClassificationResponse(
         session_id=payload.session_id,
         predicted_label=verdict["final_verdict"],
@@ -361,16 +380,20 @@ def list_sessions(
     source: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Lists recent session summaries with optional site_id and label filters."""
+    """Lists recent session summaries with optional site_id, source, and label filters."""
     query = db.query(SessionRecord).order_by(SessionRecord.created_at.desc())
     if label and label != "ALL":
         query = query.filter(SessionRecord.predicted_label == label)
     if site_id and site_id != "ALL":
         query = query.filter(SessionRecord.site_id == site_id)
-    if source and source != "ALL":
-        query = query.filter(SessionRecord.data_source == source)
+    query = apply_source_filter(query, source)
     
     sessions = query.offset(offset).limit(limit).all()
+    logger.info(
+        "list_sessions returned=%d limit=%d offset=%d label=%s site=%s source=%s",
+        len(sessions), limit, offset,
+        label or "ALL", site_id or "ALL", source or "ALL",
+    )
     return [build_session_summary(s) for s in sessions]
 
 
@@ -379,8 +402,17 @@ def get_session_detail(session_id: str, db: Session = Depends(get_db)):
     """Fetches full session details including 2D trajectory coordinates, features, and layer breakdown."""
     session = db.query(SessionRecord).filter(SessionRecord.session_id == session_id).first()
     if not session:
+        logger.warning("session_detail_not_found session_id=%s", session_id)
         raise HTTPException(status_code=404, detail="Session not found")
 
+    logger.info(
+        "session_detail session_id=%s verdict=%s confidence=%.1f risk=%.1f site=%s",
+        session_id,
+        session.predicted_label or "-",
+        session.confidence or 0.0,
+        session.risk_score or 0.0,
+        session.site_id or "-",
+    )
     summary = build_session_summary(session)
 
     feat_dict = session.features.all_features_json if session.features and session.features.all_features_json else {}

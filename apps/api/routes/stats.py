@@ -6,6 +6,7 @@ Uses new actor terminology: TRADITIONAL_AUTOMATION, AGENTIC_AI.
 Legacy field names (bot_count, ai_agent_count) are preserved for API compatibility.
 """
 
+import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -14,9 +15,10 @@ from sqlalchemy import func
 from packages.database.db import get_db
 from packages.database.models import SessionRecord
 from packages.database.schemas import OverviewStatsResponse, SessionSummary
-from packages.database.repository import build_session_summary
+from packages.database.repository import build_session_summary, apply_source_filter
 
 router = APIRouter(prefix="/api/v1/stats", tags=["Statistics"])
+logger = logging.getLogger("websense.stats")
 
 
 @router.get("/overview", response_model=OverviewStatsResponse)
@@ -30,15 +32,13 @@ def get_overview_stats(
     low_signal_query = db.query(SessionRecord).filter(SessionRecord.data_quality == "low_signal")
     if site_id and site_id != "ALL":
         low_signal_query = low_signal_query.filter(SessionRecord.site_id == site_id)
-    if source and source != "ALL":
-        low_signal_query = low_signal_query.filter(SessionRecord.data_source == source)
+    low_signal_query = apply_source_filter(low_signal_query, source)
     low_signal_count = low_signal_query.count()
 
     base_query = db.query(SessionRecord)
     if site_id and site_id != "ALL":
         base_query = base_query.filter(SessionRecord.site_id == site_id)
-    if source and source != "ALL":
-        base_query = base_query.filter(SessionRecord.data_source == source)
+    base_query = apply_source_filter(base_query, source)
     if not include_low_signal:
         base_query = base_query.filter(SessionRecord.data_quality != "low_signal")
 
@@ -99,6 +99,18 @@ def get_overview_stats(
          "automation": automation_count,
          "agentic": agentic_count},
     ]
+
+    logger.info(
+        "stats_overview total=%d human=%d(%.1f%%) automation=%d(%.1f%%) "
+        "agentic=%d(%.1f%%) uncertain=%d(%.1f%%) avg_conf=%.1f avg_risk=%.1f site=%s source=%s",
+        total,
+        human_count, human_pct,
+        automation_count, automation_pct,
+        agentic_count, agentic_pct,
+        uncertain_count, uncertain_pct,
+        avg_conf, avg_risk,
+        site_id or "ALL", source or "ALL",
+    )
 
     return OverviewStatsResponse(
         total_sessions=total,
