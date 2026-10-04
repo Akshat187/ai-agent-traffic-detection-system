@@ -63,31 +63,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'INGEST_TELEMETRY') {
-    const endpoint = message.endpoint || 'http://localhost:8000/api/v1/sessions';
-    const payload = message.payload;
+    chrome.storage.local.get(['websenseHost'], (storage) => {
+      const configuredHost = (storage && storage.websenseHost) ? storage.websenseHost.replace(/\/+$/, '') : null;
+      let endpoint = message.endpoint;
+      if (!endpoint || endpoint.startsWith('http://localhost:8000')) {
+        if (configuredHost) {
+          endpoint = `${configuredHost}/api/v1/sessions`;
+        } else {
+          endpoint = endpoint || 'http://localhost:8000/api/v1/sessions';
+        }
+      }
 
-    fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const errorText = await res.text();
-          sendResponse({ success: false, status: res.status, error: errorText });
-          return;
-        }
-        const data = await res.json();
-        if (tabId && data) {
-          updateBadge(tabId, data);
-        }
-        sendResponse({ success: true, verdict: data });
+      const payload = message.payload;
+
+      fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       })
-      .catch((err) => {
-        sendResponse({ success: false, error: err.message || 'Network error' });
-      });
+        .then(async (res) => {
+          if (!res.ok) {
+            const errorText = await res.text();
+            sendResponse({ success: false, status: res.status, error: errorText });
+            return;
+          }
+          const data = await res.json();
+          if (tabId && data) {
+            updateBadge(tabId, data);
+          }
+          sendResponse({ success: true, verdict: data });
+        })
+        .catch((err) => {
+          sendResponse({ success: false, error: err.message || 'Network error' });
+        });
+    });
 
     return true; // Keep sendResponse open for asynchronous reply
   }

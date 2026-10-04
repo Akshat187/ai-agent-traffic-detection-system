@@ -16,6 +16,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   const evtClicks = document.getElementById('evt-clicks');
   const activeTime = document.getElementById('active-time');
 
+  // Settings Panel & Host Configuration
+  const btnSettingsToggle = document.getElementById('btn-settings-toggle');
+  const settingsPanel = document.getElementById('settings-panel');
+  const endpointInput = document.getElementById('endpoint-input');
+  const btnEndpointSave = document.getElementById('btn-endpoint-save');
+  const endpointMsg = document.getElementById('endpoint-msg');
+  const btnDashboard = document.getElementById('btn-dashboard');
+
+  if (chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get(['websenseHost'], (data) => {
+      const host = (data && data.websenseHost) || 'http://localhost:8000';
+      if (endpointInput) endpointInput.value = host;
+      if (btnDashboard) btnDashboard.href = `${host.replace(/\/+$/, '')}/dashboard`;
+    });
+  }
+
+  if (btnSettingsToggle && settingsPanel) {
+    btnSettingsToggle.addEventListener('click', () => {
+      const isHidden = settingsPanel.style.display === 'none';
+      settingsPanel.style.display = isHidden ? 'block' : 'none';
+    });
+  }
+
+  if (btnEndpointSave && endpointInput) {
+    btnEndpointSave.addEventListener('click', () => {
+      let rawHost = endpointInput.value.trim() || 'http://localhost:8000';
+      rawHost = rawHost.replace(/\/+$/, '');
+      if (chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ websenseHost: rawHost }, () => {
+          if (btnDashboard) btnDashboard.href = `${rawHost}/dashboard`;
+          if (endpointMsg) {
+            endpointMsg.style.display = 'block';
+            setTimeout(() => { endpointMsg.style.display = 'none'; }, 2000);
+          }
+        });
+      }
+    });
+  }
+
   try {
     const url = new URL(tab.url);
     sitePill.textContent = url.hostname;

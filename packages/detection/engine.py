@@ -163,7 +163,7 @@ class DecisionEngine:
                 f"Abnormally linear mouse trajectory (straightness: {straightness:.2f}) — consistent with scripted automation"
             )
             risk += 25.0
-        elif straightness < 0.85 and features.get("micro_corrections", 0) >= 3 and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold)):
+        elif (straightness < 0.90 and features.get("micro_corrections", 0) >= 2) and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold)):
             counter_signals.append(
                 f"Natural human trajectory curvature with {features.get('micro_corrections', 0)} micro-corrections"
             )
@@ -179,6 +179,13 @@ class DecisionEngine:
             counter_signals.append(f"Organic typing rhythm variation (CV: {key_cv:.2f}, hold: {key_hold:.0f}ms)")
             risk -= 15.0
 
+        # Keyboard-only / assistive navigation: natural typing rhythm without mouse movement
+        is_keyboard_human = (features.get("path_length", 0) == 0 and key_count >= 4 and key_cv >= 0.20 and not has_robotic_hold)
+        if is_keyboard_human:
+            counter_signals.append(
+                f"Organic keyboard-only interaction pattern (CV: {key_cv:.2f}) — assistive or keyboard-centric navigation"
+            )
+            risk -= 15.0
 
         # Agentic agency profile signals
         planning_pause_ratio = features.get("planning_pause_ratio", 0.0)
@@ -258,18 +265,22 @@ class DecisionEngine:
             (adaptation_score > 0.45 and features.get("micro_corrections", 0) <= 2 and nav_segments >= 3) or
             (features.get("first_action_delay_ms", 0) > 500 and nav_segments >= 4 and straightness > 0.80) or
             (action_interval_var > 1200 and nav_segments >= 3) or  # Strong LLM inference-delay signature
+            (len(task_actions) >= 3 and action_interval_var > 1000 and planning_pause_ratio > 0.25) or  # Workflow / computer-use agent
             (ml_pred == "AGENTIC_AI" and ml_conf >= 70.0 and rule_score < 60.0)  # Corroborated ML prediction
         )
 
         # Traditional automation profile: highly uniform, deterministic behavior.
+        # Keyboard-only organic human browsing is protected from false-positive ML automation attribution.
         is_automation_profile = (
-            is_replay or
-            rule_score >= 35.0 or
-            (key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0))) or
-            (straightness > 0.92 and key_count >= 4 and (key_cv < 0.20 or features.get("micro_corrections", 0) <= 1)) or
-            (features.get("duration_ms", 1000) < 500 and features.get("total_event_count", 0) >= 5) or
-            (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0)
-        ) and not is_agentic_profile  # Never override agentic evidence
+            (
+                is_replay or
+                rule_score >= 35.0 or
+                (key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0))) or
+                (straightness > 0.92 and key_count >= 4 and (key_cv < 0.20 or features.get("micro_corrections", 0) <= 1)) or
+                (features.get("duration_ms", 1000) < 500 and features.get("total_event_count", 0) >= 5) or
+                (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0 and not is_keyboard_human)
+            ) and not is_agentic_profile  # Never override agentic evidence
+        )
 
         if is_agentic_profile:
             final_verdict = "AGENTIC_AI"
@@ -312,7 +323,7 @@ class DecisionEngine:
         # HUMAN: only assign when risk is genuinely low. Both risk_score and rule_score must
         # be below 30 — this prevents bot sessions with zero agentic signals but moderate
         # behavioral risk from falling through to HUMAN via the ML fallback.
-        elif risk_score <= 30.0 and rule_score < 30.0 and ml_pred == "HUMAN":
+        elif risk_score <= 30.0 and rule_score < 30.0 and (ml_pred == "HUMAN" or is_keyboard_human):
             final_verdict = "HUMAN"
             confidence = round(min(98.0, max(68.0, 100.0 - (risk_score * 1.1))), 1)
 

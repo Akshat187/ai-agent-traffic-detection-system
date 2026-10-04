@@ -20,6 +20,7 @@ TaskName = Literal[
     "flight_booking",
     "ecommerce_purchase",
     "forum_post",
+    "lead_form",
     "other",
 ]
 _TASK_ALIASES = {
@@ -30,6 +31,7 @@ _TASK_ALIASES = {
     "shop": "shopping",
     "flight_booking": "travel",
     "flights": "travel",
+    "lead_form": "custom",
     "other": "custom",
 }
 

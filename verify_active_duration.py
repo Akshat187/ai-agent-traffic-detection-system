@@ -15,8 +15,11 @@ Test 3: Two-payload differentiation
   - Confirm different verdicts
 """
 import sys, os, json
-sys.path.insert(0, r"d:\RealDevSquad\akshat-projects\ai_agent traffic detection system")
-os.chdir(r"d:\RealDevSquad\akshat-projects\ai_agent traffic detection system")
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE_DIR))
+os.chdir(str(BASE_DIR))
 
 from packages.core.features import extract_all_features
 from packages.detection.engine import DecisionEngine

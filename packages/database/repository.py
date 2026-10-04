@@ -496,14 +496,20 @@ def ingest_chunk(
         apply_client_context(rec, {"client_context": ctx})
     rec.updated_at = now
 
-    # 6. Rebuild the full visit from all chunks and re-evaluate.
+    # 6. Rebuild the visit from stored chunks (bounded to a rolling window for long visits)
     chunks = (
         db.query(TelemetryChunk)
         .filter(TelemetryChunk.session_id == sid)
         .order_by(TelemetryChunk.seq)
         .all()
     )
-    merged, browser_signals = _merge_chunks(chunks)
+    # Bound evaluation chunks to keep ingest time low for long sessions (P9 fix)
+    eval_chunks = chunks[-60:] if len(chunks) > 60 else chunks
+    merged, browser_signals = _merge_chunks(eval_chunks)
+
+    max_eval_mouse = 2000
+    eval_mouse = merged["mouse_events"][-max_eval_mouse:] if len(merged["mouse_events"]) > max_eval_mouse else merged["mouse_events"]
+
     session_dict: Dict[str, Any] = dict(
         session_id=sid,
         task=rec.task,
@@ -512,16 +518,27 @@ def ingest_chunk(
         duration_ms=rec.duration_ms,
         active_duration_ms=rec.active_ms,
         browser_signals=browser_signals,
-        **merged,
+        mouse_events=eval_mouse,
+        keyboard_events=merged["keyboard_events"][-1000:],
+        scroll_events=merged["scroll_events"][-1000:],
+        click_events=merged["click_events"][-500:],
+        task_actions=merged["task_actions"][-500:],
     )
     features = extract_all_features(session_dict)
+
+    # P8 Fix: Register trajectory for replay comparison when final, snapshot, or once
+    # sufficient trajectory is present (>= 15 mouse events). ReplayDetector deduplicates by session_id.
+    should_register_replay = (
+        bool(payload.final)
+        or kind == "snapshot"
+        or len(eval_mouse) >= 15
+    )
     verdict = engine.evaluate_session(
         session_id=sid,
         task=rec.task,
         session_data=session_dict,
         features=features,
-        # Register the trajectory for replay comparison once per visit.
-        register_replay=bool(payload.final) or kind == "snapshot",
+        register_replay=should_register_replay,
     )
 
     # 7. Upsert the three 1:1 child rows so they always reflect the same data.
@@ -529,11 +546,12 @@ def ingest_chunk(
     if telem is None:
         telem = RawTelemetry(session_id=sid)
         db.add(telem)
-    telem.mouse_events = merged["mouse_events"]
-    telem.keyboard_events = _sanitize_keyboard(merged["keyboard_events"])
-    telem.scroll_events = merged["scroll_events"]
-    telem.click_events = merged["click_events"]
-    telem.task_actions = merged["task_actions"]
+    max_store_events = 3000
+    telem.mouse_events = merged["mouse_events"][-max_store_events:]
+    telem.keyboard_events = _sanitize_keyboard(merged["keyboard_events"][-1000:])
+    telem.scroll_events = merged["scroll_events"][-1000:]
+    telem.click_events = merged["click_events"][-500:]
+    telem.task_actions = merged["task_actions"][-500:]
     telem.browser_signals = browser_signals
 
     feat = rec.features

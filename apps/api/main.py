@@ -15,7 +15,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 
-from packages.database.db import init_db, SessionLocal
+import packages.database.db as db_module
 from packages.database.models import SessionRecord, SiteRecord
 from apps.api.config import settings
 from apps.api.routes import sessions, stats, experiments, adversarial, seed, sites
@@ -89,8 +89,8 @@ async def lifespan(app: FastAPI):
     Runs label migration and provisions default sites.
     Seeds minimal demo data if the database is empty.
     """
-    init_db()
-    db = SessionLocal()
+    db_module.init_db()
+    db = db_module.SessionLocal()
     try:
         # Phase 1: Migrate any legacy labels
         migrated = _migrate_legacy_labels(db)

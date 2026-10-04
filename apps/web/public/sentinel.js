@@ -1,20 +1,22 @@
 /**
- * Sentinel Behavioral Intelligence SDK — v1.3.0
+ * Sentinel Behavioral Intelligence SDK — v1.3.1
  * Unified, zero-dependency embeddable telemetry collector for AI agent and bot detection.
  *
  * Architecture:
  *   - Page-visit identity model: 1 session_id = 1 page visit.
- *   - Single collector ownership lock via document.documentElement.dataset.wsOwner.
- *   - Delta transmission protocol: only new events sent per chunk with monotonic seq.
- *   - Lifecycle-aware: handles SPA route changes (pushState/popstate), bfcache, visibility.
- *   - Reliable JSON beacons on unload via fetch(keepalive) and Blob sendBeacon.
- *   - Keystroke hold tracking per e.code, e.repeat filtering.
- *   - Click center-offset calculation, isTrusted, pointer type tracking.
+ *   - Isolated per-visit state lifecycle: route transitions cannot mutate or corrupt events.
+ *   - Reliable delta transmission: in-flight chunk kept immutable until server acknowledgement.
+ *   - Automatic retry: re-sends exact same payload with same seq on network drop or 429/5xx.
+ *   - Malformed chunk handling: drops 4xx client errors (e.g. 422) with warning to prevent infinite loops.
+ *   - Timeout resilience: 10s fetch timeout ensures sender lock never gets stuck.
+ *   - Single collector ownership lock via documentElement.dataset.wsOwner.
+ *   - Keystroke hold tracking per e.code, e.repeat filtering, paste detection.
+ *   - URL privacy: transmits pathname only by default; query tokens and hash fragments omitted.
  *
  * Privacy Guarantees:
  *   - NEVER records keystroke characters, key codes, or form inputs.
  *   - NEVER captures or interacts with type="password" or data-private fields.
- *   - Captures anonymous timing and kinematic dynamics ONLY.
+ *   - Captures anonymous timing, physics, and kinematic dynamics ONLY.
  */
 
 (function (window, document) {
@@ -24,8 +26,8 @@
   if (window.top !== window.self) return;
 
   // Guard 2: Single collector lock.
-  // Both the page world and extension world share the documentElement dataset.
-  if (document.documentElement.dataset.wsOwner && document.documentElement.dataset.wsOwner !== 'sdk') {
+  // Prevent multiple SDK instances on the same page while allowing SDK to override extension.
+  if (window.__WEBSENSE_COLLECTOR_ACTIVE__ || document.documentElement.dataset.wsOwner === 'sdk') {
     return;
   }
   document.documentElement.dataset.wsOwner = 'sdk';
@@ -60,7 +62,7 @@
     'site_meridian_prod';
 
   const apiEndpoint = (currentScript && currentScript.getAttribute('data-endpoint')) || defaultEndpoint;
-  const initialTask = (currentScript && currentScript.getAttribute('data-task')) ||
+  let currentTask = (currentScript && currentScript.getAttribute('data-task')) ||
     (document.body && document.body.dataset.task) ||
     'general';
 
@@ -93,7 +95,7 @@
   }
 
   // 3. Persistent Visitor ID & Tab Journey ID
-  let visitorId = (function () {
+  const visitorId = (function () {
     try {
       let v = localStorage.getItem(VISITOR_KEY);
       if (!v) {
@@ -106,7 +108,7 @@
     }
   })();
 
-  let tabId = (function () {
+  const tabId = (function () {
     try {
       let t = sessionStorage.getItem(TAB_KEY);
       if (!t) {
@@ -150,9 +152,47 @@
 
   let consentGranted = checkConsent();
 
-  // 5. Page Visit State (1 visit = 1 session_id)
-  let sessionId = generateId('st');
-  let previousVisitId = (function () {
+  // 5. Page Visit State Factory (Encapsulated State Object)
+  function createPageVisit(prevVisitId, task) {
+    const sid = generateId('st');
+    try {
+      sessionStorage.setItem(PREV_VISIT_KEY, sid);
+    } catch (_) {}
+
+    return {
+      sessionId: sid,
+      previousVisitId: prevVisitId,
+      task: task || currentTask,
+      transmissionSeq: 1,
+      startTime: performance.now(),
+      absoluteStartTime: Date.now(),
+      firstEventTime: null,
+      lastEventTime: null,
+      accumulatedIdleMs: 0,
+
+      // Delta buffers for freshly captured events
+      pendingMouse: [],
+      pendingKeyboard: [],
+      pendingScroll: [],
+      pendingClicks: [],
+      pendingActions: [],
+
+      // Active keystrokes map (e.code -> { elapsed, pressTime })
+      activeKeyCodes: new Map(),
+
+      // Event signal flags
+      totalEventsCount: 0,
+      hasSignificantSignal: false,
+
+      // In-flight transmission tracking (P2 & P3 fix)
+      inFlight: null,
+      isSending: false,
+      latestVerdict: null,
+      isFinalized: false,
+    };
+  }
+
+  const initialPreviousVisitId = (function () {
     try {
       return sessionStorage.getItem(PREV_VISIT_KEY) || null;
     } catch (_) {
@@ -160,60 +200,35 @@
     }
   })();
 
-  try {
-    sessionStorage.setItem(PREV_VISIT_KEY, sessionId);
-  } catch (_) {}
-
-  let transmissionSeq = 1;
-  let startTime = performance.now();
-  let absoluteStartTime = Date.now();
-  let currentTask = initialTask;
+  let currentVisit = createPageVisit(initialPreviousVisitId, currentTask);
   let listenersAttached = false;
-  let latestVerdict = null;
+  let lastMouseMoveTime = 0;
+  let lastScrollTime = 0;
+  let lastKeyDownTime = 0;
 
-  // Active duration metrics
-  let firstEventTime = null;
-  let lastEventTime = null;
-  let accumulatedIdleMs = 0;
-
-  function recordActivity() {
+  function recordActivity(visit) {
+    if (!visit) return;
     const now = performance.now();
-    if (firstEventTime === null) {
-      firstEventTime = now;
-    } else if (lastEventTime !== null) {
-      const gap = now - lastEventTime;
+    if (visit.firstEventTime === null) {
+      visit.firstEventTime = now;
+    } else if (visit.lastEventTime !== null) {
+      const gap = now - visit.lastEventTime;
       if (gap > INACTIVITY_GAP_MS) {
-        accumulatedIdleMs += gap;
+        visit.accumulatedIdleMs += gap;
       }
     }
-    lastEventTime = now;
+    visit.lastEventTime = now;
     try {
       sessionStorage.setItem(JOURNEY_TIME_KEY, String(Date.now()));
     } catch (_) {}
   }
 
-  function getActiveDurationMs() {
-    if (firstEventTime === null || lastEventTime === null) return 0;
-    return Math.max(0, Math.round((lastEventTime - firstEventTime) - accumulatedIdleMs));
+  function getActiveDurationMs(visit) {
+    if (!visit || visit.firstEventTime === null || visit.lastEventTime === null) return 0;
+    return Math.max(0, Math.round((visit.lastEventTime - visit.firstEventTime) - visit.accumulatedIdleMs));
   }
 
-  // Delta event buffers (cleared upon confirmed transmission)
-  let pendingMouse = [];
-  let pendingKeyboard = [];
-  let pendingScroll = [];
-  let pendingClicks = [];
-  let pendingActions = [];
-
-  // Total session event counters
-  let totalEventsCount = 0;
-  let hasSignificantSignal = false;
-
-  let lastMouseMoveTime = 0;
-  let lastScrollTime = 0;
-  let lastKeyDownTime = 0;
-  const activeKeyCodes = new Map(); // e.code -> { t, pressTime }
-
-  // 6. Browser Signals
+  // 6. Browser Signals & Client Context
   function getBrowserSignals() {
     return {
       webdriver: Boolean(navigator.webdriver),
@@ -231,22 +246,25 @@
     };
   }
 
-  function getClientContext() {
+  function getClientContext(visit) {
     let referrerPath = '';
     try {
-      if (document.referrer) referrerPath = new URL(document.referrer).pathname;
+      if (document.referrer) {
+        referrerPath = new URL(document.referrer).pathname;
+      }
     } catch (_) {}
 
     return {
       tab_id: tabId,
       page_path: location.pathname,
       page_title: (document.title || '').slice(0, 256),
-      page_url: (location.pathname + location.search).slice(0, 512),
+      // URL privacy (P11): transmit clean origin + pathname without sensitive query parameters or hashes
+      page_url: (location.origin + location.pathname).slice(0, 512),
       page_host: location.origin,
       referrer_path: referrerPath,
       visibility_state: document.visibilityState,
-      transmission_seq: transmissionSeq,
-      sdk_version: 'sentinel-1.3.0',
+      transmission_seq: visit ? visit.transmissionSeq : 1,
+      sdk_version: 'sentinel-1.3.1',
       collector: 'sdk',
     };
   }
@@ -258,44 +276,32 @@
 
     // Mouse dynamics
     window.addEventListener('mousemove', function (e) {
-      if (!consentGranted) return;
+      if (!consentGranted || !currentVisit || currentVisit.isFinalized) return;
       const now = performance.now();
       if (now - lastMouseMoveTime < MOUSE_THROTTLE_MS) return;
       lastMouseMoveTime = now;
-      recordActivity();
+      recordActivity(currentVisit);
 
-      if (pendingMouse.length < MAX_MOUSE_DELTA) {
-        pendingMouse.push({
+      if (currentVisit.pendingMouse.length < MAX_MOUSE_DELTA) {
+        currentVisit.pendingMouse.push({
           x: Math.round(e.clientX),
           y: Math.round(e.clientY),
-          t: Math.round(now - startTime),
+          t: Math.round(now - currentVisit.startTime),
           type: 'move',
         });
-        totalEventsCount++;
-        if (pendingMouse.length >= 5) hasSignificantSignal = true;
+        currentVisit.totalEventsCount++;
+        if (currentVisit.pendingMouse.length >= 5) currentVisit.hasSignificantSignal = true;
       }
     }, { passive: true });
 
-    // Click dynamics with center-offset and trust verification
+    // Click dynamics
     window.addEventListener('click', function (e) {
-      if (!consentGranted) return;
+      if (!consentGranted || !currentVisit || currentVisit.isFinalized) return;
       const now = performance.now();
-      recordActivity();
+      recordActivity(currentVisit);
 
       const target = e.target;
       let category = 'general';
-      let offsetX = 0;
-      let offsetY = 0;
-
-      if (target && target.getBoundingClientRect) {
-        try {
-          const rect = target.getBoundingClientRect();
-          const centerX = rect.left + rect.width / 2;
-          const centerY = rect.top + rect.height / 2;
-          offsetX = Math.round(e.clientX - centerX);
-          offsetY = Math.round(e.clientY - centerY);
-        } catch (_) {}
-      }
 
       if (target && target.closest) {
         if (target.closest("button, .btn, [role='button'], input[type='submit']")) category = 'button';
@@ -304,63 +310,60 @@
         else if (target.closest(".add-cart-btn, #checkout-btn, .flight-card")) category = 'task_action';
       }
 
-      if (pendingClicks.length < MAX_CLICK_DELTA) {
-        pendingClicks.push({
+      if (currentVisit.pendingClicks.length < MAX_CLICK_DELTA) {
+        currentVisit.pendingClicks.push({
           x: Math.round(e.clientX),
           y: Math.round(e.clientY),
-          t: Math.round(now - startTime),
+          t: Math.round(now - currentVisit.startTime),
           target_category: category,
         });
-        totalEventsCount++;
-        hasSignificantSignal = true;
+        currentVisit.totalEventsCount++;
+        currentVisit.hasSignificantSignal = true;
       }
     }, { passive: true });
 
-    // Keyboard dynamics (Timing ONLY — NO key names or characters)
+    // Keyboard dynamics (Timing ONLY — NO key names or characters stored)
     window.addEventListener('keydown', function (e) {
-      if (!consentGranted) return;
-      // Skip password and private inputs entirely
+      if (!consentGranted || !currentVisit || currentVisit.isFinalized) return;
       if (e.target && (e.target.type === 'password' || e.target.getAttribute('data-private') === 'true')) return;
-      // Filter out auto-repeat keystrokes (holding a key down)
-      if (e.repeat) return;
+      if (e.repeat) return; // Discard auto-repeat events
 
       const now = performance.now();
-      recordActivity();
-      const elapsed = Math.round(now - startTime);
+      recordActivity(currentVisit);
+      const elapsed = Math.round(now - currentVisit.startTime);
       const interval = lastKeyDownTime > 0 ? Math.round(now - lastKeyDownTime) : 0;
       lastKeyDownTime = now;
 
-      // Track key hold per code
       const code = e.code || ('k_' + Math.random().toString(36).slice(2, 6));
-      activeKeyCodes.set(code, { elapsed: elapsed, pressTime: now });
+      currentVisit.activeKeyCodes.set(code, { elapsed: elapsed, pressTime: now });
 
-      if (pendingKeyboard.length < MAX_KEYBOARD_DELTA) {
-        pendingKeyboard.push({
+      if (currentVisit.pendingKeyboard.length < MAX_KEYBOARD_DELTA) {
+        currentVisit.pendingKeyboard.push({
           t: elapsed,
           interval: interval,
-          hold: 0, // updated on keyup
+          hold: 0,
           is_paste: false,
           _code: code,
         });
-        totalEventsCount++;
-        hasSignificantSignal = true;
+        currentVisit.totalEventsCount++;
+        currentVisit.hasSignificantSignal = true;
       }
     }, { passive: true });
 
     window.addEventListener('keyup', function (e) {
-      if (!consentGranted) return;
+      if (!consentGranted || !currentVisit || currentVisit.isFinalized) return;
       if (e.target && e.target.type === 'password') return;
 
       const now = performance.now();
       const code = e.code;
-      if (code && activeKeyCodes.has(code)) {
-        const item = activeKeyCodes.get(code);
-        activeKeyCodes.delete(code);
+      if (code && currentVisit.activeKeyCodes.has(code)) {
+        const item = currentVisit.activeKeyCodes.get(code);
+        currentVisit.activeKeyCodes.delete(code);
         const holdDuration = Math.max(0, Math.round(now - item.pressTime));
-        // Find matching pending event
-        for (let i = pendingKeyboard.length - 1; i >= 0; i--) {
-          if (pendingKeyboard[i]._code === code) {
-            pendingKeyboard[i].hold = holdDuration;
+
+        for (let i = currentVisit.pendingKeyboard.length - 1; i >= 0; i--) {
+          if (currentVisit.pendingKeyboard[i]._code === code) {
+            currentVisit.pendingKeyboard[i].hold = holdDuration;
             break;
           }
         }
@@ -369,48 +372,51 @@
 
     // Paste event flag (content stripped)
     window.addEventListener('paste', function (e) {
-      if (!consentGranted) return;
+      if (!consentGranted || !currentVisit || currentVisit.isFinalized) return;
       if (e.target && e.target.type === 'password') return;
       const now = performance.now();
-      recordActivity();
-      pendingKeyboard.push({
-        t: Math.round(now - startTime),
+      recordActivity(currentVisit);
+      currentVisit.pendingKeyboard.push({
+        t: Math.round(now - currentVisit.startTime),
         interval: 0,
         hold: 0,
         is_paste: true,
       });
-      totalEventsCount++;
+      currentVisit.totalEventsCount++;
     }, { passive: true });
 
     // Scroll dynamics
     window.addEventListener('scroll', function () {
-      if (!consentGranted) return;
+      if (!consentGranted || !currentVisit || currentVisit.isFinalized) return;
       const now = performance.now();
       if (now - lastScrollTime < SCROLL_THROTTLE_MS) return;
       lastScrollTime = now;
-      recordActivity();
+      recordActivity(currentVisit);
 
-      if (pendingScroll.length < MAX_SCROLL_DELTA) {
+      if (currentVisit.pendingScroll.length < MAX_SCROLL_DELTA) {
         const scrollY = window.scrollY || window.pageYOffset || 0;
-        const lastY = pendingScroll.length > 0 ? pendingScroll[pendingScroll.length - 1].scroll_y : scrollY;
-        pendingScroll.push({
-          t: Math.round(now - startTime),
+        const lastY = currentVisit.pendingScroll.length > 0
+          ? currentVisit.pendingScroll[currentVisit.pendingScroll.length - 1].scroll_y
+          : scrollY;
+
+        currentVisit.pendingScroll.push({
+          t: Math.round(now - currentVisit.startTime),
           scroll_y: Math.round(scrollY),
           delta_y: Math.round(scrollY - lastY),
         });
-        totalEventsCount++;
-        if (pendingScroll.length >= 2) hasSignificantSignal = true;
+        currentVisit.totalEventsCount++;
+        if (currentVisit.pendingScroll.length >= 2) currentVisit.hasSignificantSignal = true;
       }
     }, { passive: true });
   }
 
-  // 8. Payload Assembly (Delta)
-  function buildDeltaPayload(isFinal) {
+  // 8. Payload Assembly & Reliable Transmission (P2 & P3 Solution)
+  function assemblePayload(visit, seq, isFinal, events) {
     const now = performance.now();
-    const durationMs = Math.max(0, Math.round(now - startTime));
+    const durationMs = Math.max(0, Math.round(now - visit.startTime));
 
     // Strip private internal metadata (_code) from keyboard events
-    const cleanKeyboard = pendingKeyboard.map(function (k) {
+    const cleanKeyboard = events.keyboard.map(function (k) {
       return {
         t: k.t,
         interval: k.interval,
@@ -420,52 +426,82 @@
     });
 
     return {
-      session_id: sessionId,
-      page_visit_id: sessionId,
+      session_id: visit.sessionId,
+      page_visit_id: visit.sessionId,
       journey_id: getJourneyId(),
-      previous_visit_id: previousVisitId,
+      previous_visit_id: visit.previousVisitId,
       site_id: siteId,
       visitor_id: visitorId,
-      task: currentTask,
-      seq: transmissionSeq,
+      task: visit.task,
+      seq: seq,
       final: Boolean(isFinal),
-      start_time: absoluteStartTime,
-      end_time: absoluteStartTime + durationMs,
+      start_time: visit.absoluteStartTime,
+      end_time: visit.absoluteStartTime + durationMs,
       duration_ms: durationMs,
-      active_duration_ms: getActiveDurationMs(),
+      active_duration_ms: getActiveDurationMs(visit),
       data_source: 'realtime_sdk',
-      client_context: getClientContext(),
+      client_context: getClientContext(visit),
       browser_signals: getBrowserSignals(),
-      mouse_events: pendingMouse.slice(),
+      mouse_events: events.mouse,
       keyboard_events: cleanKeyboard,
-      scroll_events: pendingScroll.slice(),
-      click_events: pendingClicks.slice(),
-      task_actions: pendingActions.slice(),
+      scroll_events: events.scroll,
+      click_events: events.clicks,
+      task_actions: events.actions,
     };
   }
 
-  function hasInteractionToSend() {
+  function hasInteractionToSend(visit) {
+    if (!visit) return false;
     return (
-      pendingMouse.length > 0 ||
-      pendingKeyboard.length > 0 ||
-      pendingScroll.length > 0 ||
-      pendingClicks.length > 0 ||
-      pendingActions.length > 0
+      visit.pendingMouse.length > 0 ||
+      visit.pendingKeyboard.length > 0 ||
+      visit.pendingScroll.length > 0 ||
+      visit.pendingClicks.length > 0 ||
+      visit.pendingActions.length > 0
     );
   }
 
-  let isSending = false;
+  async function flushTelemetry(visit, isFinal) {
+    if (!consentGranted || !visit) return null;
+    if (!hasInteractionToSend(visit) && !isFinal && !visit.inFlight) return null;
+    if (visit.isSending) return null;
 
-  async function flushTelemetry(isFinal) {
-    if (!consentGranted) return null;
-    if (!hasInteractionToSend() && !isFinal) return null;
-    if (isSending) return null;
+    // Assemble new in-flight payload only if not currently waiting to retry an unacknowledged chunk
+    if (!visit.inFlight) {
+      if (!hasInteractionToSend(visit) && !isFinal) return null;
 
-    const payload = buildDeltaPayload(isFinal);
-    const bodyStr = JSON.stringify(payload);
-    const currentSeq = transmissionSeq;
+      const seq = visit.transmissionSeq;
+      const deltaMouse = visit.pendingMouse.splice(0, visit.pendingMouse.length);
+      const deltaKeyboard = visit.pendingKeyboard.splice(0, visit.pendingKeyboard.length);
+      const deltaScroll = visit.pendingScroll.splice(0, visit.pendingScroll.length);
+      const deltaClicks = visit.pendingClicks.splice(0, visit.pendingClicks.length);
+      const deltaActions = visit.pendingActions.splice(0, visit.pendingActions.length);
 
-    isSending = true;
+      const payload = assemblePayload(visit, seq, isFinal, {
+        mouse: deltaMouse,
+        keyboard: deltaKeyboard,
+        scroll: deltaScroll,
+        clicks: deltaClicks,
+        actions: deltaActions,
+      });
+
+      visit.inFlight = {
+        seq: seq,
+        payload: payload,
+        bodyStr: JSON.stringify(payload),
+        isFinal: Boolean(isFinal),
+      };
+    }
+
+    const inFlight = visit.inFlight;
+    visit.isSending = true;
+
+    // Timeout guard: 10s timeout ensures isSending never gets permanently stuck
+    const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timeoutId = setTimeout(function () {
+      if (controller) controller.abort();
+      visit.isSending = false;
+    }, 10000);
 
     try {
       const resp = await fetch(apiEndpoint, {
@@ -474,74 +510,72 @@
           'Content-Type': 'application/json',
           'X-Sentinel-Site-ID': siteId,
         },
-        body: bodyStr,
+        body: inFlight.bodyStr,
+        signal: controller ? controller.signal : undefined,
         keepalive: true,
       });
 
-      isSending = false;
+      clearTimeout(timeoutId);
+      visit.isSending = false;
 
       if (resp.ok) {
         const data = await resp.json();
-        latestVerdict = data;
+        visit.latestVerdict = data;
 
-        // Clear transmitted delta buffer
-        pendingMouse = [];
-        pendingKeyboard = [];
-        pendingScroll = [];
-        pendingClicks = [];
-        pendingActions = [];
-
-        // Increment sequence only on successful ingest
-        transmissionSeq++;
+        // Successfully acknowledged: advance seq and clear in-flight chunk
+        visit.transmissionSeq++;
+        visit.inFlight = null;
 
         // Broadcast verdict to window observers (such as the Chrome Extension)
         window.postMessage({
           type: 'WEBSENSE_VERDICT_UPDATE',
           verdict: data,
-          sessionId: sessionId,
-          pageVisitId: sessionId,
-          seq: currentSeq,
+          sessionId: visit.sessionId,
+          pageVisitId: visit.sessionId,
+          seq: inFlight.seq,
         }, '*');
 
         return data;
+      } else if (resp.status >= 400 && resp.status < 500 && resp.status !== 429) {
+        // Permanent 4xx client rejection (e.g. 422 schema validation)
+        // Log and drop this chunk so the client does not get stuck retrying forever
+        console.warn('[WebSense Sentinel] Chunk seq ' + inFlight.seq + ' rejected by server (' + resp.status + '); dropping chunk.');
+        visit.transmissionSeq++;
+        visit.inFlight = null;
+        return null;
+      } else {
+        // 429 (Rate limited) or 5xx (Server error) - keep visit.inFlight intact to retry the same payload with same seq
+        console.warn('[WebSense Sentinel] Transient failure (' + resp.status + ') for chunk seq ' + inFlight.seq + '; will retry.');
+        return null;
       }
     } catch (err) {
-      isSending = false;
-      // If unloading and fetch failed, send JSON beacon as fallback
+      clearTimeout(timeoutId);
+      visit.isSending = false;
+
+      // Network offline or fetch aborted - keep visit.inFlight intact for next retry
       if (isFinal && navigator.sendBeacon) {
-        const blob = new Blob([bodyStr], { type: 'application/json' });
-        navigator.sendBeacon(apiEndpoint, blob);
+        try {
+          const blob = new Blob([inFlight.bodyStr], { type: 'application/json' });
+          navigator.sendBeacon(apiEndpoint, blob);
+        } catch (_) {}
       }
+      return null;
     }
-    return null;
   }
 
   // 9. Lifecycle Management (SPA, bfcache, Page Unload)
   function handlePageVisitTransition(newPath) {
-    // Flush current visit as final
-    flushTelemetry(true);
+    const oldVisit = currentVisit;
 
-    // Initialize new visit state
-    previousVisitId = sessionId;
-    try {
-      sessionStorage.setItem(PREV_VISIT_KEY, previousVisitId);
-    } catch (_) {}
+    // 1. Flush previous visit as final asynchronously (bound to oldVisit state)
+    if (oldVisit) {
+      oldVisit.isFinalized = true;
+      flushTelemetry(oldVisit, true);
+    }
 
-    sessionId = generateId('st');
-    transmissionSeq = 1;
-    startTime = performance.now();
-    absoluteStartTime = Date.now();
-    firstEventTime = null;
-    lastEventTime = null;
-    accumulatedIdleMs = 0;
-    pendingMouse = [];
-    pendingKeyboard = [];
-    pendingScroll = [];
-    pendingClicks = [];
-    pendingActions = [];
-    totalEventsCount = 0;
-    hasSignificantSignal = false;
-    latestVerdict = null;
+    // 2. Instantiate completely isolated NEW visit state (P3 fix)
+    const prevId = oldVisit ? oldVisit.sessionId : null;
+    currentVisit = createPageVisit(prevId, currentTask);
   }
 
   // SPA Route Change Interception (pushState / replaceState / popstate)
@@ -581,57 +615,47 @@
 
   // Visibility and Pagehide Lifecycle
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'hidden') {
-      flushTelemetry(false);
+    if (document.visibilityState === 'hidden' && currentVisit) {
+      flushTelemetry(currentVisit, false);
     }
   });
 
   window.addEventListener('pagehide', function () {
-    if (hasInteractionToSend()) {
-      const payload = buildDeltaPayload(true);
-      const bodyStr = JSON.stringify(payload);
-      if (navigator.sendBeacon) {
-        const blob = new Blob([bodyStr], { type: 'application/json' });
-        navigator.sendBeacon(apiEndpoint, blob);
-      } else {
-        fetch(apiEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: bodyStr,
-          keepalive: true,
-        }).catch(function () {});
-      }
+    if (currentVisit && !currentVisit.isFinalized) {
+      flushTelemetry(currentVisit, true);
     }
   });
 
-  // Periodic delta flush every 5 seconds if interaction has occurred
+  // Periodic delta flush every 5 seconds if interaction has occurred or retry is pending
   setInterval(function () {
-    if (document.visibilityState === 'visible' && hasInteractionToSend()) {
-      flushTelemetry(false);
+    if (document.visibilityState === 'visible' && currentVisit) {
+      if (hasInteractionToSend(currentVisit) || currentVisit.inFlight) {
+        flushTelemetry(currentVisit, false);
+      }
     }
   }, 5000);
 
   // 10. Public API
   const Sentinel = {
-    version: '1.3.0',
+    version: '1.3.1',
     siteId: siteId,
-    getSessionId: function () { return sessionId; },
-    getPageVisitId: function () { return sessionId; },
+    getSessionId: function () { return currentVisit ? currentVisit.sessionId : null; },
+    getPageVisitId: function () { return currentVisit ? currentVisit.sessionId : null; },
     getVisitorId: function () { return visitorId; },
     getJourneyId: function () { return getJourneyId(); },
     getTabId: function () { return tabId; },
-    getClientContext: function () { return getClientContext(); },
-    getLatestVerdict: function () { return latestVerdict; },
+    getClientContext: function () { return getClientContext(currentVisit); },
+    getLatestVerdict: function () { return currentVisit ? currentVisit.latestVerdict : null; },
 
     logAction: function (action, details) {
-      if (!consentGranted) return;
-      recordActivity();
-      pendingActions.push({
+      if (!consentGranted || !currentVisit || currentVisit.isFinalized) return;
+      recordActivity(currentVisit);
+      currentVisit.pendingActions.push({
         action: action,
-        t: Math.round(performance.now() - startTime),
+        t: Math.round(performance.now() - currentVisit.startTime),
         details: details || {},
       });
-      totalEventsCount++;
+      currentVisit.totalEventsCount++;
     },
 
     grantConsent: function () {
@@ -651,11 +675,14 @@
 
     setTask: function (task) {
       currentTask = task || 'general';
+      if (currentVisit) {
+        currentVisit.task = currentTask;
+      }
     },
 
     flush: function (overrideTask) {
-      if (overrideTask) currentTask = overrideTask;
-      return flushTelemetry(false);
+      if (overrideTask) Sentinel.setTask(overrideTask);
+      return flushTelemetry(currentVisit, false);
     },
 
     init: function () {

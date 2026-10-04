@@ -1,4 +1,4 @@
-﻿# WebSense — Architecture & Threat Model Documentation
+# WebSense — Architecture & Threat Model Documentation
 
 WebSense is a multi-layered security intelligence and traffic classification platform built to distinguish between **Human Users**, **Traditional Automation**, and **Agentic AI** using browser and behavioral fingerprinting.
 
@@ -13,7 +13,7 @@ WebSense is a multi-layered security intelligence and traffic classification pla
 |  - Flight & Travel Reservation (/visitor/travel)                                  |
 |  - CyberSec Community Forum (/visitor/forum)                                      |
 |                                                                                   |
-|  [collector.js Telemetry Engine]                                                  |
+|  [sentinel.js Telemetry Engine]                                                   |
 |   -> Mouse Coordinates (x, y, t) throttled to 25ms                               |
 |   -> Keystroke Timing (Inter-key Latency, Hold Time - NO Characters Stored)      |
 |   -> Scroll Velocity & Jump Ratios                                                |
