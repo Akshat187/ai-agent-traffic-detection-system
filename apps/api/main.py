@@ -59,17 +59,27 @@ def _migrate_legacy_labels(db) -> int:
 
 def _ensure_default_sites(db):
     """Provisions default sites if not already present."""
-    default_site = db.query(SiteRecord).filter(SiteRecord.site_id == "site_meridian_prod").first()
-    if not default_site:
-        site = SiteRecord(
-            site_id="site_meridian_prod",
-            name="Meridian Honey-Suite (Official)",
-            allowed_origins="*",
-            api_key="ws_live_meridian_default_key_2026",
-            is_active=True
-        )
-        db.add(site)
-        db.commit()
+    default_sites = [
+        {
+            "site_id": settings.DEFAULT_SITE_ID,
+            "name": "Meridian Honey-Suite (Official)",
+            "allowed_origins": "*",
+            "api_key": "ws_live_meridian_default_key_2026",
+            "is_active": True,
+        },
+        {
+            "site_id": settings.EXTENSION_SITE_ID,
+            "name": "WebSense Chrome Extension",
+            "allowed_origins": "*",
+            "api_key": "ws_live_chrome_ext_default_key",
+            "is_active": True,
+        },
+    ]
+    for site_data in default_sites:
+        existing = db.query(SiteRecord).filter(SiteRecord.site_id == site_data["site_id"]).first()
+        if not existing:
+            db.add(SiteRecord(**site_data))
+    db.commit()
 
 
 @asynccontextmanager
@@ -157,9 +167,14 @@ app.include_router(sites.router)
 def get_sentinel_script():
     """Serves the standalone embeddable Sentinel SDK directly from root."""
     js_path = STATIC_DIR / "sentinel.js"
-    if not js_path.exists():
-        js_path = STATIC_DIR / "collector.js"
     return FileResponse(js_path, media_type="application/javascript")
+
+
+@app.get("/collector.js", tags=["SDK"], include_in_schema=False)
+@app.get("/static/collector.js", tags=["SDK"], include_in_schema=False)
+def get_collector_legacy():
+    """Legacy alias redirecting to /sentinel.js."""
+    return RedirectResponse(url="/sentinel.js", status_code=301)
 
 
 # Health Check Endpoints

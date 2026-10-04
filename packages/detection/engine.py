@@ -26,6 +26,10 @@ from packages.detection.ml_classifier import BehavioralClassifier
 from packages.detection.anomaly import AnomalyDetector
 from packages.detection.replay import ReplayDetector
 from packages.detection.context import ContextValidator
+from packages.version import MODEL_VERSION
+
+# Tasks that have Layer-5 workflow rules. Every other task is "not_applicable".
+WORKFLOW_TASKS = ("shopping", "travel", "forum")
 
 
 class DecisionEngine:
@@ -70,16 +74,49 @@ class DecisionEngine:
         session_id: str,
         task: str,
         session_data: Dict[str, Any],
-        features: Dict[str, Any]
+        features: Dict[str, Any],
+        register_replay: bool = True,
     ) -> Dict[str, Any]:
         """
         Executes all 5 detection layers and synthesizes a unified actor verdict.
+
+        register_replay: add this trajectory to the replay cache. The ingest path
+        evaluates a page visit after every chunk, so it passes True only once
+        (on the final chunk) to avoid filling the cache with snapshots of one visit.
 
         Signal hierarchy respected throughout:
           - Behavioral evidence drives classification
           - Environmental signals (webdriver) are supporting only
           - No single signal determines the final class
         """
+        # Check for zero interaction / empty event payload
+        total_interactions = (
+            len(session_data.get("mouse_events", []))
+            + len(session_data.get("keyboard_events", []))
+            + len(session_data.get("click_events", []))
+            + len(session_data.get("scroll_events", []))
+            + features.get("total_event_count", 0)
+        )
+        if total_interactions == 0:
+            return {
+                "final_verdict": "UNCERTAIN",
+                "confidence": 50.0,
+                "risk_score": 0.0,
+                "l1_rule_score": 0.0,
+                "l2_ml_pred": "UNCERTAIN",
+                "l2_ml_confidence": 50.0,
+                "l2_ml_probabilities": {"UNCERTAIN": 1.0},
+                "l3_anomaly_score": 0.0,
+                "l3_is_anomaly": False,
+                "l4_is_replay": False,
+                "l5_context_valid": True,
+                "l5_status": "not_applicable",
+                "contributing_signals": ["Insufficient interaction data to evaluate behavior (zero events recorded)."],
+                "counter_signals": [],
+                "human_explanation": "Insufficient interaction data. No behavioral kinematics recorded yet.",
+                "model_version": MODEL_VERSION,
+            }
+
         # --- Layer 1: Rules ---
         rule_score, rule_flags, rule_mitigations = self.rules.evaluate(features)
 
@@ -92,12 +129,20 @@ class DecisionEngine:
         # --- Layer 4: Replay Detection ---
         mouse_events = session_data.get("mouse_events", [])
         replay_sim, matched_id, is_replay = self.replay.check_replay(session_id, mouse_events)
-        self.replay.register_session(session_id, mouse_events)
+        if register_replay:
+            self.replay.register_session(session_id, mouse_events)
 
         # --- Layer 5: Contextual Validation ---
         task_actions = session_data.get("task_actions", [])
         click_events = session_data.get("click_events", [])
         ctx_valid, ctx_violations = self.context.validate(task, task_actions, click_events, features)
+        if ctx_violations:
+            l5_status = "violated"
+        elif task in WORKFLOW_TASKS:
+            l5_status = "valid"
+        else:
+            # No workflow rules for general/custom tasks: never report "valid".
+            l5_status = "not_applicable"
 
         # --- Synthesize Risk Score (Behavioral signals first, environmental supporting) ---
         contributing_signals = []
@@ -202,12 +247,18 @@ class DecisionEngine:
         # caused virtually every real extension session to be misclassified as AGENTIC_AI.
         # Checked FIRST — agent sessions can also have moderately linear per-segment motion,
         # so they must be captured before the broader automation check.
-        is_agentic_profile = (
+        has_agency_signal = (
+            planning_pause_ratio > 0.15 or
+            nav_segments >= 2 or
+            adaptation_score > 0.35 or
+            action_interval_var > 800
+        )
+        is_agentic_profile = has_agency_signal and (
             (planning_pause_ratio > 0.30 and nav_segments >= 3) or
-            (adaptation_score > 0.45 and features.get("micro_corrections", 0) <= 2 and nav_segments >= 2) or
+            (adaptation_score > 0.45 and features.get("micro_corrections", 0) <= 2 and nav_segments >= 3) or
             (features.get("first_action_delay_ms", 0) > 500 and nav_segments >= 4 and straightness > 0.80) or
             (action_interval_var > 1200 and nav_segments >= 3) or  # Strong LLM inference-delay signature
-            (ml_pred == "AGENTIC_AI" and ml_conf >= 70.0)  # Require high ML confidence to avoid false positives
+            (ml_pred == "AGENTIC_AI" and ml_conf >= 70.0 and rule_score < 60.0)  # Corroborated ML prediction
         )
 
         # Traditional automation profile: highly uniform, deterministic behavior.
@@ -324,6 +375,7 @@ class DecisionEngine:
             "l4_is_replay": is_replay,
             "l5_context_valid": ctx_valid,
             "l5_context_violations": ctx_violations,
+            "l5_status": l5_status,
             "final_verdict": final_verdict,
             "confidence": confidence,
             "risk_score": risk_score,
@@ -331,6 +383,6 @@ class DecisionEngine:
             "counter_signals": counter_signals,
             "human_explanation": explanation,
             "fallback_used": fallback_used,
-            "model_version": "v1.2.1-actor-inference"
+            "model_version": MODEL_VERSION
         }
 

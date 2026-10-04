@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const evtMouse = document.getElementById('evt-mouse');
   const evtKeys = document.getElementById('evt-keys');
   const evtClicks = document.getElementById('evt-clicks');
+  const activeTime = document.getElementById('active-time');
 
   try {
     const url = new URL(tab.url);
@@ -26,19 +27,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      sessionVal.textContent = res.sessionId ? res.sessionId.slice(0, 12) + '...' : '—';
+      sessionVal.textContent = res.sessionId ? res.sessionId.slice(0, 14) + '...' : '—';
       if (res.events) {
         evtMouse.textContent = res.events.mouse || 0;
         evtKeys.textContent = res.events.keys || 0;
         evtClicks.textContent = res.events.clicks || 0;
       }
 
+      if (typeof res.activeDurationMs === 'number' && activeTime) {
+        activeTime.textContent = (res.activeDurationMs / 1000).toFixed(1) + 's';
+      }
+
       if (res.verdict) {
         const v = res.verdict;
         verdictBadge.textContent = v.predicted_label || 'UNCERTAIN';
         verdictBadge.className = 'verdict-badge ' + (v.predicted_label || '');
-        confidenceText.textContent = `Confidence: ${(v.confidence * 100).toFixed(0)}%`;
-        riskVal.textContent = `${Math.round(v.risk_score)} / 100`;
+
+        let conf = typeof v.confidence === 'number' ? v.confidence : 0;
+        // Fix Bug 19: API already returns 0-100 score; if normalized <= 1.0, scale to 100
+        if (conf <= 1.0 && conf > 0) {
+          conf = conf * 100;
+        }
+        confidenceText.textContent = `Confidence: ${Math.round(conf)}%`;
+        riskVal.textContent = `${Math.round(v.risk_score || 0)} / 100`;
       } else {
         verdictBadge.textContent = 'STREAMING';
         confidenceText.textContent = 'Collecting kinematics...';

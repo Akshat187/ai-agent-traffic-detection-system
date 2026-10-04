@@ -2,8 +2,57 @@
 Pydantic v2 Schemas — WebSense Web Interaction Intelligence Platform.
 """
 
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional, Literal
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+# Identifiers are opaque random strings created by collectors. Restricting the
+# alphabet and length keeps them safe for logs, URLs and the VARCHAR(64) columns.
+ID_PATTERN = r"^[A-Za-z0-9_\-:.]{1,64}$"
+
+# Accepted task values. Supports canonical site tasks and explicit workflow aliases.
+TaskName = Literal[
+    "general",
+    "shopping",
+    "travel",
+    "forum",
+    "custom",
+    "flight_booking",
+    "ecommerce_purchase",
+    "forum_post",
+    "other",
+]
+_TASK_ALIASES = {
+    "community": "forum",
+    "forum_post": "forum",
+    "ecommerce": "shopping",
+    "ecommerce_purchase": "shopping",
+    "shop": "shopping",
+    "flight_booking": "travel",
+    "flights": "travel",
+    "other": "custom",
+}
+
+# Per-chunk event caps. A delta chunk normally holds ~5 s of events; legacy
+# full-blob snapshots are capped at 600 mouse events by the old collectors.
+MAX_MOUSE_EVENTS_PER_CHUNK = 5000
+MAX_KEYBOARD_EVENTS_PER_CHUNK = 2000
+MAX_SCROLL_EVENTS_PER_CHUNK = 2000
+MAX_CLICK_EVENTS_PER_CHUNK = 1000
+MAX_TASK_ACTIONS_PER_CHUNK = 500
+
+# Unix timestamps below this are seconds, above are milliseconds.
+_UNIX_MS_THRESHOLD = 1e11
+
+
+def normalize_task(value: Any) -> Any:
+    """Lower-cases task names and maps legacy aliases; leaves validation to Literal."""
+    if value is None:
+        return "general"
+    if isinstance(value, str):
+        v = value.strip().lower()
+        return _TASK_ALIASES.get(v, v)
+    return value
 
 
 class MouseEventSchema(BaseModel):
@@ -55,14 +104,16 @@ class TaskActionSchema(BaseModel):
 
 
 class ClientContextSchema(BaseModel):
-    tab_id: str
-    page_path: str = ""
-    page_title: str = ""
-    page_url: str = ""
-    referrer_path: str = ""
-    visibility_state: str = "visible"
+    tab_id: str = Field("", max_length=64)
+    page_path: str = Field("", max_length=512)
+    page_title: str = Field("", max_length=256)
+    page_url: str = Field("", max_length=512)
+    page_host: str = Field("", max_length=256)
+    referrer_path: str = Field("", max_length=512)
+    visibility_state: str = Field("visible", max_length=16)
     transmission_seq: int = 1
-    sdk_version: str = ""
+    sdk_version: str = Field("", max_length=64)
+    collector: str = Field("", max_length=16)  # "sdk" | "ext" | "" (legacy)
 
 
 class SiteCreateRequest(BaseModel):
@@ -85,24 +136,77 @@ class SiteListResponse(BaseModel):
 
 
 class IngestSessionRequest(BaseModel):
-    session_id: str
-    site_id: Optional[str] = None
-    visitor_id: Optional[str] = None
-    task: str = "shopping"
-    start_time: float
+    """
+    One transmission from a collector.
+
+    Identity model: ``session_id`` identifies ONE page visit (it is the same
+    value as ``page_visit_id``). ``journey_id`` groups the page visits of one
+    tab, ``tab_id`` (in client_context) is metadata only.
+
+    Protocol v2 (delta): the collector sets ``seq`` (1, 2, 3 … per page visit)
+    and sends only the events recorded since the previous chunk. Retries reuse
+    the same ``seq``. The server stores each chunk once and rebuilds features
+    from all chunks of the visit.
+
+    Legacy (snapshot): ``seq`` is absent and the payload holds ALL events since
+    page load. ``client_context.transmission_seq`` (if present) orders snapshots;
+    older snapshots are ignored.
+    """
+
+    session_id: str = Field(..., pattern=ID_PATTERN)
+    site_id: Optional[str] = Field(None, pattern=ID_PATTERN)
+    visitor_id: Optional[str] = Field(None, pattern=ID_PATTERN)
+    page_visit_id: Optional[str] = Field(None, pattern=ID_PATTERN)
+    journey_id: Optional[str] = Field(None, pattern=ID_PATTERN)
+    previous_visit_id: Optional[str] = Field(None, pattern=ID_PATTERN)
+
+    task: TaskName = "general"
+    custom_task: Optional[str] = Field(None, max_length=64)
+
+    # Delta protocol
+    seq: Optional[int] = Field(None, ge=1, le=1_000_000)
+    final: bool = False  # last chunk of this page visit (pagehide / route change)
+
+    start_time: float  # Unix epoch, milliseconds (seconds are auto-converted)
     end_time: float
-    duration_ms: float = 0.0
+    duration_ms: float = Field(0.0, ge=0)
+    # Engaged time on the page: excludes hidden-tab time and idle gaps > 60 s.
+    active_duration_ms: Optional[float] = Field(None, ge=0)
+
     ground_truth_label: Optional[str] = None  # Optional for synthetic generation
     is_synthetic: bool = False
-    data_source: str = "realtime_sdk"
+    data_source: str = Field("realtime_sdk", max_length=64)
     client_context: Optional[ClientContextSchema] = None
 
     browser_signals: BrowserSignalsSchema = Field(default_factory=BrowserSignalsSchema)
-    mouse_events: List[MouseEventSchema] = Field(default_factory=list)
-    keyboard_events: List[KeyboardEventSchema] = Field(default_factory=list)
-    scroll_events: List[ScrollEventSchema] = Field(default_factory=list)
-    click_events: List[ClickEventSchema] = Field(default_factory=list)
-    task_actions: List[TaskActionSchema] = Field(default_factory=list)
+    mouse_events: List[MouseEventSchema] = Field(default_factory=list, max_length=MAX_MOUSE_EVENTS_PER_CHUNK)
+    keyboard_events: List[KeyboardEventSchema] = Field(default_factory=list, max_length=MAX_KEYBOARD_EVENTS_PER_CHUNK)
+    scroll_events: List[ScrollEventSchema] = Field(default_factory=list, max_length=MAX_SCROLL_EVENTS_PER_CHUNK)
+    click_events: List[ClickEventSchema] = Field(default_factory=list, max_length=MAX_CLICK_EVENTS_PER_CHUNK)
+    task_actions: List[TaskActionSchema] = Field(default_factory=list, max_length=MAX_TASK_ACTIONS_PER_CHUNK)
+
+    @field_validator("task", mode="before")
+    @classmethod
+    def _normalize_task(cls, v: Any) -> Any:
+        return normalize_task(v)
+
+    @model_validator(mode="after")
+    def _normalize(self) -> "IngestSessionRequest":
+        # page_visit_id is an alias of session_id; they must agree when both are sent.
+        if self.page_visit_id and self.page_visit_id != self.session_id:
+            raise ValueError("page_visit_id must equal session_id")
+        # Always store milliseconds. Legacy sentinel.js sent Unix seconds.
+        if 0 < self.start_time < _UNIX_MS_THRESHOLD:
+            self.start_time *= 1000.0
+        if 0 < self.end_time < _UNIX_MS_THRESHOLD:
+            self.end_time *= 1000.0
+        if self.task != "custom":
+            self.custom_task = None
+        return self
+
+    @property
+    def is_delta(self) -> bool:
+        return self.seq is not None
 
 
 class ClassificationResponse(BaseModel):
@@ -119,6 +223,16 @@ class ClassificationResponse(BaseModel):
     counter_signals: List[str]
     human_explanation: str
     model_version: str
+    # Layer 5 status: "valid" | "violated" | "not_applicable"
+    l5_status: str = "not_applicable"
+    active_duration_ms: Optional[float] = None
+    # Ingest protocol outcome
+    page_visit_id: Optional[str] = None
+    seq: Optional[int] = None
+    last_seq: int = 0
+    duplicate: bool = False   # this seq was already stored; nothing was written
+    stale: bool = False       # legacy snapshot older than the stored one; ignored
+    gap: bool = False         # seq skipped ahead (missing chunks may still arrive)
 
 
 class SessionSummary(BaseModel):
@@ -143,6 +257,15 @@ class SessionSummary(BaseModel):
     transmission_seq: Optional[int] = None
     client_context: Optional[Dict[str, Any]] = None
     data_quality: str = "standard"
+    # Page-visit identity (session_id == page_visit_id)
+    page_visit_id: Optional[str] = None
+    journey_id: Optional[str] = None
+    previous_visit_id: Optional[str] = None
+    page_url: Optional[str] = None
+    custom_task: Optional[str] = None
+    last_seq: int = 0
+    active_duration_ms: Optional[float] = None
+    updated_at: Optional[str] = None
 
 
 class SessionDetailResponse(BaseModel):

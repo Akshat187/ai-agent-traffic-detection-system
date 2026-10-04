@@ -1,28 +1,45 @@
 /**
- * Sentinel Behavioral Intelligence SDK — v1.2.0
- * Standalone, zero-dependency embeddable script for AI agent and bot detection.
+ * Sentinel Behavioral Intelligence SDK — v1.3.0
+ * Unified, zero-dependency embeddable telemetry collector for AI agent and bot detection.
  *
- * Usage:
- *   <script src="https://api.yourdomain.com/sentinel.js" data-site-id="site_xxxx" async></script>
+ * Architecture:
+ *   - Page-visit identity model: 1 session_id = 1 page visit.
+ *   - Single collector ownership lock via document.documentElement.dataset.wsOwner.
+ *   - Delta transmission protocol: only new events sent per chunk with monotonic seq.
+ *   - Lifecycle-aware: handles SPA route changes (pushState/popstate), bfcache, visibility.
+ *   - Reliable JSON beacons on unload via fetch(keepalive) and Blob sendBeacon.
+ *   - Keystroke hold tracking per e.code, e.repeat filtering.
+ *   - Click center-offset calculation, isTrusted, pointer type tracking.
  *
  * Privacy Guarantees:
  *   - NEVER records keystroke characters, key codes, or form inputs.
- *   - NEVER captures or interacts with type="password" fields.
+ *   - NEVER captures or interacts with type="password" or data-private fields.
  *   - Captures anonymous timing and kinematic dynamics ONLY.
  */
 
 (function (window, document) {
   'use strict';
 
-  // Guard: Only run in top-level context
+  // Guard 1: Only run in top-level context (never in iframes)
   if (window.top !== window.self) return;
+
+  // Guard 2: Single collector lock.
+  // Both the page world and extension world share the documentElement dataset.
+  if (document.documentElement.dataset.wsOwner && document.documentElement.dataset.wsOwner !== 'sdk') {
+    return;
+  }
+  document.documentElement.dataset.wsOwner = 'sdk';
   window.__WEBSENSE_COLLECTOR_ACTIVE__ = true;
 
+  // Notify extension or other observers that SDK owns collection
+  window.dispatchEvent(new CustomEvent('ws:claimed', { detail: { owner: 'sdk' } }));
+
   // 1. Discover configuration from script tag
-  const currentScript = document.currentScript || (function() {
+  const currentScript = document.currentScript || (function () {
     const scripts = document.getElementsByTagName('script');
     for (let i = scripts.length - 1; i >= 0; i--) {
-      if (scripts[i].src && (scripts[i].src.includes('sentinel.js') || scripts[i].src.includes('collector.js'))) {
+      const src = scripts[i].src || '';
+      if (src.includes('sentinel.js') || src.includes('collector.js')) {
         return scripts[i];
       }
     }
@@ -38,55 +55,125 @@
     } catch (_) {}
   }
 
-  const siteId = (currentScript && currentScript.getAttribute('data-site-id')) || 'site_meridian_prod';
+  const siteId = (currentScript && currentScript.getAttribute('data-site-id')) ||
+    (document.body && document.body.dataset.siteId) ||
+    'site_meridian_prod';
+
   const apiEndpoint = (currentScript && currentScript.getAttribute('data-endpoint')) || defaultEndpoint;
-  const taskName = (currentScript && currentScript.getAttribute('data-task')) || (document.body ? document.body.dataset.task : 'general') || 'general';
+  const initialTask = (currentScript && currentScript.getAttribute('data-task')) ||
+    (document.body && document.body.dataset.task) ||
+    'general';
+
   const requireConsent = currentScript && currentScript.getAttribute('data-require-consent') === 'true';
 
   // 2. Constants & Storage Keys
-  const CONSENT_STORAGE_KEY = 'ws_sentinel_consent_' + siteId;
-  const SESSION_KEY = 'ws_sentinel_session_' + siteId;
+  const CONSENT_KEYS = [
+    'meridian_consent',
+    'meridian_telemetry_consent',
+    'ws_consent',
+    'ws_sentinel_consent_' + siteId
+  ];
   const VISITOR_KEY = 'ws_visitor_id';
-  const LEGACY_VISITOR_KEYS = ['ws_sentinel_visitor_id', 'meridian_visitor_id'];
+  const JOURNEY_KEY = 'ws_journey_id';
+  const JOURNEY_TIME_KEY = 'ws_journey_last_active';
   const TAB_KEY = 'ws_tab_id';
-  const SEQ_KEY = 'ws_transmission_seq';
+  const PREV_VISIT_KEY = 'ws_prev_visit_id';
 
   const MOUSE_THROTTLE_MS = 25;
   const SCROLL_THROTTLE_MS = 50;
-  const MAX_MOUSE_EVENTS = 600;
-  const MAX_KEYBOARD_EVENTS = 400;
-  const MAX_SCROLL_EVENTS = 250;
-  const MAX_CLICK_EVENTS = 100;
+  const MAX_MOUSE_DELTA = 300;
+  const MAX_KEYBOARD_DELTA = 200;
+  const MAX_SCROLL_DELTA = 150;
+  const MAX_CLICK_DELTA = 50;
+  const INACTIVITY_GAP_MS = 60000; // 60s inactivity = idle
+  const JOURNEY_MAX_IDLE_MS = 30 * 60 * 1000; // 30 min tab idle ends journey
 
-  // 3. State
-  let consentGranted = !requireConsent;
-  const savedConsent = (function() {
-    try { return localStorage.getItem(CONSENT_STORAGE_KEY); } catch(_) { return null; }
+  function generateId(prefix) {
+    return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+  }
+
+  // 3. Persistent Visitor ID & Tab Journey ID
+  let visitorId = (function () {
+    try {
+      let v = localStorage.getItem(VISITOR_KEY);
+      if (!v) {
+        v = generateId('vis');
+        localStorage.setItem(VISITOR_KEY, v);
+      }
+      return v;
+    } catch (_) {
+      return generateId('vis');
+    }
   })();
-  if (savedConsent === 'granted') consentGranted = true;
-  if (savedConsent === 'declined') consentGranted = false;
 
+  let tabId = (function () {
+    try {
+      let t = sessionStorage.getItem(TAB_KEY);
+      if (!t) {
+        t = 'tab_' + (window.crypto && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : generateId('tab').slice(4));
+        sessionStorage.setItem(TAB_KEY, t);
+      }
+      return t;
+    } catch (_) {
+      return generateId('tab');
+    }
+  })();
+
+  function getJourneyId() {
+    const now = Date.now();
+    try {
+      const lastActive = parseInt(sessionStorage.getItem(JOURNEY_TIME_KEY) || '0', 10);
+      let jid = sessionStorage.getItem(JOURNEY_KEY);
+      if (!jid || (now - lastActive > JOURNEY_MAX_IDLE_MS)) {
+        jid = generateId('jny');
+        sessionStorage.setItem(JOURNEY_KEY, jid);
+      }
+      sessionStorage.setItem(JOURNEY_TIME_KEY, String(now));
+      return jid;
+    } catch (_) {
+      return generateId('jny');
+    }
+  }
+
+  // 4. Consent State
+  function checkConsent() {
+    if (!requireConsent) return true;
+    for (let i = 0; i < CONSENT_KEYS.length; i++) {
+      try {
+        const val = localStorage.getItem(CONSENT_KEYS[i]);
+        if (val === 'granted') return true;
+        if (val === 'declined') return false;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  let consentGranted = checkConsent();
+
+  // 5. Page Visit State (1 visit = 1 session_id)
+  let sessionId = generateId('st');
+  let previousVisitId = (function () {
+    try {
+      return sessionStorage.getItem(PREV_VISIT_KEY) || null;
+    } catch (_) {
+      return null;
+    }
+  })();
+
+  try {
+    sessionStorage.setItem(PREV_VISIT_KEY, sessionId);
+  } catch (_) {}
+
+  let transmissionSeq = 1;
+  let startTime = performance.now();
+  let absoluteStartTime = Date.now();
+  let currentTask = initialTask;
   let listenersAttached = false;
-  let isTransmitted = false;
+  let latestVerdict = null;
 
-  const mouseEvents = [];
-  const keyboardEvents = [];
-  const scrollEvents = [];
-  const clickEvents = [];
-  const taskActions = [];
-
-  let lastMouseMoveTime = 0;
-  let lastScrollTime = 0;
-  let lastKeyDownTime = 0;
-  const activeKeys = new Map();
-
-  // --- Active-Duration Tracking ---
-  // Measures the true active engagement window, not raw tab lifetime.
-  // Gaps > INACTIVITY_GAP_MS between events are treated as idle and excluded
-  // so a tab left open idle in the background does not inflate ratio features.
-  const INACTIVITY_GAP_MS = 60000; // 60 s of silence = idle, not counted
+  // Active duration metrics
   let firstEventTime = null;
-  let lastEventTime  = null;
+  let lastEventTime = null;
   let accumulatedIdleMs = 0;
 
   function recordActivity() {
@@ -95,9 +182,14 @@
       firstEventTime = now;
     } else if (lastEventTime !== null) {
       const gap = now - lastEventTime;
-      if (gap > INACTIVITY_GAP_MS) accumulatedIdleMs += gap;
+      if (gap > INACTIVITY_GAP_MS) {
+        accumulatedIdleMs += gap;
+      }
     }
     lastEventTime = now;
+    try {
+      sessionStorage.setItem(JOURNEY_TIME_KEY, String(Date.now()));
+    } catch (_) {}
   }
 
   function getActiveDurationMs() {
@@ -105,76 +197,23 @@
     return Math.max(0, Math.round((lastEventTime - firstEventTime) - accumulatedIdleMs));
   }
 
-  function generateId(prefix) {
-    return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
-  }
+  // Delta event buffers (cleared upon confirmed transmission)
+  let pendingMouse = [];
+  let pendingKeyboard = [];
+  let pendingScroll = [];
+  let pendingClicks = [];
+  let pendingActions = [];
 
-  let sessionId = (function() {
-    try {
-      let s = sessionStorage.getItem(SESSION_KEY);
-      if (!s) {
-        s = generateId('st');
-        sessionStorage.setItem(SESSION_KEY, s);
-      }
-      return s;
-    } catch (_) {
-      return generateId('st');
-    }
-  })();
+  // Total session event counters
+  let totalEventsCount = 0;
+  let hasSignificantSignal = false;
 
-  let visitorId = (function() {
-    try {
-      let v = localStorage.getItem(VISITOR_KEY);
-      if (!v) {
-        for (let i = 0; i < LEGACY_VISITOR_KEYS.length; i++) {
-          v = localStorage.getItem(LEGACY_VISITOR_KEYS[i]);
-          if (v) break;
-        }
-      }
-      if (!v) v = generateId('vis');
-      localStorage.setItem(VISITOR_KEY, v);
-      return v;
-    } catch (_) {
-      return generateId('vis');
-    }
-  })();
+  let lastMouseMoveTime = 0;
+  let lastScrollTime = 0;
+  let lastKeyDownTime = 0;
+  const activeKeyCodes = new Map(); // e.code -> { t, pressTime }
 
-  function getClientContext() {
-    let tabId;
-    try {
-      tabId = sessionStorage.getItem(TAB_KEY);
-      if (!tabId) {
-        tabId = 'tab_' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : generateId('tab').slice(4));
-        sessionStorage.setItem(TAB_KEY, tabId);
-      }
-    } catch (_) {
-      tabId = generateId('tab');
-    }
-    let seq = 1;
-    try {
-      seq = parseInt(sessionStorage.getItem(SEQ_KEY) || '0', 10) + 1;
-      sessionStorage.setItem(SEQ_KEY, String(seq));
-    } catch (_) {}
-    let referrerPath = '';
-    try {
-      if (document.referrer) referrerPath = new URL(document.referrer).pathname;
-    } catch (_) {}
-    return {
-      tab_id: tabId,
-      page_path: location.pathname,
-      page_title: document.title || '',
-      page_url: location.pathname + location.search,
-      referrer_path: referrerPath,
-      visibility_state: document.visibilityState,
-      transmission_seq: seq,
-      sdk_version: 'sentinel-1.2.0',
-    };
-  }
-
-  const startTime = performance.now();
-  const absoluteStartTime = Date.now();
-
-  // 4. Browser Environment Signals
+  // 6. Browser Signals
   function getBrowserSignals() {
     return {
       webdriver: Boolean(navigator.webdriver),
@@ -192,55 +231,98 @@
     };
   }
 
-  // 5. Behavioral Event Listeners
+  function getClientContext() {
+    let referrerPath = '';
+    try {
+      if (document.referrer) referrerPath = new URL(document.referrer).pathname;
+    } catch (_) {}
+
+    return {
+      tab_id: tabId,
+      page_path: location.pathname,
+      page_title: (document.title || '').slice(0, 256),
+      page_url: (location.pathname + location.search).slice(0, 512),
+      page_host: location.origin,
+      referrer_path: referrerPath,
+      visibility_state: document.visibilityState,
+      transmission_seq: transmissionSeq,
+      sdk_version: 'sentinel-1.3.0',
+      collector: 'sdk',
+    };
+  }
+
+  // 7. Event Listeners
   function attachListeners() {
     if (listenersAttached || !consentGranted) return;
     listenersAttached = true;
 
-    // Mouse movement dynamics
+    // Mouse dynamics
     window.addEventListener('mousemove', function (e) {
       if (!consentGranted) return;
       const now = performance.now();
       if (now - lastMouseMoveTime < MOUSE_THROTTLE_MS) return;
       lastMouseMoveTime = now;
       recordActivity();
-      if (mouseEvents.length < MAX_MOUSE_EVENTS) {
-        mouseEvents.push({
+
+      if (pendingMouse.length < MAX_MOUSE_DELTA) {
+        pendingMouse.push({
           x: Math.round(e.clientX),
           y: Math.round(e.clientY),
           t: Math.round(now - startTime),
           type: 'move',
         });
+        totalEventsCount++;
+        if (pendingMouse.length >= 5) hasSignificantSignal = true;
       }
     }, { passive: true });
 
-    // Click categorization (no sensitive form contents)
+    // Click dynamics with center-offset and trust verification
     window.addEventListener('click', function (e) {
       if (!consentGranted) return;
       const now = performance.now();
-      const target = e.target;
       recordActivity();
+
+      const target = e.target;
       let category = 'general';
+      let offsetX = 0;
+      let offsetY = 0;
 
-      if (target.closest("button, .btn, [role='button'], input[type='submit']")) category = 'button';
-      else if (target.closest("input, textarea, select")) category = 'input';
-      else if (target.closest('a, nav')) category = 'navigation';
-      else if (target.closest('.add-cart-btn, #checkout-btn, .flight-card')) category = 'task_action';
+      if (target && target.getBoundingClientRect) {
+        try {
+          const rect = target.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          offsetX = Math.round(e.clientX - centerX);
+          offsetY = Math.round(e.clientY - centerY);
+        } catch (_) {}
+      }
 
-      if (clickEvents.length < MAX_CLICK_EVENTS) {
-        clickEvents.push({
+      if (target && target.closest) {
+        if (target.closest("button, .btn, [role='button'], input[type='submit']")) category = 'button';
+        else if (target.closest("input, textarea, select")) category = 'input';
+        else if (target.closest("a, nav")) category = 'navigation';
+        else if (target.closest(".add-cart-btn, #checkout-btn, .flight-card")) category = 'task_action';
+      }
+
+      if (pendingClicks.length < MAX_CLICK_DELTA) {
+        pendingClicks.push({
           x: Math.round(e.clientX),
           y: Math.round(e.clientY),
           t: Math.round(now - startTime),
           target_category: category,
         });
+        totalEventsCount++;
+        hasSignificantSignal = true;
       }
     }, { passive: true });
 
-    // Keyboard dynamics (TIMING ONLY — no characters, never password fields)
+    // Keyboard dynamics (Timing ONLY — NO key names or characters)
     window.addEventListener('keydown', function (e) {
       if (!consentGranted) return;
+      // Skip password and private inputs entirely
       if (e.target && (e.target.type === 'password' || e.target.getAttribute('data-private') === 'true')) return;
+      // Filter out auto-repeat keystrokes (holding a key down)
+      if (e.repeat) return;
 
       const now = performance.now();
       recordActivity();
@@ -248,15 +330,20 @@
       const interval = lastKeyDownTime > 0 ? Math.round(now - lastKeyDownTime) : 0;
       lastKeyDownTime = now;
 
-      activeKeys.set(elapsed, now);
+      // Track key hold per code
+      const code = e.code || ('k_' + Math.random().toString(36).slice(2, 6));
+      activeKeyCodes.set(code, { elapsed: elapsed, pressTime: now });
 
-      if (keyboardEvents.length < MAX_KEYBOARD_EVENTS) {
-        keyboardEvents.push({
+      if (pendingKeyboard.length < MAX_KEYBOARD_DELTA) {
+        pendingKeyboard.push({
           t: elapsed,
           interval: interval,
-          hold: 0,
+          hold: 0, // updated on keyup
           is_paste: false,
+          _code: code,
         });
+        totalEventsCount++;
+        hasSignificantSignal = true;
       }
     }, { passive: true });
 
@@ -265,26 +352,34 @@
       if (e.target && e.target.type === 'password') return;
 
       const now = performance.now();
-      if (keyboardEvents.length > 0) {
-        const last = keyboardEvents[keyboardEvents.length - 1];
-        const downTime = activeKeys.get(last.t);
-        if (downTime && last.hold === 0) {
-          last.hold = Math.round(now - downTime);
+      const code = e.code;
+      if (code && activeKeyCodes.has(code)) {
+        const item = activeKeyCodes.get(code);
+        activeKeyCodes.delete(code);
+        const holdDuration = Math.max(0, Math.round(now - item.pressTime));
+        // Find matching pending event
+        for (let i = pendingKeyboard.length - 1; i >= 0; i--) {
+          if (pendingKeyboard[i]._code === code) {
+            pendingKeyboard[i].hold = holdDuration;
+            break;
+          }
         }
       }
     }, { passive: true });
 
-    // Paste event indicator (flag only, content ignored)
+    // Paste event flag (content stripped)
     window.addEventListener('paste', function (e) {
       if (!consentGranted) return;
       if (e.target && e.target.type === 'password') return;
       const now = performance.now();
-      keyboardEvents.push({
+      recordActivity();
+      pendingKeyboard.push({
         t: Math.round(now - startTime),
         interval: 0,
         hold: 0,
         is_paste: true,
       });
+      totalEventsCount++;
     }, { passive: true });
 
     // Scroll dynamics
@@ -294,171 +389,285 @@
       if (now - lastScrollTime < SCROLL_THROTTLE_MS) return;
       lastScrollTime = now;
       recordActivity();
-      if (scrollEvents.length < MAX_SCROLL_EVENTS) {
+
+      if (pendingScroll.length < MAX_SCROLL_DELTA) {
         const scrollY = window.scrollY || window.pageYOffset || 0;
-        const lastY = scrollEvents.length > 0 ? scrollEvents[scrollEvents.length - 1].scroll_y : scrollY;
-        scrollEvents.push({
+        const lastY = pendingScroll.length > 0 ? pendingScroll[pendingScroll.length - 1].scroll_y : scrollY;
+        pendingScroll.push({
           t: Math.round(now - startTime),
           scroll_y: Math.round(scrollY),
           delta_y: Math.round(scrollY - lastY),
         });
+        totalEventsCount++;
+        if (pendingScroll.length >= 2) hasSignificantSignal = true;
       }
     }, { passive: true });
   }
 
-  // 6. Payload Assembly & Telemetry Flush
-  function buildPayload(overrideTask) {
+  // 8. Payload Assembly (Delta)
+  function buildDeltaPayload(isFinal) {
     const now = performance.now();
-    const durationMs = Math.round(now - startTime);
+    const durationMs = Math.max(0, Math.round(now - startTime));
+
+    // Strip private internal metadata (_code) from keyboard events
+    const cleanKeyboard = pendingKeyboard.map(function (k) {
+      return {
+        t: k.t,
+        interval: k.interval,
+        hold: k.hold,
+        is_paste: k.is_paste,
+      };
+    });
 
     return {
       session_id: sessionId,
+      page_visit_id: sessionId,
+      journey_id: getJourneyId(),
+      previous_visit_id: previousVisitId,
       site_id: siteId,
       visitor_id: visitorId,
-      task: overrideTask || taskName,
-      start_time: Math.round(absoluteStartTime / 1000),
-      end_time: Math.round((absoluteStartTime + durationMs) / 1000),
+      task: currentTask,
+      seq: transmissionSeq,
+      final: Boolean(isFinal),
+      start_time: absoluteStartTime,
+      end_time: absoluteStartTime + durationMs,
       duration_ms: durationMs,
-      // Bounded active engagement window: excludes idle gaps > 60 s.
-      // The detection engine uses this field for all ratio-based features.
       active_duration_ms: getActiveDurationMs(),
       data_source: 'realtime_sdk',
       client_context: getClientContext(),
       browser_signals: getBrowserSignals(),
-      mouse_events: mouseEvents,
-      keyboard_events: keyboardEvents,
-      scroll_events: scrollEvents,
-      click_events: clickEvents,
-      task_actions: taskActions,
+      mouse_events: pendingMouse.slice(),
+      keyboard_events: cleanKeyboard,
+      scroll_events: pendingScroll.slice(),
+      click_events: pendingClicks.slice(),
+      task_actions: pendingActions.slice(),
     };
   }
 
-  const MIN_MOUSE_EVENTS = 5;
-  const MIN_MOUSE_DISPLACEMENT_PX = 15;
-  const MIN_TOTAL_EVENTS = 5;
-
-  function hasMinimumInteraction() {
-    if (clickEvents.length > 0) return true;
-    if (keyboardEvents.length > 0) return true;
-    if (scrollEvents.length >= 2) return true;
-    if (mouseEvents.length >= MIN_MOUSE_EVENTS) {
-      const first = mouseEvents[0];
-      const last = mouseEvents[mouseEvents.length - 1];
-      const dx = last.x - first.x;
-      const dy = last.y - first.y;
-      if (Math.sqrt(dx * dx + dy * dy) >= MIN_MOUSE_DISPLACEMENT_PX) {
-        return true;
-      }
-    }
-    const total = mouseEvents.length + keyboardEvents.length + scrollEvents.length + clickEvents.length;
-    return total >= MIN_TOTAL_EVENTS;
+  function hasInteractionToSend() {
+    return (
+      pendingMouse.length > 0 ||
+      pendingKeyboard.length > 0 ||
+      pendingScroll.length > 0 ||
+      pendingClicks.length > 0 ||
+      pendingActions.length > 0
+    );
   }
 
-  async function flushTelemetry(overrideTask) {
-    if (!consentGranted) return Promise.resolve(null);
-    if (!hasMinimumInteraction()) {
-      return Promise.resolve(null);
-    }
+  let isSending = false;
 
-    const payload = buildPayload(overrideTask);
+  async function flushTelemetry(isFinal) {
+    if (!consentGranted) return null;
+    if (!hasInteractionToSend() && !isFinal) return null;
+    if (isSending) return null;
+
+    const payload = buildDeltaPayload(isFinal);
     const bodyStr = JSON.stringify(payload);
+    const currentSeq = transmissionSeq;
+
+    isSending = true;
 
     try {
       const resp = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Sentinel-Site-ID': siteId
+          'X-Sentinel-Site-ID': siteId,
         },
         body: bodyStr,
         keepalive: true,
       });
+
+      isSending = false;
+
       if (resp.ok) {
-        isTransmitted = true;
-        return await resp.json();
+        const data = await resp.json();
+        latestVerdict = data;
+
+        // Clear transmitted delta buffer
+        pendingMouse = [];
+        pendingKeyboard = [];
+        pendingScroll = [];
+        pendingClicks = [];
+        pendingActions = [];
+
+        // Increment sequence only on successful ingest
+        transmissionSeq++;
+
+        // Broadcast verdict to window observers (such as the Chrome Extension)
+        window.postMessage({
+          type: 'WEBSENSE_VERDICT_UPDATE',
+          verdict: data,
+          sessionId: sessionId,
+          pageVisitId: sessionId,
+          seq: currentSeq,
+        }, '*');
+
+        return data;
       }
     } catch (err) {
-      // Fallback via sendBeacon on unload
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(apiEndpoint, bodyStr);
+      isSending = false;
+      // If unloading and fetch failed, send JSON beacon as fallback
+      if (isFinal && navigator.sendBeacon) {
+        const blob = new Blob([bodyStr], { type: 'application/json' });
+        navigator.sendBeacon(apiEndpoint, blob);
       }
     }
     return null;
   }
 
-  // 7. Auto Flush on Page Lifecycle
+  // 9. Lifecycle Management (SPA, bfcache, Page Unload)
+  function handlePageVisitTransition(newPath) {
+    // Flush current visit as final
+    flushTelemetry(true);
+
+    // Initialize new visit state
+    previousVisitId = sessionId;
+    try {
+      sessionStorage.setItem(PREV_VISIT_KEY, previousVisitId);
+    } catch (_) {}
+
+    sessionId = generateId('st');
+    transmissionSeq = 1;
+    startTime = performance.now();
+    absoluteStartTime = Date.now();
+    firstEventTime = null;
+    lastEventTime = null;
+    accumulatedIdleMs = 0;
+    pendingMouse = [];
+    pendingKeyboard = [];
+    pendingScroll = [];
+    pendingClicks = [];
+    pendingActions = [];
+    totalEventsCount = 0;
+    hasSignificantSignal = false;
+    latestVerdict = null;
+  }
+
+  // SPA Route Change Interception (pushState / replaceState / popstate)
+  let lastPathname = location.pathname;
+
+  function checkPathChange() {
+    if (location.pathname !== lastPathname) {
+      lastPathname = location.pathname;
+      handlePageVisitTransition(location.pathname);
+    }
+  }
+
+  const origPushState = history.pushState;
+  if (origPushState) {
+    history.pushState = function () {
+      origPushState.apply(history, arguments);
+      checkPathChange();
+    };
+  }
+
+  const origReplaceState = history.replaceState;
+  if (origReplaceState) {
+    history.replaceState = function () {
+      origReplaceState.apply(history, arguments);
+      checkPathChange();
+    };
+  }
+
+  window.addEventListener('popstate', checkPathChange);
+
+  // Back-Forward Cache (bfcache) restore
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) {
+      handlePageVisitTransition(location.pathname);
+    }
+  });
+
+  // Visibility and Pagehide Lifecycle
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') {
-      flushTelemetry();
+      flushTelemetry(false);
     }
   });
 
-  window.addEventListener('beforeunload', function () {
-    if (!isTransmitted && consentGranted && hasMinimumInteraction()) {
-      const payload = buildPayload();
-      const body = JSON.stringify(payload);
+  window.addEventListener('pagehide', function () {
+    if (hasInteractionToSend()) {
+      const payload = buildDeltaPayload(true);
+      const bodyStr = JSON.stringify(payload);
       if (navigator.sendBeacon) {
-        navigator.sendBeacon(apiEndpoint, body);
+        const blob = new Blob([bodyStr], { type: 'application/json' });
+        navigator.sendBeacon(apiEndpoint, blob);
+      } else {
+        fetch(apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: bodyStr,
+          keepalive: true,
+        }).catch(function () {});
       }
     }
   });
 
-  // 8. Public SDK API
+  // Periodic delta flush every 5 seconds if interaction has occurred
+  setInterval(function () {
+    if (document.visibilityState === 'visible' && hasInteractionToSend()) {
+      flushTelemetry(false);
+    }
+  }, 5000);
+
+  // 10. Public API
   const Sentinel = {
-    version: '1.2.0',
+    version: '1.3.0',
     siteId: siteId,
-    getSessionId: function() { return sessionId; },
-    getVisitorId: function() { return visitorId; },
-    getTabId: function() {
-      try {
-        let tabId = sessionStorage.getItem(TAB_KEY);
-        if (!tabId) {
-          tabId = 'tab_' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : generateId('tab').slice(4));
-          sessionStorage.setItem(TAB_KEY, tabId);
-        }
-        return tabId;
-      } catch (_) {
-        return generateId('tab');
-      }
-    },
-    getClientContext: function() { return getClientContext(); },
-    
+    getSessionId: function () { return sessionId; },
+    getPageVisitId: function () { return sessionId; },
+    getVisitorId: function () { return visitorId; },
+    getJourneyId: function () { return getJourneyId(); },
+    getTabId: function () { return tabId; },
+    getClientContext: function () { return getClientContext(); },
+    getLatestVerdict: function () { return latestVerdict; },
+
     logAction: function (action, details) {
       if (!consentGranted) return;
-      taskActions.push({
+      recordActivity();
+      pendingActions.push({
         action: action,
         t: Math.round(performance.now() - startTime),
         details: details || {},
       });
+      totalEventsCount++;
     },
 
     grantConsent: function () {
       consentGranted = true;
-      try { localStorage.setItem(CONSENT_STORAGE_KEY, 'granted'); } catch (_) {}
+      for (let i = 0; i < CONSENT_KEYS.length; i++) {
+        try { localStorage.setItem(CONSENT_KEYS[i], 'granted'); } catch (_) {}
+      }
       attachListeners();
     },
 
     declineConsent: function () {
       consentGranted = false;
-      try { localStorage.setItem(CONSENT_STORAGE_KEY, 'declined'); } catch (_) {}
+      for (let i = 0; i < CONSENT_KEYS.length; i++) {
+        try { localStorage.setItem(CONSENT_KEYS[i], 'declined'); } catch (_) {}
+      }
     },
 
-    flush: function (task) {
-      return flushTelemetry(task);
+    setTask: function (task) {
+      currentTask = task || 'general';
+    },
+
+    flush: function (overrideTask) {
+      if (overrideTask) currentTask = overrideTask;
+      return flushTelemetry(false);
     },
 
     init: function () {
       if (consentGranted) {
         attachListeners();
       }
-    }
+    },
   };
 
-  // Expose global SDK
   window.Sentinel = Sentinel;
-  window.WebSense = Sentinel; // Backward compatibility alias for Meridian honey-sites
+  window.WebSense = Sentinel; // Backward compatibility alias
 
-  // Auto-initialize if DOM is ready or on DOMContentLoaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', Sentinel.init);
   } else {

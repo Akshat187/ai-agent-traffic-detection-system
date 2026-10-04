@@ -16,8 +16,9 @@ class ReplayDetector:
         self.session_cache: List[Dict[str, Any]] = []
 
     def register_session(self, session_id: str, mouse_events: List[Dict[str, Any]]):
-        """Stores normalized trajectory in sliding window cache."""
+        """Stores normalized trajectory in sliding window cache (one entry per session)."""
         if mouse_events and len(mouse_events) >= 5:
+            self.session_cache = [s for s in self.session_cache if s["session_id"] != session_id]
             self.session_cache.append({
                 "session_id": session_id,
                 "mouse_events": mouse_events

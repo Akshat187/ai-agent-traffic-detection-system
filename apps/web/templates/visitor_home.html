@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/static/meridian.css">
+  <script src="/sentinel.js" data-site-id="site_meridian_prod" data-task="general" data-require-consent="true" async></script>
   <style>
     /* ── Home-specific styles ──────────────────────────────────────────── */
     .home-hero {
@@ -408,11 +409,6 @@
   (function() {
     var CONSENT_KEY = 'meridian_consent';
     var banner = document.getElementById('consent-banner');
-    function loadTelemetry() {
-      var s = document.createElement('script');
-      s.src = '/static/collector.js';
-      document.body.appendChild(s);
-    }
     function hideBanner() {
       if (banner) {
         banner.classList.remove('visible');
@@ -420,17 +416,22 @@
       }
     }
     var consent = localStorage.getItem(CONSENT_KEY);
-    if (consent === 'granted') {
-      loadTelemetry();
-    } else if (!consent) {
+    if (!consent) {
       setTimeout(function() { if (banner) banner.classList.add('visible'); }, 800);
       document.getElementById('consent-accept').addEventListener('click', function() {
-        localStorage.setItem(CONSENT_KEY, 'granted');
+        if (window.Sentinel && window.Sentinel.grantConsent) {
+          window.Sentinel.grantConsent();
+        } else {
+          localStorage.setItem(CONSENT_KEY, 'granted');
+        }
         hideBanner();
-        loadTelemetry();
       });
       document.getElementById('consent-decline').addEventListener('click', function() {
-        localStorage.setItem(CONSENT_KEY, 'declined');
+        if (window.Sentinel && window.Sentinel.declineConsent) {
+          window.Sentinel.declineConsent();
+        } else {
+          localStorage.setItem(CONSENT_KEY, 'declined');
+        }
         hideBanner();
       });
     }

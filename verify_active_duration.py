@@ -1,4 +1,4 @@
-﻿"""
+"""
 Verification tests for the active-duration session fix.
 
 Test 1: Idle-tab simulation
@@ -60,20 +60,20 @@ print(f"  Actual event window:       {ACTIVE_MS/1000:.1f}s")
 print()
 print(f"  BEFORE fix:")
 print(f"    effective duration_ms:   {feats_before['duration_ms']:.0f} ms  (~{feats_before['duration_ms']/1000/3600:.1f}h)")
-print(f"    planning_pause_ratio:    {feats_before['planning_pause_ratio']:.6f}  ← collapsed toward 0")
+print(f"    planning_pause_ratio:    {feats_before['planning_pause_ratio']:.6f}  <- collapsed toward 0")
 print()
 print(f"  AFTER fix:")
 print(f"    effective duration_ms:   {feats_after['duration_ms']:.0f} ms  ({feats_after['duration_ms']/1000:.1f}s)")
-print(f"    planning_pause_ratio:    {feats_after['planning_pause_ratio']:.6f}  ← meaningful fraction")
+print(f"    planning_pause_ratio:    {feats_after['planning_pause_ratio']:.6f}  <- meaningful fraction")
 print(f"    active_duration_ms:      {feats_after.get('active_duration_ms', 'N/A')}")
 
 ratio_improvement = feats_after["planning_pause_ratio"] - feats_before["planning_pause_ratio"]
-print(f"\n  planning_pause_ratio improvement: +{ratio_improvement:.6f} ✓" if ratio_improvement > 0 else f"\n  WARNING: ratio did not improve (diff={ratio_improvement:.6f})")
+print(f"\n  planning_pause_ratio improvement: +{ratio_improvement:.6f} [PASS]" if ratio_improvement > 0 else f"\n  WARNING: ratio did not improve (diff={ratio_improvement:.6f})")
 
 # ─── TEST 3: Two-payload differentiation ──────────────────────────────────────
 print()
 print("=" * 60)
-print("TEST 3 — Two-payload differentiation")
+print("TEST 3 -- Two-payload differentiation")
 
 bot_payload = {
     "session_id": "test_bot",
@@ -143,29 +143,29 @@ human_feats = extract_all_features(human_payload)
 bot_result   = engine.evaluate_session("test_bot",   "shopping", bot_payload,   bot_feats)
 human_result = engine.evaluate_session("test_human", "shopping", human_payload, human_feats)
 
+bot_verdict = bot_result.get("final_verdict", bot_result.get("predicted_label", "?"))
+human_verdict = human_result.get("final_verdict", human_result.get("predicted_label", "?"))
+
 print(f"\n  BOT payload:")
-print(f"    verdict:     {bot_result.get('predicted_label', bot_result.get('label', '?'))}")
+print(f"    verdict:     {bot_verdict}")
 print(f"    confidence:  {bot_result.get('confidence', '?')}")
 print(f"    risk_score:  {bot_result.get('risk_score', '?')}")
 
 print(f"\n  HUMAN payload:")
-print(f"    verdict:     {human_result.get('predicted_label', human_result.get('label', '?'))}")
+print(f"    verdict:     {human_verdict}")
 print(f"    confidence:  {human_result.get('confidence', '?')}")
 print(f"    risk_score:  {human_result.get('risk_score', '?')}")
 
-same_verdict = (
-    bot_result.get("predicted_label", bot_result.get("label")) ==
-    human_result.get("predicted_label", human_result.get("label"))
-)
+same_verdict = (bot_verdict == human_verdict)
 same_conf = abs(
     float(bot_result.get("confidence", 0)) - float(human_result.get("confidence", 0))
 ) < 5.0
 
 if not same_verdict:
-    print("\n  ✓  Different verdicts — payloads discriminated correctly.")
+    print("\n  [PASS] Different verdicts -- payloads discriminated correctly.")
 elif not same_conf:
-    print("\n  ~  Same verdict but different confidence — partial discrimination.")
+    print("\n  [PARTIAL] Same verdict but different confidence -- partial discrimination.")
 else:
-    print("\n  ✗  WARNING: Both payloads returned identical outputs — further investigation needed.")
+    print("\n  [FAIL] WARNING: Both payloads returned identical outputs -- further investigation needed.")
 
 print()

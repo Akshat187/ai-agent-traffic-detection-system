@@ -175,3 +175,17 @@ FastAPI default error handling is safe.
 | Phase | File | Change | Status |
 |-------|------|--------|--------|
 | Audit | `AUDIT.md` | Initial audit created | ✓ Done |
+| Phase 1 | `tests/test_detection.py`, `tests/test_api.py` | Stale assertions updated for v1.2.0 labels & schema | ✓ Done |
+| Phase 1 | `packages/detection/engine.py` | Fixed bot classified as HUMAN and resolved priority inversion (`is_agentic_profile` checked before `is_automation_profile`) | ✓ Done |
+| Phase 1 | `packages/core/features.py` | Extracted agentic timing features from `task_actions` timestamps | ✓ Done |
+| Phase 1 | `tests/test_api.py` | Seeded test sessions for experiments benchmark endpoint | ✓ Done |
+| Phase 1 | `apps/web/public/dashboard.js` | Aligned experiment keys (`browser_only`, `behavioral_all`, `combined`) | ✓ Done |
+| Phase 1 | `scripts/check_balance.py` | Added class/task balance verification script | ✓ Done |
+| Phase 1 | `scripts/check_leakage.py` | Added metadata leakage detection script | ✓ Done |
+| Phase 1 | `packages/generators/agent_adapter.py` | Created `AgentProvider` hierarchy (`LocalDemoAgent`, `LLMAgentAdapter`) with provenance tracking | ✓ Done |
+| Phase 1 | `apps/web/templates/visitor_*.html` | Unified brand identity ("Meridian"), shared navigation, and consent banner with active Decline | ✓ Done |
+| Phase 1 | `tests/test_privacy.py` | Added comprehensive automated negative privacy tests for keystroke timing | ✓ Done |
+| Phase 1 | `packages/version.py`, `apps/api/config.py`, `apps/api/routes/sessions.py` | Single source of truth for versions, rate limiting, and configurable CORS | ✓ Done |
+| Phase 1 | `apps/web/templates/dashboard.html` | Removed hardcoded initial stats | ✓ Done |
+| Phase 1 | `apps/web/public/sentinel.js`, `extension/` | Consolidated single collector SDK, fixed Chrome extension badge and CORS routing | ✓ Done |
+| Phase 1 | `tests/test_sessions_architecture.py` | Added 18 comprehensive integration tests for session architecture & delta ingest | ✓ Done |

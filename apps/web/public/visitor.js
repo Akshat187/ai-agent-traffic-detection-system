@@ -1,7 +1,7 @@
 /**
  * Meridian Visitor — consent notice manager.
  * Handles the consent notice UI shared across all three Meridian pages.
- * The actual telemetry collection lives entirely in collector.js.
+ * The actual telemetry collection lives entirely in sentinel.js.
  */
 
 document.addEventListener('DOMContentLoaded', function () {

@@ -14,9 +14,12 @@ from sqlalchemy import (
     Text,
     ForeignKey,
     JSON,
+    Index,
+    PrimaryKeyConstraint,
 )
 from sqlalchemy.orm import relationship
 from packages.database.db import Base
+from packages.version import MODEL_VERSION, FEATURE_SCHEMA_VERSION
 
 
 class SiteRecord(Base):
@@ -39,9 +42,9 @@ class SiteRecord(Base):
 
 class SessionRecord(Base):
     """
-    Core session record. One row per detected interaction session.
-    data_source: 'realtime_sdk' | 'synthetic_demo' | 'synthetic_test' |
-                 'synthetic_simulated_agent' | 'synthetic_bot'
+    Core session record. ONE ROW PER PAGE VISIT (session_id == page_visit_id).
+    journey_id groups the page visits of one tab; tab_id is metadata only.
+    data_source: 'realtime_sdk' | 'chrome_extension' | 'synthetic_demo' | ...
     """
 
     __tablename__ = "sessions"
@@ -50,12 +53,15 @@ class SessionRecord(Base):
     site_id = Column(String(64), ForeignKey("sites.site_id"), index=True, nullable=True)
     visitor_id = Column(String(64), index=True, nullable=True)
 
-    # Task must be one of: shopping / travel / community / custom
-    task = Column(String(64), default="shopping", index=True)
+    # general | shopping | travel | forum | custom  (validated at ingest)
+    task = Column(String(64), default="general", index=True)
+    custom_task = Column(String(64), nullable=True)
 
+    # Unix epoch milliseconds (ingest normalizes legacy seconds)
     start_time = Column(Float, nullable=True)
     end_time = Column(Float, nullable=True)
     duration_ms = Column(Float, default=0.0)
+    active_ms = Column(Float, nullable=True)  # engaged time reported by the collector
     user_agent = Column(String(512), nullable=True)
     ip_hash = Column(String(64), nullable=True)
 
@@ -72,19 +78,41 @@ class SessionRecord(Base):
     risk_score = Column(Float, default=0.0)
 
     # Versioning — every prediction records which model produced it
-    model_version = Column(String(64), default="v1.1.0-defense-in-depth")
-    feature_schema_version = Column(String(16), default="v1.1")
+    model_version = Column(String(64), default=MODEL_VERSION)
+    feature_schema_version = Column(String(16), default=FEATURE_SCHEMA_VERSION)
+
+    # Page-visit identity
+    journey_id = Column(String(64), index=True, nullable=True)
+    previous_visit_id = Column(String(64), nullable=True)
+    page_url = Column(String(512), nullable=True)
 
     # Tab / page identification metadata from client_context
     tab_id = Column(String(64), index=True, nullable=True)
     page_path = Column(String(256), nullable=True)
     page_title = Column(String(256), nullable=True)
-    transmission_seq = Column(Integer, default=1)
+    transmission_seq = Column(Integer, default=1)  # kept for API compat; == last_seq
     client_context = Column(JSON, nullable=True)
 
+    # Ingest protocol state: highest accepted seq for this page visit
+    last_seq = Column(Integer, nullable=False, default=0)
+
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, index=True)
     # Data quality flag: 'standard' | 'low_signal' (e.g. near-empty sessions with insufficient events)
     data_quality = Column(String(32), default="standard", index=True)
+
+    @property
+    def page_visit_id(self) -> str:
+        return self.session_id
+
+    @property
+    def is_final(self) -> bool:
+        return any(bool(c.is_final) for c in self.chunks)
+
+    __table_args__ = (
+        Index("ix_sessions_site_visitor_start", "site_id", "visitor_id", "start_time"),
+        Index("ix_sessions_site_page", "site_id", "page_path"),
+    )
 
     # Relationships
     site = relationship("SiteRecord", back_populates="sessions")
@@ -97,6 +125,63 @@ class SessionRecord(Base):
     verdict = relationship(
         "DetectionVerdict", back_populates="session", uselist=False, cascade="all, delete-orphan"
     )
+    chunks = relationship(
+        "TelemetryChunk", back_populates="session", cascade="all, delete-orphan",
+        order_by="TelemetryChunk.seq", lazy="dynamic",
+    )
+    verdict_history = relationship(
+        "VerdictHistory", back_populates="session", cascade="all, delete-orphan",
+        order_by="VerdictHistory.seq", lazy="dynamic",
+    )
+
+
+class TelemetryChunk(Base):
+    """
+    One accepted transmission for a page visit. (session_id, seq) is unique, which
+    makes ingest idempotent: a retried chunk can never be stored twice.
+
+    kind: 'delta'    — events recorded since the previous chunk (protocol v2)
+          'snapshot' — all events since page load (legacy collectors)
+    payload holds the privacy-filtered event lists + browser_signals.
+    """
+
+    __tablename__ = "telemetry_chunks"
+
+    session_id = Column(String(64), ForeignKey("sessions.session_id", ondelete="CASCADE"), nullable=False)
+    seq = Column(Integer, nullable=False)
+    kind = Column(String(16), nullable=False, default="delta")
+    is_final = Column(Boolean, default=False)
+    event_count = Column(Integer, default=0)
+    received_at = Column(DateTime, default=datetime.utcnow)
+    payload = Column(JSON, nullable=True)
+
+    __table_args__ = (PrimaryKeyConstraint("session_id", "seq", name="pk_telemetry_chunks"),)
+
+    session = relationship("SessionRecord", back_populates="chunks")
+
+    @property
+    def final(self) -> bool:
+        return bool(self.is_final)
+
+
+class VerdictHistory(Base):
+    """Verdict after each accepted chunk — gives the per-visit confidence timeline."""
+
+    __tablename__ = "verdict_history"
+
+    session_id = Column(String(64), ForeignKey("sessions.session_id", ondelete="CASCADE"), nullable=False)
+    seq = Column(Integer, nullable=False)
+    label = Column(String(32))
+    confidence = Column(Float, default=0.0)
+    risk_score = Column(Float, default=0.0)
+    event_count = Column(Integer, default=0)
+    evidence = Column(JSON, nullable=True)  # {contributing: [...], counter: [...], l5_status}
+    model_version = Column(String(64), default=MODEL_VERSION)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    __table_args__ = (PrimaryKeyConstraint("session_id", "seq", name="pk_verdict_history"),)
+
+    session = relationship("SessionRecord", back_populates="verdict_history")
 
 
 class RawTelemetry(Base):
@@ -199,6 +284,7 @@ class DetectionVerdict(Base):
     # Layer 5: Contextual Validation
     l5_context_valid = Column(Boolean, default=True)
     l5_context_violations = Column(JSON, default=list)
+    l5_status = Column(String(16), default="not_applicable")  # valid | violated | not_applicable
 
     # Unified decision
     final_verdict = Column(String(32), default="UNCERTAIN")
@@ -209,7 +295,7 @@ class DetectionVerdict(Base):
     contributing_signals = Column(JSON, default=list)
     counter_signals = Column(JSON, default=list)
     human_explanation = Column(Text, default="")
-    model_version = Column(String(64), default="v1.1.0-defense-in-depth")
+    model_version = Column(String(64), default=MODEL_VERSION)
 
     session = relationship("SessionRecord", back_populates="verdict")
 
