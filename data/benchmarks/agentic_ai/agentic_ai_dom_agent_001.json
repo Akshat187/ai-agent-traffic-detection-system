@@ -1,0 +1,99 @@
+{
+  "session_id": "bm_agentic_ai_dom_agent_shopping_001",
+  "visitor_id": "vis_agentic_ai_001",
+  "task": "shopping",
+  "start_time": 1724900060000,
+  "end_time": 1724900069607,
+  "duration_ms": 9607.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_dom_agent",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 8,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [],
+  "scroll_events": [
+    {
+      "t": 1921,
+      "scroll_y": 298,
+      "delta_y": 298
+    },
+    {
+      "t": 2890,
+      "scroll_y": 663,
+      "delta_y": 365
+    },
+    {
+      "t": 4642,
+      "scroll_y": 1029,
+      "delta_y": 366
+    },
+    {
+      "t": 5628,
+      "scroll_y": 1385,
+      "delta_y": 356
+    }
+  ],
+  "click_events": [
+    {
+      "x": 300,
+      "y": 250,
+      "t": 738,
+      "target_category": "input"
+    },
+    {
+      "x": 520,
+      "y": 380,
+      "t": 2868,
+      "target_category": "button"
+    },
+    {
+      "x": 750,
+      "y": 620,
+      "t": 6898,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 738,
+      "details": {
+        "target": "search_input"
+      }
+    },
+    {
+      "action": "item_selected",
+      "t": 2868,
+      "details": {
+        "target": "item_card"
+      }
+    },
+    {
+      "action": "quantity_updated",
+      "t": 6898,
+      "details": {
+        "target": "action_button"
+      }
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 8856,
+      "details": {
+        "target": "confirm_button"
+      }
+    }
+  ],
+  "active_duration_ms": 9607.0
+}

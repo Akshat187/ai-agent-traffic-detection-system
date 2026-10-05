@@ -1,0 +1,99 @@
+{
+  "session_id": "bm_agentic_ai_dom_agent_travel_017",
+  "visitor_id": "vis_agentic_ai_017",
+  "task": "travel",
+  "start_time": 1724901020000,
+  "end_time": 1724901029753,
+  "duration_ms": 9753.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_dom_agent",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 4,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [],
+  "scroll_events": [
+    {
+      "t": 1950,
+      "scroll_y": 314,
+      "delta_y": 314
+    },
+    {
+      "t": 3274,
+      "scroll_y": 688,
+      "delta_y": 374
+    },
+    {
+      "t": 5216,
+      "scroll_y": 1020,
+      "delta_y": 332
+    },
+    {
+      "t": 6238,
+      "scroll_y": 1318,
+      "delta_y": 298
+    }
+  ],
+  "click_events": [
+    {
+      "x": 300,
+      "y": 250,
+      "t": 1077,
+      "target_category": "input"
+    },
+    {
+      "x": 520,
+      "y": 380,
+      "t": 2951,
+      "target_category": "button"
+    },
+    {
+      "x": 750,
+      "y": 620,
+      "t": 6647,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 1077,
+      "details": {
+        "target": "search_input"
+      }
+    },
+    {
+      "action": "item_selected",
+      "t": 2951,
+      "details": {
+        "target": "item_card"
+      }
+    },
+    {
+      "action": "quantity_updated",
+      "t": 6647,
+      "details": {
+        "target": "action_button"
+      }
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 8820,
+      "details": {
+        "target": "confirm_button"
+      }
+    }
+  ],
+  "active_duration_ms": 9753.0
+}

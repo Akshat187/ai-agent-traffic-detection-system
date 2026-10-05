@@ -1,0 +1,94 @@
+{
+  "session_id": "bm_agentic_ai_dom_agent_travel_020",
+  "visitor_id": "vis_agentic_ai_020",
+  "task": "travel",
+  "start_time": 1724901200000,
+  "end_time": 1724901209565,
+  "duration_ms": 9565.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_dom_agent",
+  "browser_signals": {
+    "webdriver": false,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 8,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [],
+  "scroll_events": [
+    {
+      "t": 1913,
+      "scroll_y": 350,
+      "delta_y": 350
+    },
+    {
+      "t": 3025,
+      "scroll_y": 750,
+      "delta_y": 400
+    },
+    {
+      "t": 4202,
+      "scroll_y": 971,
+      "delta_y": 221
+    }
+  ],
+  "click_events": [
+    {
+      "x": 300,
+      "y": 250,
+      "t": 464,
+      "target_category": "input"
+    },
+    {
+      "x": 520,
+      "y": 380,
+      "t": 3040,
+      "target_category": "button"
+    },
+    {
+      "x": 750,
+      "y": 620,
+      "t": 5680,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 464,
+      "details": {
+        "target": "search_input"
+      }
+    },
+    {
+      "action": "item_selected",
+      "t": 3040,
+      "details": {
+        "target": "item_card"
+      }
+    },
+    {
+      "action": "quantity_updated",
+      "t": 5680,
+      "details": {
+        "target": "action_button"
+      }
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 9164,
+      "details": {
+        "target": "confirm_button"
+      }
+    }
+  ],
+  "active_duration_ms": 9565.0
+}

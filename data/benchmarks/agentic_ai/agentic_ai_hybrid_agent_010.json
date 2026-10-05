@@ -1,0 +1,103 @@
+{
+  "session_id": "bm_agentic_ai_hybrid_agent_shopping_010",
+  "visitor_id": "vis_agentic_ai_010",
+  "task": "shopping",
+  "start_time": 1724900600000,
+  "end_time": 1724900606421,
+  "duration_ms": 6421.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_hybrid_agent",
+  "browser_signals": {
+    "webdriver": false,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 8,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 200,
+      "y": 150,
+      "t": 100,
+      "type": "move"
+    },
+    {
+      "x": 450,
+      "y": 320,
+      "t": 955,
+      "type": "move"
+    },
+    {
+      "x": 680,
+      "y": 540,
+      "t": 3460,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [],
+  "scroll_events": [
+    {
+      "t": 1284,
+      "scroll_y": 370,
+      "delta_y": 370
+    },
+    {
+      "t": 2579,
+      "scroll_y": 639,
+      "delta_y": 269
+    },
+    {
+      "t": 3673,
+      "scroll_y": 855,
+      "delta_y": 216
+    },
+    {
+      "t": 4778,
+      "scroll_y": 1147,
+      "delta_y": 292
+    },
+    {
+      "t": 5825,
+      "scroll_y": 1513,
+      "delta_y": 366
+    }
+  ],
+  "click_events": [
+    {
+      "x": 450,
+      "y": 320,
+      "t": 955,
+      "target_category": "button"
+    },
+    {
+      "x": 680,
+      "y": 540,
+      "t": 3460,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 955,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 3460,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 5396,
+      "details": {}
+    }
+  ]
+}

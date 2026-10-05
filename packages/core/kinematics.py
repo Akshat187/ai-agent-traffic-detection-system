@@ -1,4 +1,4 @@
-﻿"""
+"""
 Kinematics and Motion Dynamics Calculation Engine for WebSense.
 Computes high-resolution physical motion metrics from 2D mouse trajectory data.
 """
@@ -49,7 +49,10 @@ def calculate_kinematics(mouse_events: List[Dict[str, Any]]) -> Dict[str, float]
             "pause_time_ratio": 0.0,
             "low_speed_ratio": 0.0,
             "curvature_mean": 0.0,
-            "angular_velocity_mean": 0.0
+            "angular_velocity_mean": 0.0,
+            "jerk_to_velocity_ratio": 0.0,
+            "target_approach_deceleration_ratio": 1.0,
+            "velocity_autocorrelation": 0.0,
         }
 
     # Filter distinct temporal points
@@ -78,7 +81,10 @@ def calculate_kinematics(mouse_events: List[Dict[str, Any]]) -> Dict[str, float]
             "pause_time_ratio": 0.0,
             "low_speed_ratio": 0.0,
             "curvature_mean": 0.0,
-            "angular_velocity_mean": 0.0
+            "angular_velocity_mean": 0.0,
+            "jerk_to_velocity_ratio": 0.0,
+            "target_approach_deceleration_ratio": 1.0,
+            "velocity_autocorrelation": 0.0,
         }
 
     # 1. Trajectory segments
@@ -159,6 +165,34 @@ def calculate_kinematics(mouse_events: List[Dict[str, Any]]) -> Dict[str, float]
     pause_time_ratio = (pause_time / total_time) if total_time > 0 else 0.0
     low_speed_ratio = (low_speed_time / total_time) if total_time > 0 else 0.0
 
+    # 6. Fitts's Law Target Approach Deceleration Ratio
+    # Natural human movements exhibit sharp deceleration (homing phase) during final ~20% of path.
+    # Synthetic/evasive bots maintain constant velocity or terminate abruptly without deceleration.
+    if len(velocities) >= 5:
+        split_idx = int(len(velocities) * 0.8)
+        early_vels = velocities[:split_idx]
+        final_vels = velocities[split_idx:]
+        max_early = max(early_vels) if early_vels else 1.0
+        mean_final = sum(final_vels) / len(final_vels) if final_vels else 0.0
+        target_approach_decel = mean_final / max(1.0, max_early)
+    else:
+        target_approach_decel = 1.0
+
+    # 7. Lag-1 Velocity Autocorrelation
+    # In organic movement, physiological momentum creates positive autocorrelation between successive velocity deltas.
+    # In evasive bots injecting uncorrelated Gaussian noise (dx ~ N(0, sigma^2)), consecutive deltas have negative/near-zero autocorrelation.
+    vel_diffs = [velocities[i] - velocities[i - 1] for i in range(1, len(velocities))]
+    if len(vel_diffs) >= 4:
+        m_vd = sum(vel_diffs) / len(vel_diffs)
+        var_vd = sum((x - m_vd) ** 2 for x in vel_diffs)
+        if var_vd > 1e-5:
+            cov = sum((vel_diffs[i] - m_vd) * (vel_diffs[i + 1] - m_vd) for i in range(len(vel_diffs) - 1))
+            autocorr = cov / var_vd
+        else:
+            autocorr = 0.0
+    else:
+        autocorr = 0.0
+
     # Summary statistics helper
     def mean_std(arr):
         if not arr:
@@ -171,6 +205,11 @@ def calculate_kinematics(mouse_events: List[Dict[str, Any]]) -> Dict[str, float]
     mean_acc, std_acc = mean_std([abs(a) for a in accelerations])
     mean_jerk, std_jerk = mean_std(jerks)
     mean_curv, _ = mean_std(angle_diffs)
+
+    # 8. Jerk-to-Velocity Ratio (Minimum Jerk Principle)
+    # Biological arm movement minimizes jerk relative to movement scale.
+    # Artificially jittered coordinates blow up 3rd derivative finite differences (jerk >> velocity).
+    jerk_to_vel_ratio = (mean_jerk / (mean_vel + 1.0)) if mean_vel >= 0 else 0.0
 
     return {
         "mouse_event_count": n,
@@ -190,6 +229,9 @@ def calculate_kinematics(mouse_events: List[Dict[str, Any]]) -> Dict[str, float]
         "pause_time_ratio": round(pause_time_ratio, 4),
         "low_speed_ratio": round(low_speed_ratio, 4),
         "curvature_mean": round(mean_curv, 4),
-        "angular_velocity_mean": round(mean_curv / (total_time / 1000.0), 4) if total_time > 0 else 0.0
+        "angular_velocity_mean": round(mean_curv / (total_time / 1000.0), 4) if total_time > 0 else 0.0,
+        "jerk_to_velocity_ratio": round(jerk_to_vel_ratio, 4),
+        "target_approach_deceleration_ratio": round(target_approach_decel, 4),
+        "velocity_autocorrelation": round(autocorr, 4)
     }
 

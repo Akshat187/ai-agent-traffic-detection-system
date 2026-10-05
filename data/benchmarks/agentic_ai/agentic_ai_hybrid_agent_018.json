@@ -1,0 +1,103 @@
+{
+  "session_id": "bm_agentic_ai_hybrid_agent_forum_018",
+  "visitor_id": "vis_agentic_ai_018",
+  "task": "forum",
+  "start_time": 1724901080000,
+  "end_time": 1724901088436,
+  "duration_ms": 8436.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_hybrid_agent",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 4,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 200,
+      "y": 150,
+      "t": 100,
+      "type": "move"
+    },
+    {
+      "x": 450,
+      "y": 320,
+      "t": 1439,
+      "type": "move"
+    },
+    {
+      "x": 680,
+      "y": 540,
+      "t": 4046,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [],
+  "scroll_events": [
+    {
+      "t": 1687,
+      "scroll_y": 230,
+      "delta_y": 230
+    },
+    {
+      "t": 3161,
+      "scroll_y": 511,
+      "delta_y": 281
+    },
+    {
+      "t": 4205,
+      "scroll_y": 772,
+      "delta_y": 261
+    },
+    {
+      "t": 5016,
+      "scroll_y": 980,
+      "delta_y": 208
+    },
+    {
+      "t": 6291,
+      "scroll_y": 1347,
+      "delta_y": 367
+    }
+  ],
+  "click_events": [
+    {
+      "x": 450,
+      "y": 320,
+      "t": 1439,
+      "target_category": "button"
+    },
+    {
+      "x": 680,
+      "y": 540,
+      "t": 4046,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 1439,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 4046,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 7625,
+      "details": {}
+    }
+  ]
+}

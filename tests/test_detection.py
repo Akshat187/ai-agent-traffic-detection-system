@@ -7,6 +7,7 @@ Updated for v1.2.0 terminology:
   AUTOMATION_BROWSER_ENV_DETECTED  (was: AUTOMATED_BROWSER_WEBDRIVER_ACTIVE)
 """
 
+import math
 import pytest
 from packages.detection.rules import RuleEngine
 from packages.detection.anomaly import AnomalyDetector
@@ -298,3 +299,82 @@ def test_mahalanobis_anomaly_detector():
     assert is_anom_out
     assert score_out < 0.0
     assert len(reasons_out) >= 2
+
+
+def test_calibrated_probabilities_and_ece():
+    """Verifies BehavioralClassifier temperature scaling, probability sum to 1.0, and ECE tracking."""
+    from packages.detection.ml_classifier import BehavioralClassifier, compute_ece, compute_brier
+    clf = BehavioralClassifier()
+
+    # Create synthetic dataset with known distribution
+    features_h = {"straightness_ratio": 0.70, "micro_corrections": 8, "key_latency_cv": 0.35, "target_approach_deceleration_ratio": 0.15}
+    features_b = {"straightness_ratio": 0.98, "micro_corrections": 0, "key_latency_cv": 0.05, "target_approach_deceleration_ratio": 0.95}
+    features_a = {"straightness_ratio": 0.88, "micro_corrections": 1, "planning_pause_ratio": 0.35, "llm_inference_gap_ratio": 0.40}
+
+    vec_h = clf.extract_feature_vector(features_h)
+    vec_b = clf.extract_feature_vector(features_b)
+    vec_a = clf.extract_feature_vector(features_a)
+
+    X = [vec_h] * 10 + [vec_b] * 10 + [vec_a] * 10
+    y = ["HUMAN"] * 10 + ["TRADITIONAL_AUTOMATION"] * 10 + ["AGENTIC_AI"] * 10
+
+    metrics = clf.train(X, y)
+    assert clf.is_calibrated
+    assert "calibration" in metrics
+    assert "post_ece" in metrics["calibration"]
+
+    # Test prediction calibration
+    pred_cls, conf, probs = clf.predict(features_h)
+    assert pred_cls == "HUMAN"
+    assert math.isclose(sum(probs.values()), 1.0, abs_tol=0.01)
+    assert conf > 60.0
+
+    cal_probs = clf.predict_calibrated(features_h)
+    assert math.isclose(sum(cal_probs.values()), 1.0, abs_tol=0.01)
+
+
+def test_evasive_bot_distinguished_from_human_tremor():
+    """Verifies that an evasive bot injecting coordinate noise with webdriver=False is identified as automation."""
+    engine = DecisionEngine()
+    evasive_bot = generate_synthetic_session(
+        label="TRADITIONAL_AUTOMATION", task="shopping", subtype="evasive", seed=42
+    )
+    feats = extract_all_features(evasive_bot)
+    verdict = engine.evaluate_session(
+        session_id=evasive_bot["session_id"],
+        task="shopping",
+        session_data=evasive_bot,
+        features=feats,
+    )
+    assert verdict["final_verdict"] == "TRADITIONAL_AUTOMATION", (
+        f"Expected TRADITIONAL_AUTOMATION for evasive bot, got {verdict['final_verdict']} "
+        f"(risk: {verdict['risk_score']}, rules: {verdict['l1_rule_score']})"
+    )
+    assert verdict["risk_score"] >= 50.0
+
+
+def test_llm_agent_deliberation_distinguished_from_scripted_bot():
+    """Verifies that an LLM agent with multi-second inference gaps is identified as AGENTIC_AI, not traditional bot."""
+    engine = DecisionEngine()
+    agent_session = generate_synthetic_session(
+        label="AGENTIC_AI", task="travel", subtype="dom_agent", seed=42
+    )
+    feats = extract_all_features(agent_session)
+    verdict = engine.evaluate_session(
+        session_id=agent_session["session_id"],
+        task="travel",
+        session_data=agent_session,
+        features=feats,
+    )
+    assert verdict["final_verdict"] == "AGENTIC_AI", (
+        f"Expected AGENTIC_AI for LLM deliberative agent, got {verdict['final_verdict']} "
+        f"(signals: {verdict['contributing_signals']})"
+    )
+
+
+def test_bootstrap_from_persistent_benchmark():
+    """Verifies that DecisionEngine successfully bootstraps and trains from persistent benchmark data on disk."""
+    engine = DecisionEngine()
+    assert engine.ml.is_trained
+    assert engine.ml.is_calibrated
+    assert "accuracy" in engine.ml.metrics

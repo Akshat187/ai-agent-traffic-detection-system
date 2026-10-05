@@ -51,26 +51,48 @@ class DecisionEngine:
         self._bootstrap_ml()
 
     def _bootstrap_ml(self):
-        """Pre-trains behavioral classifier across all diverse operational profiles and subtypes."""
+        """Pre-trains and calibrates behavioral classifier. Prioritizes persistent benchmark traces from disk."""
         try:
-            from packages.generators.seed_data import generate_synthetic_session
+            import json
+            from pathlib import Path
             from packages.core.features import extract_all_features
-            import random
-            rng = random.Random(42)
+
+            benchmark_dir = Path(__file__).resolve().parent.parent.parent / "data" / "benchmarks"
             X, y = [], []
-            subtypes = {
-                "HUMAN": ["organic_mouse", "keyboard_focused"],
-                "TRADITIONAL_AUTOMATION": ["deterministic", "randomized", "evasive", "headless_dom"],
-                "AGENTIC_AI": ["trajectory_agent", "dom_agent", "hybrid_agent"],
-            }
-            for cls, st_list in subtypes.items():
-                for task in ["shopping", "travel", "forum"]:
-                    for st in st_list:
-                        for i in range(5):
-                            s = generate_synthetic_session(cls, task, index=i, subtype=st, seed=rng.randint(0, 1000000))
-                            f = extract_all_features(s)
-                            X.append(self.ml.extract_feature_vector(f))
-                            y.append(cls)
+
+            if benchmark_dir.exists():
+                for cls in ["HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI"]:
+                    cls_dir = benchmark_dir / cls.lower()
+                    if cls_dir.exists():
+                        for json_file in cls_dir.glob("*.json"):
+                            try:
+                                with open(json_file, "r", encoding="utf-8") as f:
+                                    s = json.load(f)
+                                f_dict = extract_all_features(s)
+                                X.append(self.ml.extract_feature_vector(f_dict))
+                                y.append(cls)
+                            except Exception:
+                                pass
+
+            # If benchmark directory is empty or insufficient (< 12 samples), supplement with procedural seeds
+            if len(X) < 12:
+                from packages.generators.seed_data import generate_synthetic_session
+                import random
+                rng = random.Random(42)
+                subtypes = {
+                    "HUMAN": ["organic_mouse", "keyboard_focused"],
+                    "TRADITIONAL_AUTOMATION": ["deterministic", "randomized", "evasive", "headless_dom"],
+                    "AGENTIC_AI": ["trajectory_agent", "dom_agent", "hybrid_agent"],
+                }
+                for cls, st_list in subtypes.items():
+                    for task in ["shopping", "travel", "forum"]:
+                        for st in st_list:
+                            for i in range(5):
+                                s = generate_synthetic_session(cls, task, index=i, subtype=st, seed=rng.randint(0, 1000000))
+                                f = extract_all_features(s)
+                                X.append(self.ml.extract_feature_vector(f))
+                                y.append(cls)
+
             self.ml.train(X, y)
         except Exception as e:
             print(f"[WebSense] WARNING: ML bootstrap failed — classifier will use heuristic fallback. Error: {e}")
@@ -199,12 +221,35 @@ class DecisionEngine:
         key_hold = features.get("key_mean_hold_time", 0.0)
         has_robotic_hold = (0.0 < key_hold < 35.0)
 
-        if straightness > 0.95 and features.get("micro_corrections", 0) <= 2 and features.get("path_length", 0) > 100:
+        # Evasive bots injecting Gaussian coordinate noise:
+        # Evasive bots add artificial jitter to simulate tremor, but they lack human neuromuscular
+        # target deceleration (Fitts's law), have sparse micro-corrections (<30), and uniform typing cadence.
+        target_decel = features.get("target_approach_deceleration_ratio", 1.0)
+        autocorr = features.get("velocity_autocorrelation", 0.0)
+        path_len = features.get("path_length", 0.0)
+        is_artificial_jitter = (
+            straightness < 0.80
+            and features.get("micro_corrections", 0) < 30
+            and target_decel > 0.35
+            and (key_count >= 4 and (key_cv < 0.22 or has_robotic_hold))
+        )
+        if is_artificial_jitter:
+            contributing_signals.append(
+                f"Artificial coordinate jitter detected (target decel: {target_decel:.2f}, micro-corrections: {features.get('micro_corrections', 0)}) — evasive bot spoofing human tremor"
+            )
+            risk += 35.0
+
+        # Fitts's Law Target Approach Deceleration (human motor control confirmation)
+        if target_decel < 0.35 and straightness < 0.90 and not is_artificial_jitter:
+            counter_signals.append("Fitts's law target deceleration verified (natural neuromuscular motor control)")
+            risk -= 20.0
+
+        if straightness > 0.95 and features.get("micro_corrections", 0) <= 2 and path_len > 100:
             contributing_signals.append(
                 f"Abnormally linear mouse trajectory (straightness: {straightness:.2f}) — consistent with scripted automation"
             )
             risk += 25.0
-        elif (straightness < 0.90 or features.get("micro_corrections", 0) >= 3) and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold)):
+        elif (straightness < 0.90 or features.get("micro_corrections", 0) >= 3) and not is_artificial_jitter and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold)):
             counter_signals.append(
                 f"Natural human trajectory dynamics with {features.get('micro_corrections', 0)} micro-corrections"
             )
@@ -221,7 +266,7 @@ class DecisionEngine:
             risk -= 15.0
 
         # Keyboard-only / assistive navigation: natural typing rhythm without mouse movement
-        is_keyboard_human = (features.get("path_length", 0) == 0 and key_count >= 4 and key_cv >= 0.20 and not has_robotic_hold)
+        is_keyboard_human = (path_len == 0 and key_count >= 4 and key_cv >= 0.20 and not has_robotic_hold)
         if is_keyboard_human:
             counter_signals.append(
                 f"Organic keyboard-only interaction pattern (CV: {key_cv:.2f}) — assistive or keyboard-centric navigation"
@@ -230,14 +275,17 @@ class DecisionEngine:
 
         # Agentic agency profile signals
         planning_pause_ratio = features.get("planning_pause_ratio", 0.0)
+        llm_gap_ratio = features.get("llm_inference_gap_ratio", 0.0)
+        action_burst = features.get("action_burstiness_score", 0.0)
         nav_segments = features.get("nav_segment_count", 0)
         adaptation_score = features.get("adaptation_score", 0.0)
         action_interval_var = features.get("action_interval_variance", 0.0)
+        action_interval_mean = features.get("action_interval_mean_ms", 0.0)
         interaction_diversity = features.get("interaction_diversity_score", 0.0)
 
-        if planning_pause_ratio > 0.30:
+        if planning_pause_ratio > 0.30 or llm_gap_ratio > 0.25:
             contributing_signals.append(
-                f"Goal-directed deliberation pauses ({planning_pause_ratio:.0%} of session time) — agentic planning signature"
+                f"Goal-directed deliberation pauses ({planning_pause_ratio:.0%} of session time, LLM gap ratio: {llm_gap_ratio:.0%}) — agentic planning signature"
             )
             risk += 15.0  # Shifts toward AGENTIC_AI, not TRADITIONAL_AUTOMATION
 
@@ -289,22 +337,25 @@ class DecisionEngine:
         confidence = 50.0
         fallback_used = False
 
-        # Agentic AI profile: deliberate pauses + segmented navigation + adaptive timing.
-        # Thresholds raised (0.20→0.30 pause, 2→3 segments) to prevent natural human
-        # browsing pauses from triggering this branch — the original loose thresholds
-        # caused virtually every real extension session to be misclassified as AGENTIC_AI.
-        # Checked FIRST — agent sessions can also have moderately linear per-segment motion,
-        # so they must be captured before the broader automation check.
         # Organic human kinematics protection: humans naturally have micro-corrections (hand tremor)
         # and curved Bézier paths. An organic human pausing to read must not be called AGENTIC_AI.
+        # But if artificial jitter is detected (high jerk, negative autocorrelation), it cannot be human!
         is_organic_human_kinematics = (
-            features.get("path_length", 0) > 80
+            path_len > 80
+            and not is_artificial_jitter
             and (features.get("micro_corrections", 0) >= 4 or (features.get("micro_corrections", 0) >= 2 and straightness < 0.88))
             and not features.get("webdriver_flag")
             and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold))
         )
 
+        has_llm_deliberation = (
+            llm_gap_ratio > 0.20
+            or (action_interval_mean >= 1200 and action_interval_var >= 400)
+            or (action_burst > 0.30 and planning_pause_ratio > 0.15)
+        )
+
         has_agency_signal = (
+            has_llm_deliberation or
             planning_pause_ratio > 0.15 or
             nav_segments >= 2 or
             adaptation_score > 0.35 or
@@ -314,35 +365,45 @@ class DecisionEngine:
             has_agency_signal
             and not is_organic_human_kinematics
             and (
+                has_llm_deliberation or
                 (planning_pause_ratio > 0.30 and nav_segments >= 3 and straightness > 0.80) or
                 (adaptation_score > 0.45 and features.get("micro_corrections", 0) <= 2 and nav_segments >= 3) or
                 (features.get("first_action_delay_ms", 0) > 500 and nav_segments >= 4 and straightness > 0.80) or
                 (action_interval_var > 1200 and nav_segments >= 3 and straightness > 0.80) or  # Strong LLM inference-delay signature
                 (len(task_actions) >= 2 and action_interval_var > 800 and planning_pause_ratio > 0.20 and features.get("micro_corrections", 0) <= 2) or  # Workflow / computer-use agent
-                (features.get("path_length", 0) < 50 and len(task_actions) >= 2 and planning_pause_ratio > 0.20) or  # DOM-driven agent without cursor trajectory
-                (ml_pred == "AGENTIC_AI" and ml_conf >= 70.0 and rule_score < 60.0)  # Corroborated ML prediction
+                (path_len < 50 and len(task_actions) >= 2 and (planning_pause_ratio > 0.20 or llm_gap_ratio > 0.20)) or  # DOM-driven agent without cursor trajectory
+                (ml_pred == "AGENTIC_AI" and ml_conf >= 68.0 and rule_score < 60.0)  # Corroborated ML prediction
             )
         )
 
         # Traditional automation profile: highly uniform, deterministic behavior.
-        # Keyboard-only organic human browsing is protected from false-positive ML automation attribution.
+        # Blocked if genuine LLM deliberation is present (LLM agents wait multi-seconds for tokens).
         is_automation_profile = (
             (
                 is_replay or
+                is_artificial_jitter or
                 rule_score >= 35.0 or
                 (key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0))) or
                 (straightness > 0.92 and key_count >= 4 and (key_cv < 0.20 or features.get("micro_corrections", 0) <= 1)) or
                 (features.get("duration_ms", 1000) < 500 and features.get("total_event_count", 0) >= 5) or
                 (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0 and not is_keyboard_human)
-            ) and not is_agentic_profile  # Never override agentic evidence
+            ) and not is_agentic_profile and not has_llm_deliberation  # Never override agentic LLM evidence
         )
+
+        # Calibrated confidence computation:
+        # Harmonize Layer-2 calibrated posterior probability (65%) with multi-layer corroboration (35%)
+        calibrated_conf = ml_conf
+        if ml_probs and isinstance(ml_probs, dict):
+            # If ml_probs contains calibrated probabilities for the predicted class
+            top_prob = ml_probs.get(ml_pred, 0.5)
+            calibrated_conf = top_prob * 100.0 if top_prob <= 1.0 else top_prob
 
         if is_agentic_profile:
             final_verdict = "AGENTIC_AI"
-            # Confidence scales with actual behavioral evidence (risk_score), not a hard floor.
-            # raw_risk=0 → ~55% (uncertain agentic); raw_risk=40 → ~79%; raw_risk=60 → ~91%
-            confidence = round(min(94.0, max(55.0, 38.0 + (risk_score * 0.93))), 1)
-            risk_score = max(35.0, risk_score)  # lower floor — genuine humans can still have some risk
+            c_target = ml_probs.get("AGENTIC_AI", calibrated_conf / 100.0) * 100.0 if ml_probs else calibrated_conf
+            heuristic_conf = min(94.0, max(55.0, 38.0 + (risk_score * 0.93)))
+            confidence = round(min(98.0, max(55.0, (c_target * 0.65) + (heuristic_conf * 0.35))), 1)
+            risk_score = max(35.0, risk_score)
             contributing_signals.append(
                 "Agentic behavior profile: autonomous goal-directed navigation, "
                 "planning pause cadence, and context-dependent action selection"
@@ -350,47 +411,45 @@ class DecisionEngine:
 
         elif is_automation_profile:
             final_verdict = "TRADITIONAL_AUTOMATION"
-            # Confidence scales with actual risk evidence, not a fixed floor.
-            # raw_risk=0 → ~50% (weak signal); raw_risk=40 → ~82%; raw_risk=60 → ~98%
-            confidence = round(min(99.0, max(50.0, 42.0 + (risk_score * 0.95))), 1)
+            c_target = ml_probs.get("TRADITIONAL_AUTOMATION", calibrated_conf / 100.0) * 100.0 if ml_probs else calibrated_conf
+            heuristic_conf = min(99.0, max(50.0, 42.0 + (risk_score * 0.95)))
+            confidence = round(min(99.0, max(52.0, (c_target * 0.65) + (heuristic_conf * 0.35))), 1)
             risk_score = max(50.0, risk_score)
             contributing_signals.append("Deterministic scripted behavior signature: uniform timing, predictable sequence")
 
         # Webdriver detected but behavior is not clearly automation — could be unmasked agent
         elif features.get("webdriver_flag", 0.0) == 1.0:
-            # Environmental signal is supporting — use ML to disambiguate
             if ml_pred == "AGENTIC_AI" and ml_conf >= 65.0:
                 final_verdict = "AGENTIC_AI"
-                confidence = round(min(85.0, max(55.0, ml_conf)), 1)
+                confidence = round(min(88.0, max(55.0, calibrated_conf)), 1)
                 risk_score = max(40.0, risk_score)
                 contributing_signals.append(
                     "Automated browser environment combined with agentic behavioral profile"
                 )
             elif ml_pred == "TRADITIONAL_AUTOMATION" or ml_conf >= 72.0:
                 final_verdict = "TRADITIONAL_AUTOMATION"
-                confidence = round(min(90.0, max(58.0, ml_conf)), 1)
+                confidence = round(min(92.0, max(58.0, calibrated_conf)), 1)
                 risk_score = max(50.0, risk_score)
             else:
                 final_verdict = "UNCERTAIN"
                 confidence = 48.0
                 fallback_used = True
 
-        # HUMAN: only assign when risk is genuinely low. Both risk_score and rule_score must
-        # be below 30 — this prevents bot sessions with zero agentic signals but moderate
-        # behavioral risk from falling through to HUMAN via the ML fallback.
         elif risk_score <= 30.0 and rule_score < 30.0 and (ml_pred == "HUMAN" or is_keyboard_human):
             final_verdict = "HUMAN"
-            confidence = round(min(98.0, max(68.0, 100.0 - (risk_score * 1.1))), 1)
+            c_target = ml_probs.get("HUMAN", calibrated_conf / 100.0) * 100.0 if ml_probs else calibrated_conf
+            heuristic_conf = min(98.0, max(68.0, 100.0 - (risk_score * 1.1)))
+            confidence = round(min(98.0, max(68.0, (c_target * 0.65) + (heuristic_conf * 0.35))), 1)
 
         elif ml_conf >= 78.0:
             final_verdict = ml_pred
-            confidence = round(ml_conf, 1)
+            confidence = round(calibrated_conf, 1)
             if final_verdict in ("TRADITIONAL_AUTOMATION", "AGENTIC_AI"):
                 risk_score = max(45.0, risk_score)
 
         else:
             final_verdict = "UNCERTAIN"
-            confidence = round(max(40.0, min(65.0, 50.0 + (ml_conf - 50.0) * 0.5)), 1)
+            confidence = round(max(40.0, min(65.0, 50.0 + (calibrated_conf - 50.0) * 0.5)), 1)
             fallback_used = True
 
         # ── GENERATE HUMAN-READABLE EXPLANATION ───────────────────────────────

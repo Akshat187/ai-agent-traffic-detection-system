@@ -1,0 +1,88 @@
+{
+  "session_id": "bm_agentic_ai_hybrid_agent_travel_002",
+  "visitor_id": "vis_agentic_ai_002",
+  "task": "travel",
+  "start_time": 1724900120000,
+  "end_time": 1724900128129,
+  "duration_ms": 8129.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_hybrid_agent",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 4,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 200,
+      "y": 150,
+      "t": 100,
+      "type": "move"
+    },
+    {
+      "x": 450,
+      "y": 320,
+      "t": 812,
+      "type": "move"
+    },
+    {
+      "x": 680,
+      "y": 540,
+      "t": 3660,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [],
+  "scroll_events": [
+    {
+      "t": 1625,
+      "scroll_y": 369,
+      "delta_y": 369
+    },
+    {
+      "t": 2736,
+      "scroll_y": 603,
+      "delta_y": 234
+    }
+  ],
+  "click_events": [
+    {
+      "x": 450,
+      "y": 320,
+      "t": 812,
+      "target_category": "button"
+    },
+    {
+      "x": 680,
+      "y": 540,
+      "t": 3660,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 812,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 3660,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 6917,
+      "details": {}
+    }
+  ]
+}

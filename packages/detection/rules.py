@@ -84,7 +84,8 @@ class RuleEngine:
         key_count = features.get("key_event_count", 0)
         key_cv = features.get("key_latency_cv", 0.0)
         key_hold = features.get("key_mean_hold_time", 0.0)
-        if key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0)):
+        has_robotic_hold = (0.0 < key_hold < 35.0)
+        if key_count >= 4 and (key_cv < 0.18 or has_robotic_hold):
             risk += self.config["uniform_keystrokes_penalty"]
             flags.append("SYNTHETIC_UNIFORM_KEYSTROKE_CADENCE")
 
@@ -112,9 +113,24 @@ class RuleEngine:
         if nav_segments >= 4 and straightness > 0.80 and straightness < 0.98:
             flags.append("SEGMENTED_GOAL_DIRECTED_TRAJECTORY")
 
+        # 8. Evasive Bot Artificial Jitter Detection
+        # Evasive bots add artificial jitter to simulate tremor, but they lack human neuromuscular
+        # target deceleration (Fitts's law), have sparse micro-corrections (<25), and uniform typing cadence.
+        target_decel = features.get("target_approach_deceleration_ratio", 1.0)
+        autocorr = features.get("velocity_autocorrelation", 0.0)
+        if (straightness < 0.80 and features.get("micro_corrections", 0) < 30 and target_decel > 0.35 and 
+            (key_count >= 4 and (key_cv < 0.22 or has_robotic_hold))):
+            risk += 35.0
+            flags.append("ARTIFICIAL_GAUSSIAN_JITTER_DETECTED")
+
+        # 9. LLM Token Inference Deliberation Cadence (Agentic pattern)
+        llm_gap_ratio = features.get("llm_inference_gap_ratio", 0.0)
+        if llm_gap_ratio > 0.25:
+            flags.append("LLM_TOKEN_INFERENCE_DELIBERATION_CADENCE")
+
         # ── ENVIRONMENTAL SIGNALS (supporting only) ───────────────────────────
 
-        # 8. Browser automation environment (SUPPORTING SIGNAL ONLY)
+        # 10. Browser automation environment (SUPPORTING SIGNAL ONLY)
         # This signal supports but does not determine classification.
         # Absence does NOT prove human behavior — sophisticated agents mask this.
         if features.get("webdriver_flag", 0.0) == 1.0:
@@ -127,11 +143,18 @@ class RuleEngine:
 
         micro_corrections = features.get("micro_corrections", 0)
         has_robotic_hold = (0.0 < key_hold < 35.0)
+        is_artificial_jitter = ("ARTIFICIAL_GAUSSIAN_JITTER_DETECTED" in flags)
 
-        if (micro_corrections >= 3 and straightness < 0.85 and 
+        if (micro_corrections >= 3 and straightness < 0.85 and not is_artificial_jitter and
             (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold))):
             risk -= self.config["human_micro_correction_bonus"]
             mitigations.append("NATURAL_MOUSE_MICRO_JITTER_DETECTED")
+
+        # Fitts's Law Target Approach Deceleration (human motor control confirmation)
+        target_decel = features.get("target_approach_deceleration_ratio", 1.0)
+        if target_decel < 0.45 and straightness < 0.90 and autocorr > 0.05 and not is_artificial_jitter:
+            risk -= 20.0
+            mitigations.append("FITTS_LAW_HOMING_DECELERATION_DETECTED")
 
         if key_count >= 5 and key_cv > 0.20 and not has_robotic_hold:
             risk -= self.config["human_keystroke_jitter_bonus"]

@@ -1,0 +1,104 @@
+{
+  "session_id": "bm_agentic_ai_dom_agent_travel_005",
+  "visitor_id": "vis_agentic_ai_005",
+  "task": "travel",
+  "start_time": 1724900300000,
+  "end_time": 1724900309610,
+  "duration_ms": 9610.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_dom_agent",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 8,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [],
+  "scroll_events": [
+    {
+      "t": 1922,
+      "scroll_y": 362,
+      "delta_y": 362
+    },
+    {
+      "t": 3715,
+      "scroll_y": 742,
+      "delta_y": 380
+    },
+    {
+      "t": 5671,
+      "scroll_y": 1000,
+      "delta_y": 258
+    },
+    {
+      "t": 7437,
+      "scroll_y": 1333,
+      "delta_y": 333
+    },
+    {
+      "t": 8542,
+      "scroll_y": 1732,
+      "delta_y": 399
+    }
+  ],
+  "click_events": [
+    {
+      "x": 300,
+      "y": 250,
+      "t": 657,
+      "target_category": "input"
+    },
+    {
+      "x": 520,
+      "y": 380,
+      "t": 4245,
+      "target_category": "button"
+    },
+    {
+      "x": 750,
+      "y": 620,
+      "t": 6457,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 657,
+      "details": {
+        "target": "search_input"
+      }
+    },
+    {
+      "action": "item_selected",
+      "t": 4245,
+      "details": {
+        "target": "item_card"
+      }
+    },
+    {
+      "action": "quantity_updated",
+      "t": 6457,
+      "details": {
+        "target": "action_button"
+      }
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 9210,
+      "details": {
+        "target": "confirm_button"
+      }
+    }
+  ],
+  "active_duration_ms": 9610.0
+}

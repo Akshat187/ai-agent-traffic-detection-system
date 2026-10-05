@@ -1,0 +1,58 @@
+{
+  "session_id": "bm_traditional_automation_headless_dom_shopping_016",
+  "visitor_id": "vis_traditional_automation_016",
+  "task": "shopping",
+  "start_time": 1724900960000,
+  "end_time": 1724900960314,
+  "duration_ms": 314.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_headless_dom",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [],
+  "scroll_events": [],
+  "click_events": [
+    {
+      "x": 400,
+      "y": 300,
+      "t": 80,
+      "target_category": "button"
+    },
+    {
+      "x": 600,
+      "y": 500,
+      "t": 140,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 50,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 95,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 160,
+      "details": {}
+    }
+  ]
+}

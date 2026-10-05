@@ -1,0 +1,97 @@
+{
+  "dataset_name": "WebSense Behavioral Ground Truth Benchmark",
+  "version": "1.2.0",
+  "total_traces": 60,
+  "classes": {
+    "HUMAN": {
+      "count": 20,
+      "subtypes": [
+        "organic_mouse",
+        "keyboard_focused"
+      ],
+      "files": [
+        "human_organic_mouse_001.json",
+        "human_keyboard_focused_002.json",
+        "human_organic_mouse_003.json",
+        "human_keyboard_focused_004.json",
+        "human_organic_mouse_005.json",
+        "human_keyboard_focused_006.json",
+        "human_organic_mouse_007.json",
+        "human_keyboard_focused_008.json",
+        "human_organic_mouse_009.json",
+        "human_keyboard_focused_010.json",
+        "human_organic_mouse_011.json",
+        "human_keyboard_focused_012.json",
+        "human_organic_mouse_013.json",
+        "human_keyboard_focused_014.json",
+        "human_organic_mouse_015.json",
+        "human_keyboard_focused_016.json",
+        "human_organic_mouse_017.json",
+        "human_keyboard_focused_018.json",
+        "human_organic_mouse_019.json",
+        "human_keyboard_focused_020.json"
+      ]
+    },
+    "TRADITIONAL_AUTOMATION": {
+      "count": 20,
+      "subtypes": [
+        "deterministic",
+        "headless_dom",
+        "evasive",
+        "randomized"
+      ],
+      "files": [
+        "traditional_automation_deterministic_001.json",
+        "traditional_automation_randomized_002.json",
+        "traditional_automation_evasive_003.json",
+        "traditional_automation_headless_dom_004.json",
+        "traditional_automation_deterministic_005.json",
+        "traditional_automation_randomized_006.json",
+        "traditional_automation_evasive_007.json",
+        "traditional_automation_headless_dom_008.json",
+        "traditional_automation_deterministic_009.json",
+        "traditional_automation_randomized_010.json",
+        "traditional_automation_evasive_011.json",
+        "traditional_automation_headless_dom_012.json",
+        "traditional_automation_deterministic_013.json",
+        "traditional_automation_randomized_014.json",
+        "traditional_automation_evasive_015.json",
+        "traditional_automation_headless_dom_016.json",
+        "traditional_automation_deterministic_017.json",
+        "traditional_automation_randomized_018.json",
+        "traditional_automation_evasive_019.json",
+        "traditional_automation_headless_dom_020.json"
+      ]
+    },
+    "AGENTIC_AI": {
+      "count": 20,
+      "subtypes": [
+        "trajectory_agent",
+        "hybrid_agent",
+        "dom_agent"
+      ],
+      "files": [
+        "agentic_ai_dom_agent_001.json",
+        "agentic_ai_hybrid_agent_002.json",
+        "agentic_ai_trajectory_agent_003.json",
+        "agentic_ai_dom_agent_004.json",
+        "agentic_ai_dom_agent_005.json",
+        "agentic_ai_hybrid_agent_006.json",
+        "agentic_ai_trajectory_agent_007.json",
+        "agentic_ai_dom_agent_008.json",
+        "agentic_ai_dom_agent_009.json",
+        "agentic_ai_hybrid_agent_010.json",
+        "agentic_ai_trajectory_agent_011.json",
+        "agentic_ai_dom_agent_012.json",
+        "agentic_ai_dom_agent_013.json",
+        "agentic_ai_hybrid_agent_014.json",
+        "agentic_ai_trajectory_agent_015.json",
+        "agentic_ai_dom_agent_016.json",
+        "agentic_ai_dom_agent_017.json",
+        "agentic_ai_hybrid_agent_018.json",
+        "agentic_ai_trajectory_agent_019.json",
+        "agentic_ai_dom_agent_020.json"
+      ]
+    }
+  }
+}

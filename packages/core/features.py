@@ -200,6 +200,7 @@ def extract_agency_profile_features(
     task_actions: List[Dict[str, Any]],
     mouse_events: List[Dict[str, Any]],
     duration_ms: float,
+    click_events: List[Dict[str, Any]] = None,
 ) -> Dict[str, float]:
     """
     Extracts observable behavioral signals that may indicate autonomous decision-making.
@@ -213,15 +214,23 @@ def extract_agency_profile_features(
       - action_interval_variance: variance between consecutive task action timestamps
       - adaptation_score: ratio of actions after major pauses (context-dependent selection)
       - interaction_diversity_score: entropy of interaction type usage
+      - llm_inference_gap_ratio: fraction of session in 1.2s - 6.5s pauses (LLM token generation window)
+      - action_burstiness_score: ratio of rapid sub-actions (<400ms) executed after inference pauses
+      - cursor_teleport_ratio: fraction of clicks executing without preceding mouse trajectory
     """
     PLANNING_PAUSE_THRESHOLD_MS = 800.0
+    LLM_INFERENCE_MIN_MS = 1200.0
+    LLM_INFERENCE_MAX_MS = 6500.0
 
     # -- Action intervals from task_actions (primary bot-vs-agent signal) ---------------
     # LLM-driven agents have 1-5 s gaps between consecutive actions (model inference wait).
-    # Scripted bots have gaps < 100 ms.  Humans have irregular, longer gaps.
+    # Scripted bots have gaps < 100 ms. Humans have irregular, longer gaps.
     action_intervals = []
     action_interval_mean_ms = 0.0
     task_pause_end_times = []
+    llm_gaps_ms = 0.0
+    burst_actions = 0
+
     if len(task_actions) >= 2:
         for i in range(1, len(task_actions)):
             raw_t_curr = task_actions[i].get("t", 0)
@@ -231,6 +240,13 @@ def extract_agency_profile_features(
                 action_intervals.append(dt)
                 if dt > PLANNING_PAUSE_THRESHOLD_MS:
                     task_pause_end_times.append(float(raw_t_curr))
+                if LLM_INFERENCE_MIN_MS <= dt <= LLM_INFERENCE_MAX_MS:
+                    llm_gaps_ms += dt
+                # Burstiness: rapid follow-up action (<400ms) after an LLM deliberation pause (>1200ms)
+                if i >= 2:
+                    prev_dt = float(task_actions[i - 1].get("t", 0)) - float(task_actions[i - 2].get("t", 0))
+                    if prev_dt >= LLM_INFERENCE_MIN_MS and dt < 400.0:
+                        burst_actions += 1
 
     if action_intervals:
         action_interval_mean_ms = round(
@@ -244,9 +260,14 @@ def extract_agency_profile_features(
     else:
         action_interval_variance = 0.0
 
-    # -- Planning pause ratio -----------------------------------------------------------
-    # Fraction of session time in pauses > 800 ms.
-    # Combines mouse-movement gaps AND task_action inference delays.
+    action_burstiness_score = (
+        round(burst_actions / max(1, len(task_actions) - 1), 4)
+        if len(task_actions) >= 2
+        else 0.0
+    )
+
+    # -- Planning pause ratio & LLM inference gap ratio ---------------------------------
+    # Fraction of session time in pauses > 800 ms (and specifically 1.2s-6.5s for LLM window)
     planning_pause_ms = 0.0
     mouse_pause_end_times = []
     if len(mouse_events) >= 2:
@@ -255,6 +276,8 @@ def extract_agency_profile_features(
             if dt > PLANNING_PAUSE_THRESHOLD_MS:
                 planning_pause_ms += dt
                 mouse_pause_end_times.append(float(mouse_events[i].get("t", 0)))
+            if LLM_INFERENCE_MIN_MS <= dt <= LLM_INFERENCE_MAX_MS:
+                llm_gaps_ms += dt
 
     for dt in action_intervals:
         if dt > PLANNING_PAUSE_THRESHOLD_MS:
@@ -264,6 +287,11 @@ def extract_agency_profile_features(
         (planning_pause_ms / duration_ms) if duration_ms > 0 else 0.0
     )
     planning_pause_ratio = round(min(1.0, planning_pause_ratio), 4)
+
+    llm_inference_gap_ratio = (
+        (llm_gaps_ms / duration_ms) if duration_ms > 0 else 0.0
+    )
+    llm_inference_gap_ratio = round(min(1.0, llm_inference_gap_ratio), 4)
 
     # -- Navigation segment count -------------------------------------------------------
     # Distinct cursor segments separated by pauses > 400 ms.
@@ -285,6 +313,30 @@ def extract_agency_profile_features(
                 in_segment = True
         if in_segment:
             nav_segments += 1
+
+    # -- Cursor Teleport Ratio ---------------------------------------------------------
+    # In DOM-direct agents (e.g. Stagehand), clicks happen without preceding continuous movement.
+    clicks = click_events or []
+    teleport_count = 0
+    if clicks:
+        if not mouse_events or len(mouse_events) < 3:
+            teleport_count = len(clicks)
+        else:
+            m_points = [(float(m.get("x", 0)), float(m.get("y", 0)), float(m.get("t", 0))) for m in mouse_events]
+            for clk in clicks:
+                cx, cy, ct = float(clk.get("x", 0)), float(clk.get("y", 0)), float(clk.get("t", 0))
+                prior = [p for p in m_points if p[2] <= ct]
+                if not prior:
+                    teleport_count += 1
+                else:
+                    last_m = prior[-1]
+                    dist = math.sqrt((cx - last_m[0]) ** 2 + (cy - last_m[1]) ** 2)
+                    dt = max(1.0, ct - last_m[2])
+                    # If cursor was > 180px away and jumped with dt < 30ms or without points
+                    if dist > 180.0 and dt < 40.0:
+                        teleport_count += 1
+
+    cursor_teleport_ratio = round(teleport_count / len(clicks), 4) if clicks else 0.0
 
     # -- Adaptation score --------------------------------------------------------------
     # Ratio of task actions that occur within 3 s after a planning pause.
@@ -324,6 +376,9 @@ def extract_agency_profile_features(
 
     return {
         "planning_pause_ratio": planning_pause_ratio,
+        "llm_inference_gap_ratio": llm_inference_gap_ratio,
+        "action_burstiness_score": action_burstiness_score,
+        "cursor_teleport_ratio": cursor_teleport_ratio,
         "nav_segment_count": nav_segments,
         "action_interval_variance": action_interval_variance,
         "action_interval_mean_ms": action_interval_mean_ms,
@@ -388,7 +443,7 @@ def extract_all_features(session_data: Dict[str, Any]) -> Dict[str, Any]:
     keyboard = extract_keyboard_features(kb_evs)
     scroll = extract_scroll_features(scroll_evs)
     interaction = extract_interaction_features(start_t, end_t, click_evs, task_acts, mouse_evs, kb_evs)
-    agency = extract_agency_profile_features(task_acts, mouse_evs, effective_duration_ms)
+    agency = extract_agency_profile_features(task_acts, mouse_evs, effective_duration_ms, click_evs)
 
     # Environment signals — lowest weight, supporting evidence only
     webdriver = bool(browser.get("webdriver", False))
