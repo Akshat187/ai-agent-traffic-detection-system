@@ -78,6 +78,11 @@ EXPERIMENT_DESCRIPTIONS = {
 
 def _feature_record_to_dict(feat: FeatureRecord) -> Dict[str, float]:
     """Map ORM FeatureRecord to a flat feature dict."""
+    af = feat.all_features_json or {}
+    key_uniformity = af.get("key_uniformity_score")
+    if key_uniformity is None:
+        key_std = feat.key_latency_std or 0.0
+        key_uniformity = 1.0 / (1.0 + key_std) if key_std >= 0 else 0.0
     return {
         "straightness_ratio":       feat.mouse_straightness_ratio or 1.0,
         "mean_velocity":            feat.mouse_mean_velocity or 0.0,
@@ -88,7 +93,7 @@ def _feature_record_to_dict(feat: FeatureRecord) -> Dict[str, float]:
         "direction_changes":        feat.mouse_direction_changes or 0,
         "pause_time_ratio":         feat.mouse_pause_ratio or 0.0,
         "key_latency_cv":           feat.key_latency_cv or 0.0,
-        "key_uniformity_score":     1.0 - (feat.key_latency_cv or 0.0),
+        "key_uniformity_score":     round(float(key_uniformity), 4),
         "key_mean_latency":         feat.key_mean_latency or 0.0,
         "key_latency_std":          feat.key_latency_std or 0.0,
         "scroll_velocity_std":      feat.scroll_velocity_std or 0.0,

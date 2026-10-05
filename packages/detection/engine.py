@@ -265,7 +265,8 @@ class DecisionEngine:
             (adaptation_score > 0.45 and features.get("micro_corrections", 0) <= 2 and nav_segments >= 3) or
             (features.get("first_action_delay_ms", 0) > 500 and nav_segments >= 4 and straightness > 0.80) or
             (action_interval_var > 1200 and nav_segments >= 3) or  # Strong LLM inference-delay signature
-            (len(task_actions) >= 3 and action_interval_var > 1000 and planning_pause_ratio > 0.25) or  # Workflow / computer-use agent
+            (len(task_actions) >= 2 and action_interval_var > 800 and planning_pause_ratio > 0.20) or  # Workflow / computer-use agent
+            (features.get("path_length", 0) < 50 and len(task_actions) >= 2 and planning_pause_ratio > 0.20) or  # DOM-driven agent without cursor trajectory
             (ml_pred == "AGENTIC_AI" and ml_conf >= 70.0 and rule_score < 60.0)  # Corroborated ML prediction
         )
 

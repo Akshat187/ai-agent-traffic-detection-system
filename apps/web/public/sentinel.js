@@ -70,8 +70,8 @@
 
   // 2. Constants & Storage Keys
   const CONSENT_KEYS = [
-    'meridian_consent',
     'meridian_telemetry_consent',
+    'meridian_consent',
     'ws_consent',
     'ws_sentinel_consent_' + siteId
   ];

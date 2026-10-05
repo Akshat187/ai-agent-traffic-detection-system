@@ -178,3 +178,40 @@ def test_context_validator():
     # A reasonable action sequence should pass context validation
     assert isinstance(is_valid, bool)
     assert isinstance(violations, list)
+
+
+def test_decision_engine_on_dom_agent_session():
+    """Verifies that an AI browser agent interacting directly via DOM (no mouse path) is correctly classified."""
+    engine = DecisionEngine()
+    dom_agent_session = {
+        "session_id": "st_test_dom_agent",
+        "task": "shopping",
+        "start_time": 1700000000000,
+        "end_time": 1700000007000,
+        "duration_ms": 7000,
+        "active_duration_ms": 7000,
+        "mouse_events": [],
+        "keyboard_events": [],
+        "scroll_events": [],
+        "click_events": [
+            {"x": 100, "y": 200, "t": 600, "target_category": "button"},
+            {"x": 200, "y": 300, "t": 3500, "target_category": "button"},
+            {"x": 300, "y": 400, "t": 6200, "target_category": "button"},
+        ],
+        "task_actions": [
+            {"action": "product_viewed", "t": 600, "details": {}},
+            {"action": "add_to_cart", "t": 3500, "details": {}},
+            {"action": "checkout_complete", "t": 6200, "details": {}},
+        ],
+        "browser_signals": {"webdriver": False},
+    }
+    feats = extract_all_features(dom_agent_session)
+    verdict = engine.evaluate_session(
+        session_id=dom_agent_session["session_id"],
+        task="shopping",
+        session_data=dom_agent_session,
+        features=feats,
+    )
+    assert verdict["final_verdict"] == "AGENTIC_AI", (
+        f"Expected AGENTIC_AI for DOM agent session, got {verdict['final_verdict']}"
+    )

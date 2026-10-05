@@ -465,6 +465,9 @@
       filterChips.forEach(function(c) { c.classList.remove('active'); });
       chip.classList.add('active');
       activeTopic = chip.dataset.topic;
+      if (window.Sentinel && window.Sentinel.logAction) {
+        window.Sentinel.logAction('topic_filter_applied', { topic: activeTopic });
+      }
       var visible = 0;
       threads.forEach(function(t) {
         var show = activeTopic === 'all' || t.dataset.topic === activeTopic;
@@ -482,6 +485,19 @@
     btn.classList.toggle('voted');
     var num = parseInt(btn.textContent.replace(/[^0-9]/g, ''));
     btn.textContent = btn.classList.contains('voted') ? '▲ ' + (num + 1) : '▲ ' + (num - 1);
+    if (window.Sentinel && window.Sentinel.logAction) {
+      window.Sentinel.logAction('thread_voted', { voted: btn.classList.contains('voted') });
+    }
+  });
+
+  // Track thread card clicks
+  document.addEventListener('click', function(e) {
+    var threadCard = e.target.closest('.thread-card');
+    if (threadCard && !e.target.closest('.vote-btn, button')) {
+      if (window.Sentinel && window.Sentinel.logAction) {
+        window.Sentinel.logAction('thread_opened', { topic: threadCard.dataset.topic || 'general' });
+      }
+    }
   });
 
   // ── New post ──────────────────────────────────────────────────────────────
@@ -500,6 +516,9 @@
     var text = document.getElementById('newPostInput').value.trim();
     if (!text) return;
     var topic = document.getElementById('newPostTopic').value;
+    if (window.Sentinel && window.Sentinel.logAction) {
+      window.Sentinel.logAction('reply_posted', { topic: topic, length: text.length });
+    }
     var card = document.createElement('div');
     card.className = 'thread-card';
     card.dataset.topic = topic;
@@ -524,25 +543,26 @@
 
   // ── Consent banner ───────────────────────────────────────────────────────
   (function() {
-    var CONSENT_KEY = 'meridian_consent';
+    var CONSENT_KEY = 'meridian_telemetry_consent';
+    var LEGACY_KEY = 'meridian_consent';
     var banner = document.getElementById('consent-banner');
     function hideBanner() { if (banner) { banner.classList.remove('visible'); setTimeout(function() { banner.style.display='none'; }, 400); } }
-    var consent = localStorage.getItem(CONSENT_KEY);
+    var consent = localStorage.getItem(CONSENT_KEY) || localStorage.getItem(LEGACY_KEY);
     if (!consent) {
       setTimeout(function() { if (banner) banner.classList.add('visible'); }, 800);
       document.getElementById('consent-accept').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'granted');
+        localStorage.setItem(LEGACY_KEY, 'granted');
         if (window.Sentinel && window.Sentinel.grantConsent) {
           window.Sentinel.grantConsent();
-        } else {
-          localStorage.setItem(CONSENT_KEY,'granted');
         }
         hideBanner();
       });
       document.getElementById('consent-decline').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'declined');
+        localStorage.setItem(LEGACY_KEY, 'declined');
         if (window.Sentinel && window.Sentinel.declineConsent) {
           window.Sentinel.declineConsent();
-        } else {
-          localStorage.setItem(CONSENT_KEY,'declined');
         }
         hideBanner();
       });

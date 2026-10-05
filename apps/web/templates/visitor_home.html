@@ -405,9 +405,18 @@
     });
   })();
 
+  // ── Home navigation & action logging ────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    var link = e.target.closest('a[href]');
+    if (link && window.Sentinel && window.Sentinel.logAction) {
+      window.Sentinel.logAction('nav_clicked', { href: link.getAttribute('href') });
+    }
+  });
+
   // ── Consent banner ───────────────────────────────────────────────────────
   (function() {
-    var CONSENT_KEY = 'meridian_consent';
+    var CONSENT_KEY = 'meridian_telemetry_consent';
+    var LEGACY_KEY = 'meridian_consent';
     var banner = document.getElementById('consent-banner');
     function hideBanner() {
       if (banner) {
@@ -415,22 +424,22 @@
         setTimeout(function() { banner.style.display = 'none'; }, 400);
       }
     }
-    var consent = localStorage.getItem(CONSENT_KEY);
+    var consent = localStorage.getItem(CONSENT_KEY) || localStorage.getItem(LEGACY_KEY);
     if (!consent) {
       setTimeout(function() { if (banner) banner.classList.add('visible'); }, 800);
       document.getElementById('consent-accept').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'granted');
+        localStorage.setItem(LEGACY_KEY, 'granted');
         if (window.Sentinel && window.Sentinel.grantConsent) {
           window.Sentinel.grantConsent();
-        } else {
-          localStorage.setItem(CONSENT_KEY, 'granted');
         }
         hideBanner();
       });
       document.getElementById('consent-decline').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'declined');
+        localStorage.setItem(LEGACY_KEY, 'declined');
         if (window.Sentinel && window.Sentinel.declineConsent) {
           window.Sentinel.declineConsent();
-        } else {
-          localStorage.setItem(CONSENT_KEY, 'declined');
         }
         hideBanner();
       });

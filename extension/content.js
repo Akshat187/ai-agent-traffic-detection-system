@@ -239,8 +239,9 @@
     recordActivity(currentVisit);
     const tag = (e.target.tagName || '').toLowerCase();
     let category = 'other';
-    if (['button', 'input', 'a'].includes(tag) || e.target.closest('button, a')) {
-      category = tag === 'a' || e.target.closest('a') ? 'link' : 'button';
+    const interactive = e.target.closest('button, a, input, select, textarea, [role="button"]');
+    if (['button', 'input', 'a'].includes(tag) || interactive) {
+      category = tag === 'a' || (interactive && interactive.tagName.toLowerCase() === 'a') ? 'link' : 'button';
     }
     if (currentVisit.clickEvents.length < 50) {
       currentVisit.clickEvents.push({
@@ -248,6 +249,36 @@
         y: Math.round(e.clientY),
         t: Math.round(performance.now() - currentVisit.startTime),
         target_category: category
+      });
+    }
+
+    // Capture semantic DOM task action for meaningful user interactions
+    if (interactive && currentVisit.taskActions.length < 50) {
+      const el = interactive;
+      const elTag = el.tagName.toLowerCase();
+      let act = 'element_click';
+      if (elTag === 'a') act = 'link_navigate';
+      else if (elTag === 'button' || el.getAttribute('role') === 'button') act = 'button_trigger';
+      else if (elTag === 'input' && (el.type === 'submit' || el.type === 'button')) act = 'form_action';
+      else if (elTag === 'input' || elTag === 'select' || elTag === 'textarea') act = 'input_focus';
+
+      const label = (el.getAttribute('aria-label') || el.name || el.id || el.textContent || '').trim().slice(0, 40);
+      currentVisit.taskActions.push({
+        action: act,
+        t: Math.round(performance.now() - currentVisit.startTime),
+        details: { tag: elTag, label: label, trusted: e.isTrusted }
+      });
+    }
+  }, { passive: true });
+
+  window.addEventListener('submit', function (e) {
+    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    recordActivity(currentVisit);
+    if (currentVisit.taskActions.length < 50) {
+      currentVisit.taskActions.push({
+        action: 'form_submitted',
+        t: Math.round(performance.now() - currentVisit.startTime),
+        details: { target: (e.target.id || e.target.name || 'form').slice(0, 40) }
       });
     }
   }, { passive: true });
