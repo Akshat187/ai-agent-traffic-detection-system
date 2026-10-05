@@ -182,6 +182,10 @@
       lastEventTime: null,
       accumulatedIdleMs: 0,
       totalEventsTransmitted: 0,
+      totalMouse: 0,
+      totalKeys: 0,
+      totalScroll: 0,
+      totalClicks: 0,
 
       // Delta buffers
       mouseEvents: [],
@@ -273,6 +277,7 @@
     recordActivity(currentVisit);
 
     if (currentVisit.mouseEvents.length < 300) {
+      currentVisit.totalMouse = (currentVisit.totalMouse || 0) + 1;
       currentVisit.mouseEvents.push({
         x: Math.round(e.clientX),
         y: Math.round(e.clientY),
@@ -292,6 +297,7 @@
       category = tag === 'a' || (interactive && interactive.tagName.toLowerCase() === 'a') ? 'link' : 'button';
     }
     if (currentVisit.clickEvents.length < 50) {
+      currentVisit.totalClicks = (currentVisit.totalClicks || 0) + 1;
       currentVisit.clickEvents.push({
         x: Math.round(e.clientX),
         y: Math.round(e.clientY),
@@ -346,6 +352,7 @@
     currentVisit.activeKeys.set(code, now);
 
     if (currentVisit.keyboardEvents.length < 200) {
+      currentVisit.totalKeys = (currentVisit.totalKeys || 0) + 1;
       currentVisit.keyboardEvents.push({
         t: Math.round(now - currentVisit.startTime),
         interval: interval,
@@ -383,6 +390,7 @@
     const now = performance.now();
     recordActivity(currentVisit);
     if (currentVisit.keyboardEvents.length < 200) {
+      currentVisit.totalKeys = (currentVisit.totalKeys || 0) + 1;
       currentVisit.keyboardEvents.push({
         t: Math.round(now - currentVisit.startTime),
         interval: 0,
@@ -403,6 +411,7 @@
     const currentY = Math.round(window.scrollY);
     lastScrollTime = now;
     if (currentVisit.scrollEvents.length < 150) {
+      currentVisit.totalScroll = (currentVisit.totalScroll || 0) + 1;
       currentVisit.scrollEvents.push({
         t: Math.round(now - currentVisit.startTime),
         scroll_y: currentY,
@@ -636,10 +645,11 @@
     }
   });
 
-  setupMessageResponder();
-
+  let hasSetupResponder = false;
   // --- Message Responder for Extension Popup ---
   function setupMessageResponder() {
+    if (hasSetupResponder) return;
+    hasSetupResponder = true;
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === 'GET_PAGE_STATUS') {
         const visit = currentVisit;
@@ -651,9 +661,13 @@
           source: isYieldingToSdk ? 'sdk_passthrough' : 'chrome_extension',
           events: {
             mouse: visit ? visit.mouseEvents.length : 0,
+            mouseTotal: visit ? (visit.totalMouse || 0) : 0,
             keys: visit ? visit.keyboardEvents.length : 0,
+            keysTotal: visit ? (visit.totalKeys || 0) : 0,
             scroll: visit ? visit.scrollEvents.length : 0,
+            scrollTotal: visit ? (visit.totalScroll || 0) : 0,
             clicks: visit ? visit.clickEvents.length : 0,
+            clicksTotal: visit ? (visit.totalClicks || 0) : 0,
             totalTransmitted: visit ? visit.totalEventsTransmitted : 0
           },
           activeDurationMs: visit ? getActiveDurationMs(visit) : 0,

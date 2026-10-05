@@ -5,7 +5,8 @@
   "description": "Inspects real-time behavioral telemetry, kinematics, and AI agent detection on any website.",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
   "host_permissions": [
     "<all_urls>"

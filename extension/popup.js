@@ -55,47 +55,76 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  try {
-    const url = new URL(tab.url);
-    sitePill.textContent = url.hostname;
+  let hostname = 'Web Page';
+  let isRestricted = false;
 
-    chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_STATUS' }, (res) => {
-      if (chrome.runtime.lastError || !res) {
-        verdictBadge.textContent = 'STANDBY';
-        confidenceText.textContent = 'Interact with page to stream';
-        return;
+  if (tab.url) {
+    try {
+      const parsed = new URL(tab.url);
+      hostname = parsed.hostname || tab.url;
+      if (['chrome:', 'chrome-extension:', 'edge:', 'about:', 'devtools:', 'view-source:'].includes(parsed.protocol)) {
+        isRestricted = true;
       }
-
-      sessionVal.textContent = res.sessionId ? res.sessionId.slice(0, 14) + '...' : '—';
-      if (res.events) {
-        evtMouse.textContent = res.events.mouse || 0;
-        evtKeys.textContent = res.events.keys || 0;
-        evtClicks.textContent = res.events.clicks || 0;
-      }
-
-      if (typeof res.activeDurationMs === 'number' && activeTime) {
-        activeTime.textContent = (res.activeDurationMs / 1000).toFixed(1) + 's';
-      }
-
-      if (res.verdict) {
-        const v = res.verdict;
-        verdictBadge.textContent = v.predicted_label || 'UNCERTAIN';
-        verdictBadge.className = 'verdict-badge ' + (v.predicted_label || '');
-
-        let conf = typeof v.confidence === 'number' ? v.confidence : 0;
-        // Fix Bug 19: API already returns 0-100 score; if normalized <= 1.0, scale to 100
-        if (conf <= 1.0 && conf > 0) {
-          conf = conf * 100;
-        }
-        confidenceText.textContent = `Confidence: ${Math.round(conf)}%`;
-        riskVal.textContent = `${Math.round(v.risk_score || 0)} / 100`;
-      } else {
-        verdictBadge.textContent = 'STREAMING';
-        confidenceText.textContent = 'Collecting kinematics...';
-      }
-    });
-  } catch (err) {
-    sitePill.textContent = 'Browser Internal';
-    verdictBadge.textContent = 'IDLE';
+    } catch (_) {
+      hostname = tab.url;
+    }
   }
+
+  if (sitePill) sitePill.textContent = hostname;
+
+  if (isRestricted) {
+    if (verdictBadge) {
+      verdictBadge.textContent = 'RESTRICTED';
+      verdictBadge.className = 'verdict-badge';
+    }
+    if (confidenceText) confidenceText.textContent = 'Open any web page (http/https) to inspect';
+    if (riskVal) riskVal.textContent = 'N/A';
+    return;
+  }
+
+  chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_STATUS' }, (res) => {
+    if (chrome.runtime.lastError || !res) {
+      if (verdictBadge) {
+        verdictBadge.textContent = 'STANDBY';
+        verdictBadge.className = 'verdict-badge';
+      }
+      if (confidenceText) {
+        const errMsg = chrome.runtime.lastError ? chrome.runtime.lastError.message : '';
+        if (errMsg && errMsg.includes('Receiving end does not exist')) {
+          confidenceText.textContent = 'Reload tab (F5) to activate inspector';
+        } else {
+          confidenceText.textContent = 'Interact with page to stream';
+        }
+      }
+      return;
+    }
+
+    if (sessionVal) sessionVal.textContent = res.sessionId ? res.sessionId.slice(0, 14) + '...' : '—';
+    if (res.events) {
+      evtMouse.textContent = res.events.mouseTotal ?? res.events.mouse ?? 0;
+      evtKeys.textContent = res.events.keysTotal ?? res.events.keys ?? 0;
+      evtClicks.textContent = res.events.clicksTotal ?? res.events.clicks ?? 0;
+    }
+
+    if (typeof res.activeDurationMs === 'number' && activeTime) {
+      activeTime.textContent = (res.activeDurationMs / 1000).toFixed(1) + 's';
+    }
+
+    if (res.verdict) {
+      const v = res.verdict;
+      verdictBadge.textContent = v.predicted_label || 'UNCERTAIN';
+      verdictBadge.className = 'verdict-badge ' + (v.predicted_label || '');
+
+      let conf = typeof v.confidence === 'number' ? v.confidence : 0;
+      if (conf <= 1.0 && conf > 0) {
+        conf = conf * 100;
+      }
+      confidenceText.textContent = `Confidence: ${Math.round(conf)}%`;
+      riskVal.textContent = `${Math.round(v.risk_score || 0)} / 100`;
+    } else {
+      verdictBadge.textContent = 'STREAMING';
+      verdictBadge.className = 'verdict-badge';
+      confidenceText.textContent = 'Collecting kinematics...';
+    }
+  });
 });
