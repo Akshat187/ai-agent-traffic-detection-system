@@ -18,11 +18,10 @@ BASELINE_HUMAN_STATS = {
 
 
 class AnomalyDetector:
-    """Detects statistical outliers and out-of-distribution sessions."""
+    """Detects statistical outliers and out-of-distribution sessions using Mahalanobis baseline distance."""
 
     def __init__(self, contamination: float = 0.08):
         self.contamination = contamination
-        self.sklearn_iso = None
         self.baseline_stats = BASELINE_HUMAN_STATS
 
     def score(self, features: Dict[str, Any]) -> Tuple[float, bool, List[str]]:
@@ -40,9 +39,9 @@ class AnomalyDetector:
             z = (val - mean) / std
             z_scores.append(abs(z))
 
-            # Specific anomaly checks
-            if feat == "straightness_ratio" and val > 0.95:
-                deviations.append("Abnormally straight trajectory (> 0.95)")
+            # Specific behavioral boundary checks
+            if feat == "straightness_ratio" and val > 0.95 and features.get("micro_corrections", 0) <= 2:
+                deviations.append("Abnormally straight trajectory (> 0.95) with zero tremor")
             elif feat == "micro_corrections" and val == 0 and features.get("mouse_event_count", 0) > 10:
                 deviations.append("Complete absence of natural human micro-corrections")
             elif feat == "key_latency_cv" and val < 0.06 and features.get("key_event_count", 0) >= 5:
@@ -50,13 +49,13 @@ class AnomalyDetector:
             elif feat == "first_action_delay_ms" and 0 < val < 50:
                 deviations.append("Sub-50ms reaction time beyond human perceptual limits")
 
-        # Mean z-score across feature dimensions
-        mean_z = sum(z_scores) / len(z_scores) if z_scores else 0.0
+        # Mahalanobis normalized baseline distance (variance-standardized distance across dimensions)
+        mahalanobis_dist = math.sqrt(sum(z ** 2 for z in z_scores) / len(z_scores)) if z_scores else 0.0
 
         # Anomaly score mapped to [-1, 1]
-        # Normal human: z ~ 0 to 1.5 -> score ~ 0.5 to 0.9
-        # Bot / Outlier: z > 3.0 -> score < 0.0
-        score = 1.0 - (mean_z / 3.0)
+        # Normal human: D_M ~ 0 to 1.8 -> score ~ 0.4 to 1.0
+        # Bot / Outlier: D_M > 3.0 -> score < 0.0
+        score = 1.0 - (mahalanobis_dist / 3.0)
         score = max(-1.0, min(1.0, score))
 
         is_anomaly = score < 0.0 or len(deviations) >= 2

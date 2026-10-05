@@ -3,6 +3,7 @@ Integration tests for Embeddable SDK, Site Registration, CORS Origin Verificatio
 and Multi-Site Telemetry Pipeline.
 """
 
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 from apps.api.main import app
@@ -61,9 +62,10 @@ def test_telemetry_ingestion_with_valid_site_origin(client):
     })
     site_id = reg_resp.json()["site_id"]
 
-    # 2. Ingest telemetry from valid origin
+    import uuid
+    sess_id = f"test_valid_origin_{uuid.uuid4().hex[:8]}"
     telemetry_payload = {
-        "session_id": f"test_valid_origin_{site_id[:6]}",
+        "session_id": sess_id,
         "site_id": site_id,
         "task": "shopping",
         "start_time": 1700000000.0,
@@ -118,8 +120,9 @@ def test_telemetry_ingestion_with_forbidden_origin(client):
     })
     site_id = reg_resp.json()["site_id"]
 
+    sess_id = f"test_forbidden_{uuid.uuid4().hex[:8]}"
     telemetry_payload = {
-        "session_id": f"test_forbidden_{site_id[:6]}",
+        "session_id": sess_id,
         "site_id": site_id,
         "task": "shopping",
         "start_time": 1700000000.0,

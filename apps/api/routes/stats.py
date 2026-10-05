@@ -72,33 +72,44 @@ def get_overview_stats(
     recent = base_query.order_by(SessionRecord.created_at.desc()).limit(10).all()
     recent_summaries = [build_session_summary(s) for s in recent]
 
-    # Timeline buckets (cumulative session counts over rolling window)
+    from datetime import datetime, timedelta
+
+    # Timeline buckets (real activity over rolling time windows)
+    bucket_labels = ["T-5", "T-4", "T-3", "T-2", "T-1", "Now"]
     timeline = [
-        {"bucket": "T-5",
-         "human": max(1, int(human_count * 0.1)),
-         "automation": max(1, int(automation_count * 0.1)),
-         "agentic": max(1, int(agentic_count * 0.1))},
-        {"bucket": "T-4",
-         "human": max(2, int(human_count * 0.2)),
-         "automation": max(2, int(automation_count * 0.2)),
-         "agentic": max(2, int(agentic_count * 0.2))},
-        {"bucket": "T-3",
-         "human": max(4, int(human_count * 0.4)),
-         "automation": max(3, int(automation_count * 0.4)),
-         "agentic": max(3, int(agentic_count * 0.4))},
-        {"bucket": "T-2",
-         "human": max(3, int(human_count * 0.6)),
-         "automation": max(2, int(automation_count * 0.6)),
-         "agentic": max(4, int(agentic_count * 0.6))},
-        {"bucket": "T-1",
-         "human": max(5, int(human_count * 0.8)),
-         "automation": max(4, int(automation_count * 0.8)),
-         "agentic": max(5, int(agentic_count * 0.8))},
-        {"bucket": "Now",
-         "human": human_count,
-         "automation": automation_count,
-         "agentic": agentic_count},
+        {"bucket": lbl, "human": 0, "automation": 0, "agentic": 0, "uncertain": 0}
+        for lbl in bucket_labels
     ]
+
+    if total > 0:
+        now = datetime.utcnow()
+        min_time = base_query.with_entities(func.min(SessionRecord.created_at)).scalar()
+        if min_time:
+            span_seconds = max((now - min_time).total_seconds(), 300.0)
+            step_seconds = span_seconds / 6.0
+            start_window = now - timedelta(seconds=span_seconds)
+
+            recent_records = (
+                base_query.with_entities(SessionRecord.created_at, SessionRecord.predicted_label)
+                .filter(SessionRecord.created_at >= start_window)
+                .all()
+            )
+
+            for created_at_val, label in recent_records:
+                if not created_at_val:
+                    idx = 5
+                else:
+                    offset = (created_at_val - start_window).total_seconds()
+                    idx = min(5, max(0, int(offset / step_seconds)))
+
+                if label == "HUMAN":
+                    timeline[idx]["human"] += 1
+                elif label in ("TRADITIONAL_AUTOMATION", "BOT"):
+                    timeline[idx]["automation"] += 1
+                elif label in ("AGENTIC_AI", "AI_AGENT"):
+                    timeline[idx]["agentic"] += 1
+                else:
+                    timeline[idx]["uncertain"] += 1
 
     logger.info(
         "stats_overview total=%d human=%d(%.1f%%) automation=%d(%.1f%%) "

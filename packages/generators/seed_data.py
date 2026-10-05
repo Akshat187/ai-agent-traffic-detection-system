@@ -297,135 +297,124 @@ def generate_synthetic_session(
     # ——— BOT ——————————————————————————————————————————————————————————————————
     elif target_label == "TRADITIONAL_AUTOMATION":
         # Three bot subtypes with different evasion capabilities
-        bot_subtype = subtype or rng.choice(["deterministic", "randomized", "evasive"])
+        bot_subtype = subtype or rng.choice(["deterministic", "randomized", "evasive", "headless_dom"])
 
-
-        if bot_subtype == "deterministic":
-            # Classic Playwright/Selenium: webdriver=True, zero jitter, very fast
-            duration = rng.randint(300, 900)
-            jitter_sigma = 0.0
+        if bot_subtype == "headless_dom":
+            # Fast headless crawler / script: direct DOM clicks/submits, sub-80ms intervals, no cursor
+            duration = rng.randint(250, 650)
             webdriver = True
-            fixed_interval = rng.randint(35, 55)   # very uniform
-            typing_variance = 2
-        elif bot_subtype == "randomized":
-            # Adds some Gaussian jitter to paths but still webdriver=True
-            duration = rng.randint(600, 1800)
-            jitter_sigma = rng.uniform(3.0, 8.0)
-            webdriver = True
-            fixed_interval = rng.randint(50, 100)
-            typing_variance = 15
-        else:  # evasive
-            # Attempts to look more human: webdriver=False, larger jitter, slower.
-            # jitter_sigma now wider (up to 22) so some evasive bot paths are nearly
-            # indistinguishable from human Bézier paths — intentional boundary noise.
-            duration = rng.randint(1200, 4500)
-            jitter_sigma = rng.uniform(8.0, 22.0)
-            webdriver = False    # evasive: hides webdriver flag
-            fixed_interval = rng.randint(55, 140)
-            typing_variance = 30
+            mouse_events = []
+            keyboard_events = []
+            scroll_events = []
+            click_events = [
+                {"x": 400, "y": 300, "t": 80, "target_category": "button"},
+                {"x": 600, "y": 500, "t": 140, "target_category": "button"},
+            ]
+            browser_signals = {
+                "webdriver":           True,
+                "screen_width":        1280,
+                "screen_height":       800,
+                "viewport_width":      1280,
+                "viewport_height":     800,
+                "device_pixel_ratio":  1.0,
+                "touch_support":       False,
+                "hardware_concurrency": 2,
+                "platform":            "Linux x86_64",
+                "language":            "en-US",
+                "user_agent":          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36",
+            }
+            task_actions = [
+                {"action": actions_vocab[0], "t": 50, "details": {}},
+                {"action": actions_vocab[2], "t": 95, "details": {}},
+                {"action": actions_vocab[4], "t": 160, "details": {}},
+            ]
+            data_source = "synthetic_automation"
+        else:
+            if bot_subtype == "deterministic":
+                # Classic Playwright/Selenium: webdriver=True, zero jitter, very fast
+                duration = rng.randint(300, 900)
+                jitter_sigma = 0.0
+                webdriver = True
+                fixed_interval = rng.randint(35, 55)   # very uniform
+                typing_variance = 2
+            elif bot_subtype == "randomized":
+                # Adds some Gaussian jitter to paths but still webdriver=True
+                duration = rng.randint(600, 1800)
+                jitter_sigma = rng.uniform(3.0, 8.0)
+                webdriver = True
+                fixed_interval = rng.randint(50, 100)
+                typing_variance = 15
+            else:  # evasive
+                # Attempts to look more human: webdriver=False, larger jitter, slower.
+                # jitter_sigma now wider (up to 22) so some evasive bot paths are nearly
+                # indistinguishable from human Bézier paths — intentional boundary noise.
+                duration = rng.randint(1200, 4500)
+                jitter_sigma = rng.uniform(8.0, 22.0)
+                webdriver = False    # evasive: hides webdriver flag
+                fixed_interval = rng.randint(55, 140)
+                typing_variance = 30
 
-        mouse_events = generate_bot_mouse_path(
-            200, 200, 800, 600, int(duration * 0.8), jitter_sigma, rng
-        )
+            mouse_events = generate_bot_mouse_path(
+                200, 200, 800, 600, int(duration * 0.8), jitter_sigma, rng
+            )
 
-        # Robotic typing: low CV for deterministic/randomized; evasive bots
-        # have some hold-time overlap with the human range to make detection harder.
-        keyboard_events = []
-        cur_k_t = 50
-        for _ in range(rng.randint(8, 14)):
-            inv = fixed_interval + rng.randint(-typing_variance, typing_variance)
-            cur_k_t += max(20, inv)
-            # Evasive bots inject longer occasional holds to mimic human finger release
-            if bot_subtype == "evasive" and rng.random() < 0.25:
-                hold = rng.randint(40, 65)   # bleeds into low end of human range (45-110)
-            else:
-                hold = rng.randint(15, 30)   # classic robotic hold
-            keyboard_events.append({
-                "t":        cur_k_t,
-                "interval": max(20, inv),
-                "hold":     hold,
-                "is_paste": False,
-            })
+            # Robotic typing: low CV for deterministic/randomized; evasive bots
+            # have some hold-time overlap with the human range to make detection harder.
+            keyboard_events = []
+            cur_k_t = 50
+            for _ in range(rng.randint(8, 14)):
+                inv = fixed_interval + rng.randint(-typing_variance, typing_variance)
+                cur_k_t += max(20, inv)
+                # Evasive bots inject longer occasional holds to mimic human finger release
+                if bot_subtype == "evasive" and rng.random() < 0.25:
+                    hold = rng.randint(40, 65)   # bleeds into low end of human range (45-110)
+                else:
+                    hold = rng.randint(15, 30)   # classic robotic hold
+                keyboard_events.append({
+                    "t":        cur_k_t,
+                    "interval": max(20, inv),
+                    "hold":     hold,
+                    "is_paste": False,
+                })
 
-        scroll_events = generate_bot_scroll(duration, rng)
+            scroll_events = generate_bot_scroll(duration, rng)
 
-        click_events = [
-            {"x": 800, "y": 600, "t": int(duration * 0.85), "target_category": "button"},
-        ]
+            click_events = [
+                {"x": 800, "y": 600, "t": int(duration * 0.85), "target_category": "button"},
+            ]
 
-        browser_signals = {
-            "webdriver":           webdriver,
-            "screen_width":        1280,
-            "screen_height":       800,
-            "viewport_width":      1280,
-            "viewport_height":     800,
-            "device_pixel_ratio":  1.0,
-            "touch_support":       False,
-            "hardware_concurrency": 2,
-            "platform":            "Linux x86_64",
-            "language":            "en-US",
-            "user_agent":          (
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
-                if webdriver else
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                "Chrome/124.0.0.0 Safari/537.36"
-            ),
-        }
+            browser_signals = {
+                "webdriver":           webdriver,
+                "screen_width":        1280,
+                "screen_height":       800,
+                "viewport_width":      1280,
+                "viewport_height":     800,
+                "device_pixel_ratio":  1.0,
+                "touch_support":       False,
+                "hardware_concurrency": 2,
+                "platform":            "Linux x86_64",
+                "language":            "en-US",
+                "user_agent":          (
+                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+                    if webdriver else
+                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                ),
+            }
 
-        task_actions = [
-            {"action": actions_vocab[1], "t": int(duration * 0.35), "details": {}},
-            {"action": actions_vocab[3], "t": int(duration * 0.60), "details": {}},
-            {"action": actions_vocab[4], "t": int(duration * 0.80), "details": {}},
-        ]
-        data_source = "synthetic_automation"
+            task_actions = [
+                {"action": actions_vocab[1], "t": int(duration * 0.35), "details": {}},
+                {"action": actions_vocab[3], "t": int(duration * 0.60), "details": {}},
+                {"action": actions_vocab[4], "t": int(duration * 0.80), "details": {}},
+            ]
+            data_source = "synthetic_automation"
 
     # ── AI_AGENT ──────────────────────────────────────────────────────────────
     else:
-        # AI agent — explicitly SIMULATED.
-        # Not always headless: modern agents can run in non-headless mode.
-        duration = rng.randint(5000, 13000)
-
-        # Stochastic webdriver: headless agents → True; non-headless agents → False
+        # AI agent — diverse real-world profiles (DOM-direct, trajectory-based, hybrid).
+        agent_subtype = subtype or rng.choice(["trajectory_agent", "dom_agent", "hybrid_agent"])
         webdriver = rng.random() < 0.60   # 60% headless, 40% non-headless
-
-        waypoints = [
-            (150, 200),
-            (rng.randint(350, 550), rng.randint(200, 350)),
-            (rng.randint(600, 800), rng.randint(400, 600)),
-            (rng.randint(800, 1000), rng.randint(550, 700)),
-        ]
-        mouse_events = generate_agent_mouse_path(waypoints, int(duration * 0.70), rng)
-
-        # Agent typing: narrower interval range than human, but not as uniform as bot.
-        # Some agents have longer think-gaps between keystrokes (LLM latency).
-        keyboard_events = []
-        cur_k_t = int(duration * 0.25)
-        # 25% of agents have a long initial planning delay before typing
-        if rng.random() < 0.25:
-            cur_k_t += rng.randint(800, 2200)
-        for _ in range(rng.randint(5, 14)):
-            # Occasional LLM latency spike between keystrokes
-            if rng.random() < 0.15:
-                inv = rng.randint(300, 900)   # think-gap
-            else:
-                inv = rng.randint(55, 145)    # normal agent keystroke pace
-            cur_k_t += inv
-            keyboard_events.append({
-                "t":        cur_k_t,
-                "interval": inv,
-                "hold":     rng.randint(25, 55),  # slightly wider range
-                "is_paste": False,
-            })
-
-        scroll_events = generate_agent_scroll(duration, rng)
-
-        click_events = [
-            {"x": waypoints[1][0], "y": waypoints[1][1],
-             "t": int(duration * 0.35), "target_category": "input"},
-            {"x": waypoints[-1][0], "y": waypoints[-1][1],
-             "t": int(duration * 0.80), "target_category": "button"},
-        ]
 
         browser_signals = {
             "webdriver":           webdriver,
@@ -441,13 +430,99 @@ def generate_synthetic_session(
             "user_agent":          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
         }
 
-        task_actions = [
-            {"action": actions_vocab[0], "t": int(duration * 0.20), "details": {}},
-            {"action": actions_vocab[2], "t": int(duration * 0.50), "details": {}},
-            {"action": actions_vocab[3], "t": int(duration * 0.75), "details": {}},
-            {"action": actions_vocab[4], "t": int(duration * 0.90), "details": {}},
-        ]
-        data_source = "synthetic_simulated_agent"
+        if agent_subtype == "dom_agent":
+            # Real LLM browser agent (e.g. Stagehand, Browser-use) operating via direct DOM actions.
+            # Characterized by 1.5 - 4.5s model inference planning gaps and zero cursor trajectory.
+            t0 = rng.randint(400, 1200)       # Page scan & DOM inspection wait
+            t1 = t0 + rng.randint(1800, 3600)  # First LLM thinking pause
+            t2 = t1 + rng.randint(1500, 4200)  # Second LLM thinking pause
+            t3 = t2 + rng.randint(1400, 3500)  # Third LLM thinking pause
+            duration = t3 + rng.randint(400, 1000)
+
+            mouse_events = []
+            click_events = [
+                {"x": 300, "y": 250, "t": t0, "target_category": "input"},
+                {"x": 520, "y": 380, "t": t1, "target_category": "button"},
+                {"x": 750, "y": 620, "t": t2, "target_category": "button"},
+            ]
+            keyboard_events = []
+            scroll_events = generate_agent_scroll(duration, rng)
+            task_actions = [
+                {"action": actions_vocab[0], "t": t0, "details": {"target": "search_input"}},
+                {"action": actions_vocab[2], "t": t1, "details": {"target": "item_card"}},
+                {"action": actions_vocab[3], "t": t2, "details": {"target": "action_button"}},
+                {"action": actions_vocab[4], "t": t3, "details": {"target": "confirm_button"}},
+            ]
+            data_source = "synthetic_simulated_agent"
+
+        elif agent_subtype == "hybrid_agent":
+            # Hybrid agent: reading scroll + deliberate target clicks with variable LLM pauses
+            t0 = rng.randint(600, 1500)
+            t1 = t0 + rng.randint(2200, 4500)
+            t2 = t1 + rng.randint(1800, 3800)
+            duration = t2 + rng.randint(800, 1500)
+
+            # Minimal direct hop mouse points
+            mouse_events = [
+                {"x": 200, "y": 150, "t": 100, "type": "move"},
+                {"x": 450, "y": 320, "t": t0, "type": "move"},
+                {"x": 680, "y": 540, "t": t1, "type": "move"},
+            ]
+            click_events = [
+                {"x": 450, "y": 320, "t": t0, "target_category": "button"},
+                {"x": 680, "y": 540, "t": t1, "target_category": "button"},
+            ]
+            keyboard_events = []
+            scroll_events = generate_agent_scroll(duration, rng)
+            task_actions = [
+                {"action": actions_vocab[0], "t": t0, "details": {}},
+                {"action": actions_vocab[2], "t": t1, "details": {}},
+                {"action": actions_vocab[4], "t": t2, "details": {}},
+            ]
+            data_source = "synthetic_simulated_agent"
+
+        else:
+            # Trajectory-based agent (Claude Computer Use / coordinate-driven cursor)
+            duration = rng.randint(5000, 13000)
+            waypoints = [
+                (150, 200),
+                (rng.randint(350, 550), rng.randint(200, 350)),
+                (rng.randint(600, 800), rng.randint(400, 600)),
+                (rng.randint(800, 1000), rng.randint(550, 700)),
+            ]
+            mouse_events = generate_agent_mouse_path(waypoints, int(duration * 0.70), rng)
+
+            keyboard_events = []
+            cur_k_t = int(duration * 0.25)
+            if rng.random() < 0.25:
+                cur_k_t += rng.randint(800, 2200)
+            for _ in range(rng.randint(5, 14)):
+                if rng.random() < 0.15:
+                    inv = rng.randint(300, 900)
+                else:
+                    inv = rng.randint(55, 145)
+                cur_k_t += inv
+                keyboard_events.append({
+                    "t":        cur_k_t,
+                    "interval": inv,
+                    "hold":     rng.randint(25, 55),
+                    "is_paste": False,
+                })
+
+            scroll_events = generate_agent_scroll(duration, rng)
+            click_events = [
+                {"x": waypoints[1][0], "y": waypoints[1][1],
+                 "t": int(duration * 0.35), "target_category": "input"},
+                {"x": waypoints[-1][0], "y": waypoints[-1][1],
+                 "t": int(duration * 0.80), "target_category": "button"},
+            ]
+            task_actions = [
+                {"action": actions_vocab[0], "t": int(duration * 0.20), "details": {}},
+                {"action": actions_vocab[2], "t": int(duration * 0.50), "details": {}},
+                {"action": actions_vocab[3], "t": int(duration * 0.75), "details": {}},
+                {"action": actions_vocab[4], "t": int(duration * 0.90), "details": {}},
+            ]
+            data_source = "synthetic_simulated_agent"
 
     base_ts = 1724900000000 + (index * 60000)
     return {

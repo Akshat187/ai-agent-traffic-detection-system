@@ -178,3 +178,123 @@ def test_context_validator():
     # A reasonable action sequence should pass context validation
     assert isinstance(is_valid, bool)
     assert isinstance(violations, list)
+
+
+def test_decision_engine_on_dom_agent_session():
+    """Verifies that an AI browser agent interacting directly via DOM (no mouse path) is correctly classified."""
+    engine = DecisionEngine()
+    dom_agent_session = {
+        "session_id": "st_test_dom_agent",
+        "task": "shopping",
+        "start_time": 1700000000000,
+        "end_time": 1700000007000,
+        "duration_ms": 7000,
+        "active_duration_ms": 7000,
+        "mouse_events": [],
+        "keyboard_events": [],
+        "scroll_events": [],
+        "click_events": [
+            {"x": 100, "y": 200, "t": 600, "target_category": "button"},
+            {"x": 200, "y": 300, "t": 3500, "target_category": "button"},
+            {"x": 300, "y": 400, "t": 6200, "target_category": "button"},
+        ],
+        "task_actions": [
+            {"action": "product_viewed", "t": 600, "details": {}},
+            {"action": "add_to_cart", "t": 3500, "details": {}},
+            {"action": "checkout_complete", "t": 6200, "details": {}},
+        ],
+        "browser_signals": {"webdriver": False},
+    }
+    feats = extract_all_features(dom_agent_session)
+    verdict = engine.evaluate_session(
+        session_id=dom_agent_session["session_id"],
+        task="shopping",
+        session_data=dom_agent_session,
+        features=feats,
+    )
+    assert verdict["final_verdict"] == "AGENTIC_AI", (
+        f"Expected AGENTIC_AI for DOM agent session, got {verdict['final_verdict']}"
+    )
+
+
+def test_low_signal_session_returns_uncertain():
+    """Verifies that under-sampled sessions (<5 events, e.g. 1 click or 2 mouse moves) return UNCERTAIN."""
+    engine = DecisionEngine()
+    sparse_session = {
+        "session_id": "st_sparse_test",
+        "task": "general",
+        "start_time": 1700000000000,
+        "end_time": 1700000002000,
+        "duration_ms": 2000,
+        "active_duration_ms": 2000,
+        "mouse_events": [
+            {"x": 100, "y": 100, "t": 50, "type": "move"},
+            {"x": 102, "y": 101, "t": 120, "type": "move"},
+        ],
+        "keyboard_events": [],
+        "scroll_events": [],
+        "click_events": [{"x": 102, "y": 101, "t": 150, "target_category": "button"}],
+        "task_actions": [],
+        "browser_signals": {"webdriver": False},
+        "is_synthetic": False,
+    }
+    feats = extract_all_features(sparse_session)
+    verdict = engine.evaluate_session(
+        session_id=sparse_session["session_id"],
+        task="general",
+        session_data=sparse_session,
+        features=feats,
+    )
+    assert verdict["final_verdict"] == "UNCERTAIN"
+    assert "Low-signal" in verdict["human_explanation"]
+    assert verdict["risk_score"] == 0.0
+
+
+def test_human_with_reading_pause_classified_as_human():
+    """Verifies that an organic human with normal reading pauses is not misclassified as AGENTIC_AI."""
+    engine = DecisionEngine()
+    human_session = generate_synthetic_session(
+        label="HUMAN", task="shopping", subtype="organic_mouse", seed=42
+    )
+    feats = extract_all_features(human_session)
+    verdict = engine.evaluate_session(
+        session_id=human_session["session_id"],
+        task="shopping",
+        session_data=human_session,
+        features=feats,
+    )
+    assert verdict["final_verdict"] == "HUMAN", (
+        f"Expected HUMAN, got {verdict['final_verdict']} with explanation: {verdict['human_explanation']}"
+    )
+
+
+def test_mahalanobis_anomaly_detector():
+    """Verifies that AnomalyDetector computes Mahalanobis baseline distance correctly."""
+    detector = AnomalyDetector()
+    normal_features = {
+        "straightness_ratio": 0.72,
+        "mean_velocity": 450.0,
+        "velocity_std": 380.0,
+        "micro_corrections": 7,
+        "key_latency_cv": 0.38,
+        "first_action_delay_ms": 1250.0,
+    }
+    score, is_anom, reasons = detector.score(normal_features)
+    assert not is_anom
+    assert score > 0.5
+    assert len(reasons) == 0
+
+    outlier_features = {
+        "straightness_ratio": 0.99,
+        "mean_velocity": 3500.0,
+        "velocity_std": 10.0,
+        "micro_corrections": 0,
+        "mouse_event_count": 50,
+        "key_latency_cv": 0.01,
+        "key_event_count": 20,
+        "first_action_delay_ms": 10.0,
+    }
+    score_out, is_anom_out, reasons_out = detector.score(outlier_features)
+    assert is_anom_out
+    assert score_out < 0.0
+    assert len(reasons_out) >= 2

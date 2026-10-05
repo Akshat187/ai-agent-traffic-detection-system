@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/static/meridian.css">
+  <script src="/sentinel.js" data-site-id="site_meridian_prod" data-task="flight_booking" data-require-consent="true" async></script>
   <style>
     /* Travel-specific */
     .travel-hero {
@@ -550,6 +551,9 @@
     tab.addEventListener('click', function() {
       document.querySelectorAll('.travel-tab').forEach(function(t) { t.classList.remove('active'); });
       tab.classList.add('active');
+      if (window.Sentinel && window.Sentinel.logAction) {
+        window.Sentinel.logAction('tab_switched', { tab: tab.textContent.trim() });
+      }
     });
   });
 
@@ -615,6 +619,9 @@
     var pax = document.getElementById('passengers').value;
     if (!from || !to) { alert('Please select both origin and destination.'); return; }
     if (from === to) { alert('Origin and destination must be different.'); return; }
+    if (window.Sentinel && window.Sentinel.logAction) {
+      window.Sentinel.logAction('flight_search', { from: from, to: to, cabin: cabin, pax: pax });
+    }
     currentFlights = generateFlights(from, to, cabin, pax);
     var section = document.getElementById('resultsSection');
     section.style.display = '';
@@ -638,6 +645,9 @@
     var idx = parseInt(btn.dataset.flight);
     var f = currentFlights[idx];
     if (!f) return;
+    if (window.Sentinel && window.Sentinel.logAction) {
+      window.Sentinel.logAction('flight_selected', { airline: f.airline.name, price: f.price, route: f.from + ' -> ' + f.to });
+    }
     var ref = genBookingRef();
     document.getElementById('bookingRefCode').textContent = ref;
     document.getElementById('bookingDetails').innerHTML =
@@ -652,21 +662,39 @@
   });
 
   document.getElementById('bookingModalClose').addEventListener('click', function() { document.getElementById('bookingModal').classList.remove('open'); });
-  document.getElementById('bookingModalOk').addEventListener('click', function() { document.getElementById('bookingModal').classList.remove('open'); });
+  document.getElementById('bookingModalOk').addEventListener('click', function() {
+    if (window.Sentinel && window.Sentinel.logAction) {
+      window.Sentinel.logAction('flight_booked', { ref: document.getElementById('bookingRefCode').textContent });
+    }
+    document.getElementById('bookingModal').classList.remove('open');
+  });
   document.getElementById('bookingModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
 
   // ── Consent banner ───────────────────────────────────────────────────────
   (function() {
-    var CONSENT_KEY = 'meridian_consent';
+    var CONSENT_KEY = 'meridian_telemetry_consent';
+    var LEGACY_KEY = 'meridian_consent';
     var banner = document.getElementById('consent-banner');
-    function loadTelemetry() { var s = document.createElement('script'); s.src = '/static/collector.js'; document.body.appendChild(s); }
     function hideBanner() { if (banner) { banner.classList.remove('visible'); setTimeout(function() { banner.style.display='none'; }, 400); } }
-    var consent = localStorage.getItem(CONSENT_KEY);
-    if (consent === 'granted') { loadTelemetry(); }
-    else if (!consent) {
+    var consent = localStorage.getItem(CONSENT_KEY) || localStorage.getItem(LEGACY_KEY);
+    if (!consent) {
       setTimeout(function() { if (banner) banner.classList.add('visible'); }, 800);
-      document.getElementById('consent-accept').addEventListener('click', function() { localStorage.setItem(CONSENT_KEY,'granted'); hideBanner(); loadTelemetry(); });
-      document.getElementById('consent-decline').addEventListener('click', function() { localStorage.setItem(CONSENT_KEY,'declined'); hideBanner(); });
+      document.getElementById('consent-accept').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'granted');
+        localStorage.setItem(LEGACY_KEY, 'granted');
+        if (window.Sentinel && window.Sentinel.grantConsent) {
+          window.Sentinel.grantConsent();
+        }
+        hideBanner();
+      });
+      document.getElementById('consent-decline').addEventListener('click', function() {
+        localStorage.setItem(CONSENT_KEY, 'declined');
+        localStorage.setItem(LEGACY_KEY, 'declined');
+        if (window.Sentinel && window.Sentinel.declineConsent) {
+          window.Sentinel.declineConsent();
+        }
+        hideBanner();
+      });
     }
   })();
   </script>

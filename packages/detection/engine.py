@@ -26,6 +26,10 @@ from packages.detection.ml_classifier import BehavioralClassifier
 from packages.detection.anomaly import AnomalyDetector
 from packages.detection.replay import ReplayDetector
 from packages.detection.context import ContextValidator
+from packages.version import MODEL_VERSION
+
+# Tasks that have Layer-5 workflow rules. Every other task is "not_applicable".
+WORKFLOW_TASKS = ("shopping", "travel", "forum")
 
 
 class DecisionEngine:
@@ -47,20 +51,26 @@ class DecisionEngine:
         self._bootstrap_ml()
 
     def _bootstrap_ml(self):
-        """Pre-trains behavioral classifier on standard physically grounded baseline distributions."""
+        """Pre-trains behavioral classifier across all diverse operational profiles and subtypes."""
         try:
             from packages.generators.seed_data import generate_synthetic_session
             from packages.core.features import extract_all_features
             import random
             rng = random.Random(42)
             X, y = [], []
-            for cls in ["HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI"]:
+            subtypes = {
+                "HUMAN": ["organic_mouse", "keyboard_focused"],
+                "TRADITIONAL_AUTOMATION": ["deterministic", "randomized", "evasive", "headless_dom"],
+                "AGENTIC_AI": ["trajectory_agent", "dom_agent", "hybrid_agent"],
+            }
+            for cls, st_list in subtypes.items():
                 for task in ["shopping", "travel", "forum"]:
-                    for i in range(12):
-                        s = generate_synthetic_session(cls, task, index=i, seed=rng.randint(0, 1000000))
-                        f = extract_all_features(s)
-                        X.append(self.ml.extract_feature_vector(f))
-                        y.append(cls)
+                    for st in st_list:
+                        for i in range(5):
+                            s = generate_synthetic_session(cls, task, index=i, subtype=st, seed=rng.randint(0, 1000000))
+                            f = extract_all_features(s)
+                            X.append(self.ml.extract_feature_vector(f))
+                            y.append(cls)
             self.ml.train(X, y)
         except Exception as e:
             print(f"[WebSense] WARNING: ML bootstrap failed — classifier will use heuristic fallback. Error: {e}")
@@ -70,16 +80,84 @@ class DecisionEngine:
         session_id: str,
         task: str,
         session_data: Dict[str, Any],
-        features: Dict[str, Any]
+        features: Dict[str, Any],
+        register_replay: bool = True,
     ) -> Dict[str, Any]:
         """
         Executes all 5 detection layers and synthesizes a unified actor verdict.
+
+        register_replay: add this trajectory to the replay cache. The ingest path
+        evaluates a page visit after every chunk, so it passes True only once
+        (on the final chunk) to avoid filling the cache with snapshots of one visit.
 
         Signal hierarchy respected throughout:
           - Behavioral evidence drives classification
           - Environmental signals (webdriver) are supporting only
           - No single signal determines the final class
         """
+        n_mouse = len(session_data.get("mouse_events", []))
+        n_key = len(session_data.get("keyboard_events", []))
+        n_click = len(session_data.get("click_events", []))
+        n_scroll = len(session_data.get("scroll_events", []))
+        n_tasks = len(session_data.get("task_actions", []))
+        total_interactions = (
+            n_mouse + n_key + n_click + n_scroll + n_tasks
+            + features.get("total_event_count", 0)
+        )
+
+        is_synthetic = bool(session_data.get("is_synthetic"))
+
+        # Layer 1 Rules: evaluate flags and environmental signals
+        rule_score, rule_flags, rule_mitigations = self.rules.evaluate(features)
+
+        # Minimum interaction gating:
+        # A session must have minimum behavioral signal to perform reliable classification.
+        # Sparse sessions (< 5 total events or single isolated click/key without trajectory)
+        # have degenerate statistical distributions and cannot distinguish Human vs Bot vs Agent.
+        has_sufficient_signal = is_synthetic or (
+            (n_mouse >= 5 and features.get("path_length", 0) >= 15)
+            or n_key >= 3
+            or n_tasks >= 2
+            or (total_interactions >= 5 and (n_click >= 2 or n_scroll >= 2))
+            or total_interactions >= 10
+        )
+
+        if total_interactions == 0 or not has_sufficient_signal:
+            reason = (
+                "zero events recorded"
+                if total_interactions == 0
+                else f"insufficient events ({total_interactions} recorded; minimum 5 diverse events required for kinematic analysis)"
+            )
+            return {
+                "final_verdict": "UNCERTAIN",
+                "confidence": 50.0,
+                "risk_score": 0.0,
+                "l1_rule_score": rule_score if rule_score > 0 else 0.0,
+                "l1_flags": rule_flags,
+                "l2_ml_pred": "UNCERTAIN",
+                "l2_ml_confidence": 50.0,
+                "l2_ml_probabilities": {"UNCERTAIN": 1.0},
+                "l3_anomaly_score": 0.0,
+                "l3_is_anomaly": False,
+                "l4_replay_similarity": 0.0,
+                "l4_matched_session_id": None,
+                "l4_is_replay": False,
+                "l5_context_valid": True,
+                "l5_status": "not_applicable",
+                "contributing_signals": [
+                    f"Low-signal telemetry: {reason}. Classified as UNCERTAIN to prevent false positive attribution on sparse interaction data."
+                ],
+                "counter_signals": [],
+                "human_explanation": (
+                    f"Classification is Uncertain (50% confidence). "
+                    f"Low-signal telemetry: {reason}. "
+                    f"The session does not contain sufficient kinematic or temporal data to reliably determine actor class. "
+                    f"Classification is an evidence-based behavioral estimate."
+                ),
+                "fallback_used": True,
+                "model_version": MODEL_VERSION,
+            }
+
         # --- Layer 1: Rules ---
         rule_score, rule_flags, rule_mitigations = self.rules.evaluate(features)
 
@@ -92,12 +170,20 @@ class DecisionEngine:
         # --- Layer 4: Replay Detection ---
         mouse_events = session_data.get("mouse_events", [])
         replay_sim, matched_id, is_replay = self.replay.check_replay(session_id, mouse_events)
-        self.replay.register_session(session_id, mouse_events)
+        if register_replay:
+            self.replay.register_session(session_id, mouse_events)
 
         # --- Layer 5: Contextual Validation ---
         task_actions = session_data.get("task_actions", [])
         click_events = session_data.get("click_events", [])
         ctx_valid, ctx_violations = self.context.validate(task, task_actions, click_events, features)
+        if ctx_violations:
+            l5_status = "violated"
+        elif task in WORKFLOW_TASKS:
+            l5_status = "valid"
+        else:
+            # No workflow rules for general/custom tasks: never report "valid".
+            l5_status = "not_applicable"
 
         # --- Synthesize Risk Score (Behavioral signals first, environmental supporting) ---
         contributing_signals = []
@@ -113,14 +199,14 @@ class DecisionEngine:
         key_hold = features.get("key_mean_hold_time", 0.0)
         has_robotic_hold = (0.0 < key_hold < 35.0)
 
-        if straightness > 0.95 and features.get("path_length", 0) > 100:
+        if straightness > 0.95 and features.get("micro_corrections", 0) <= 2 and features.get("path_length", 0) > 100:
             contributing_signals.append(
                 f"Abnormally linear mouse trajectory (straightness: {straightness:.2f}) — consistent with scripted automation"
             )
             risk += 25.0
-        elif straightness < 0.85 and features.get("micro_corrections", 0) >= 3 and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold)):
+        elif (straightness < 0.90 or features.get("micro_corrections", 0) >= 3) and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold)):
             counter_signals.append(
-                f"Natural human trajectory curvature with {features.get('micro_corrections', 0)} micro-corrections"
+                f"Natural human trajectory dynamics with {features.get('micro_corrections', 0)} micro-corrections"
             )
             risk -= 25.0
 
@@ -134,6 +220,13 @@ class DecisionEngine:
             counter_signals.append(f"Organic typing rhythm variation (CV: {key_cv:.2f}, hold: {key_hold:.0f}ms)")
             risk -= 15.0
 
+        # Keyboard-only / assistive navigation: natural typing rhythm without mouse movement
+        is_keyboard_human = (features.get("path_length", 0) == 0 and key_count >= 4 and key_cv >= 0.20 and not has_robotic_hold)
+        if is_keyboard_human:
+            counter_signals.append(
+                f"Organic keyboard-only interaction pattern (CV: {key_cv:.2f}) — assistive or keyboard-centric navigation"
+            )
+            risk -= 15.0
 
         # Agentic agency profile signals
         planning_pause_ratio = features.get("planning_pause_ratio", 0.0)
@@ -202,23 +295,47 @@ class DecisionEngine:
         # caused virtually every real extension session to be misclassified as AGENTIC_AI.
         # Checked FIRST — agent sessions can also have moderately linear per-segment motion,
         # so they must be captured before the broader automation check.
+        # Organic human kinematics protection: humans naturally have micro-corrections (hand tremor)
+        # and curved Bézier paths. An organic human pausing to read must not be called AGENTIC_AI.
+        is_organic_human_kinematics = (
+            features.get("path_length", 0) > 80
+            and (features.get("micro_corrections", 0) >= 4 or (features.get("micro_corrections", 0) >= 2 and straightness < 0.88))
+            and not features.get("webdriver_flag")
+            and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold))
+        )
+
+        has_agency_signal = (
+            planning_pause_ratio > 0.15 or
+            nav_segments >= 2 or
+            adaptation_score > 0.35 or
+            action_interval_var > 800
+        )
         is_agentic_profile = (
-            (planning_pause_ratio > 0.30 and nav_segments >= 3) or
-            (adaptation_score > 0.45 and features.get("micro_corrections", 0) <= 2 and nav_segments >= 2) or
-            (features.get("first_action_delay_ms", 0) > 500 and nav_segments >= 4 and straightness > 0.80) or
-            (action_interval_var > 1200 and nav_segments >= 3) or  # Strong LLM inference-delay signature
-            (ml_pred == "AGENTIC_AI" and ml_conf >= 70.0)  # Require high ML confidence to avoid false positives
+            has_agency_signal
+            and not is_organic_human_kinematics
+            and (
+                (planning_pause_ratio > 0.30 and nav_segments >= 3 and straightness > 0.80) or
+                (adaptation_score > 0.45 and features.get("micro_corrections", 0) <= 2 and nav_segments >= 3) or
+                (features.get("first_action_delay_ms", 0) > 500 and nav_segments >= 4 and straightness > 0.80) or
+                (action_interval_var > 1200 and nav_segments >= 3 and straightness > 0.80) or  # Strong LLM inference-delay signature
+                (len(task_actions) >= 2 and action_interval_var > 800 and planning_pause_ratio > 0.20 and features.get("micro_corrections", 0) <= 2) or  # Workflow / computer-use agent
+                (features.get("path_length", 0) < 50 and len(task_actions) >= 2 and planning_pause_ratio > 0.20) or  # DOM-driven agent without cursor trajectory
+                (ml_pred == "AGENTIC_AI" and ml_conf >= 70.0 and rule_score < 60.0)  # Corroborated ML prediction
+            )
         )
 
         # Traditional automation profile: highly uniform, deterministic behavior.
+        # Keyboard-only organic human browsing is protected from false-positive ML automation attribution.
         is_automation_profile = (
-            is_replay or
-            rule_score >= 35.0 or
-            (key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0))) or
-            (straightness > 0.92 and key_count >= 4 and (key_cv < 0.20 or features.get("micro_corrections", 0) <= 1)) or
-            (features.get("duration_ms", 1000) < 500 and features.get("total_event_count", 0) >= 5) or
-            (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0)
-        ) and not is_agentic_profile  # Never override agentic evidence
+            (
+                is_replay or
+                rule_score >= 35.0 or
+                (key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0))) or
+                (straightness > 0.92 and key_count >= 4 and (key_cv < 0.20 or features.get("micro_corrections", 0) <= 1)) or
+                (features.get("duration_ms", 1000) < 500 and features.get("total_event_count", 0) >= 5) or
+                (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0 and not is_keyboard_human)
+            ) and not is_agentic_profile  # Never override agentic evidence
+        )
 
         if is_agentic_profile:
             final_verdict = "AGENTIC_AI"
@@ -261,7 +378,7 @@ class DecisionEngine:
         # HUMAN: only assign when risk is genuinely low. Both risk_score and rule_score must
         # be below 30 — this prevents bot sessions with zero agentic signals but moderate
         # behavioral risk from falling through to HUMAN via the ML fallback.
-        elif risk_score <= 30.0 and rule_score < 30.0 and ml_pred == "HUMAN":
+        elif risk_score <= 30.0 and rule_score < 30.0 and (ml_pred == "HUMAN" or is_keyboard_human):
             final_verdict = "HUMAN"
             confidence = round(min(98.0, max(68.0, 100.0 - (risk_score * 1.1))), 1)
 
@@ -324,6 +441,7 @@ class DecisionEngine:
             "l4_is_replay": is_replay,
             "l5_context_valid": ctx_valid,
             "l5_context_violations": ctx_violations,
+            "l5_status": l5_status,
             "final_verdict": final_verdict,
             "confidence": confidence,
             "risk_score": risk_score,
@@ -331,6 +449,6 @@ class DecisionEngine:
             "counter_signals": counter_signals,
             "human_explanation": explanation,
             "fallback_used": fallback_used,
-            "model_version": "v1.2.1-actor-inference"
+            "model_version": MODEL_VERSION
         }
 

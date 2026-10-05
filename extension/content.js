@@ -1,372 +1,667 @@
 /**
  * WebSense Sentinel Content Script (Chrome Extension Manifest V3)
- * Runs on any visited web page to capture telemetry and report AI/Bot classifications.
+ * Collects interaction telemetry on web pages and transmits via service worker to avoid
+ * HTTPS mixed-content and CORS blocks.
  *
- * Collection and transmission are gated to the active (visible) tab only.
- * Background tabs do not record events or flush telemetry to the backend.
+ * Implements cooperative single-collector ownership:
+ * - If Sentinel SDK is active on the page, the extension yields collection and acts
+ *   as a passthrough bridge for the SDK's verdict updates.
+ * - Otherwise, the extension claims ownership and captures client kinematics.
  */
 
 (function () {
   'use strict';
 
-  // Guard 1: Only run in the top-level browsing context (never in iframes/subframes)
+  // Guard 1: Only run in top-level browsing context (never in iframes/subframes)
   if (window.top !== window.self) return;
 
   // Guard 2: Prevent multiple injections into the same window context
   if (window.__WEBSENSE_SENTINEL_INJECTED__) return;
   window.__WEBSENSE_SENTINEL_INJECTED__ = true;
 
-  // Guard 3: If this page already runs native WebSense/Sentinel collector telemetry,
-  // do not duplicate session tracking from the extension.
-  if (document.querySelector('script[src*="collector.js"], script[src*="sentinel.js"]') || window.__WEBSENSE_COLLECTOR_ACTIVE__) {
+  const DEFAULT_ENDPOINT = 'http://localhost:8000/api/v1/sessions';
+  const EXTENSION_SITE_ID = 'site_chrome_extension';
+
+  let latestVerdict = null;
+  let sdkSessionId = null;
+  let isYieldingToSdk = false;
+
+  // --- Check for Native SDK Presence ---
+  function checkSdkPresence() {
+    return (
+      document.documentElement.dataset.wsOwner === 'sdk' ||
+      window.__WEBSENSE_COLLECTOR_ACTIVE__ === true ||
+      !!document.querySelector('script[src*="sentinel.js"], script[src*="collector.js"]')
+    );
+  }
+
+  function yieldToSdk(reason) {
+    if (isYieldingToSdk) return;
+    isYieldingToSdk = true;
+    isCollecting = false;
+    if (currentVisit) {
+      currentVisit.inFlight = null;
+      currentVisit.isFinalized = true;
+    }
+    console.info('[WebSense Extension] Yielded telemetry collection to native website SDK (' + reason + ').');
+    setupMessageResponder();
+  }
+
+  // Listen for SDK verdict broadcasts via postMessage
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'WEBSENSE_VERDICT_UPDATE') {
+      latestVerdict = event.data.verdict;
+      sdkSessionId = event.data.sessionId;
+
+      try {
+        chrome.runtime.sendMessage({
+          type: 'VERDICT_UPDATE',
+          verdict: latestVerdict
+        });
+      } catch (_) {}
+    } else if (event.data && event.data.type === 'WEBSENSE_SDK_ACTIVATED') {
+      yieldToSdk('postMessage WEBSENSE_SDK_ACTIVATED');
+    }
+  });
+
+  // Listen for native SDK activation events
+  window.addEventListener('ws:collector_activated', () => {
+    yieldToSdk('ws:collector_activated event');
+  });
+
+  window.addEventListener('ws:claimed', (e) => {
+    if (e.detail && e.detail.owner === 'sdk') {
+      yieldToSdk('ws:claimed event');
+    }
+  });
+
+  // Watch for dynamic injection of collector/sentinel scripts after consent
+  try {
+    const observer = new MutationObserver((mutations) => {
+      if (isYieldingToSdk) {
+        observer.disconnect();
+        return;
+      }
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = node.tagName ? node.tagName.toLowerCase() : '';
+            if (tag === 'script') {
+              const src = node.getAttribute('src') || '';
+              if (src.includes('sentinel.js') || src.includes('collector.js')) {
+                yieldToSdk('dynamic script element added');
+                observer.disconnect();
+                return;
+              }
+            }
+          }
+        }
+      }
+    });
+    observer.observe(document.documentElement || document, { childList: true, subtree: true });
+  } catch (_) {}
+
+  if (checkSdkPresence()) {
+    yieldToSdk('initial DOM inspection');
     return;
   }
 
-  const DEFAULT_ENDPOINT = 'http://localhost:8000/api/v1/sessions';
-  const siteId = 'site_chrome_ext_' + window.location.hostname.replace(/[^a-zA-Z0-9]/g, '_');
-  const SESSION_KEY = 'ws_ext_session_id';
+  // Claim ownership if SDK is not present
+  document.documentElement.dataset.wsOwner = 'extension';
+
+  // --- Constants & IDs ---
   const VISITOR_KEY = 'ws_visitor_id';
-  const LEGACY_VISITOR_KEYS = ['ws_sentinel_visitor_id', 'meridian_visitor_id'];
+  const JOURNEY_KEY = 'ws_journey_id';
+  const JOURNEY_TIME_KEY = 'ws_journey_last_active';
+  const PREV_VISIT_KEY = 'ws_prev_visit_id';
   const TAB_KEY = 'ws_tab_id';
-  const SEQ_KEY = 'ws_transmission_seq';
+  const JOURNEY_MAX_IDLE_MS = 30 * 60 * 1000;
+  const INACTIVITY_GAP_MS = 60000;
 
   function generateId(prefix) {
-    return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+    return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
   }
 
-  let sessionId = (function () {
-    try {
-      let s = sessionStorage.getItem(SESSION_KEY);
-      if (!s) {
-        s = 'ext_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-        sessionStorage.setItem(SESSION_KEY, s);
-      }
-      return s;
-    } catch (_) {
-      return 'ext_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-    }
-  })();
-
-  let visitorId = (function () {
+  // Persistent visitor ID across visits
+  const visitorId = (function () {
     try {
       let v = localStorage.getItem(VISITOR_KEY);
       if (!v) {
-        for (let i = 0; i < LEGACY_VISITOR_KEYS.length; i++) {
-          v = localStorage.getItem(LEGACY_VISITOR_KEYS[i]);
-          if (v) break;
-        }
+        v = generateId('vis');
+        localStorage.setItem(VISITOR_KEY, v);
       }
-      if (!v) v = generateId('vis');
-      localStorage.setItem(VISITOR_KEY, v);
       return v;
     } catch (_) {
       return generateId('vis');
     }
   })();
 
-  function getClientContext() {
-    let tabId;
+  const tabId = (function () {
     try {
-      tabId = sessionStorage.getItem(TAB_KEY);
-      if (!tabId) {
-        tabId = 'tab_' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : generateId('tab').slice(4));
-        sessionStorage.setItem(TAB_KEY, tabId);
+      let t = sessionStorage.getItem(TAB_KEY);
+      if (!t) {
+        t = 'tab_' + (window.crypto && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : generateId('tab').slice(4));
+        sessionStorage.setItem(TAB_KEY, t);
       }
+      return t;
     } catch (_) {
-      tabId = generateId('tab');
+      return generateId('tab');
     }
-    let seq = 1;
+  })();
+
+  function getJourneyId() {
+    const now = Date.now();
     try {
-      seq = parseInt(sessionStorage.getItem(SEQ_KEY) || '0', 10) + 1;
-      sessionStorage.setItem(SEQ_KEY, String(seq));
-    } catch (_) {}
-    let referrerPath = '';
+      const lastActive = parseInt(sessionStorage.getItem(JOURNEY_TIME_KEY) || '0', 10);
+      let jid = sessionStorage.getItem(JOURNEY_KEY);
+      if (!jid || now - lastActive > JOURNEY_MAX_IDLE_MS) {
+        jid = generateId('jny');
+        sessionStorage.setItem(JOURNEY_KEY, jid);
+      }
+      sessionStorage.setItem(JOURNEY_TIME_KEY, String(now));
+      return jid;
+    } catch (_) {
+      return generateId('jny');
+    }
+  }
+
+  // --- Page Visit State Factory ---
+  function createExtensionVisit(prevVisitId) {
+    const sid = generateId('ext_st');
     try {
-      if (document.referrer) referrerPath = new URL(document.referrer).pathname;
+      sessionStorage.setItem(PREV_VISIT_KEY, sid);
     } catch (_) {}
+
     return {
-      tab_id: tabId,
-      page_path: location.pathname,
-      page_title: document.title || '',
-      page_url: location.pathname + location.search,
-      referrer_path: referrerPath,
-      visibility_state: document.visibilityState,
-      transmission_seq: seq,
-      sdk_version: 'extension-1.0',
+      sessionId: sid,
+      previousVisitId: prevVisitId,
+      transmissionSeq: 1,
+      startTime: performance.now(),
+      startUnixTime: Date.now(),
+      firstEventTime: null,
+      lastEventTime: null,
+      accumulatedIdleMs: 0,
+      totalEventsTransmitted: 0,
+
+      // Delta buffers
+      mouseEvents: [],
+      keyboardEvents: [],
+      scrollEvents: [],
+      clickEvents: [],
+      taskActions: [],
+      activeKeys: new Map(), // code -> pressTime
+
+      // In-flight transmission tracking
+      inFlight: null,
+      isFlushing: false,
+      isFinalized: false,
     };
   }
 
-  const startTime = performance.now();
+  const initialPreviousVisitId = (function () {
+    try {
+      return sessionStorage.getItem(PREV_VISIT_KEY) || null;
+    } catch (_) {
+      return null;
+    }
+  })();
 
-  const mouseEvents = [];
-  const keyboardEvents = [];
-  const scrollEvents = [];
-  const clickEvents = [];
-  const taskActions = [];
+  function isTabActive() {
+    return document.visibilityState === 'visible' && (typeof document.hasFocus === 'function' ? document.hasFocus() : true);
+  }
 
+  let currentVisit = createExtensionVisit(initialPreviousVisitId);
+  let isCollecting = isTabActive();
   let lastMouseMoveTime = 0;
   let lastScrollTime = 0;
   let lastKeyDownTime = 0;
-  const activeKeys = new Map();
-  let latestVerdict = null;
 
-  // --- Active-Duration Tracking ---
-  // Measures true active engagement, not raw tab lifetime.
-  // Gaps > INACTIVITY_GAP_MS between events are treated as idle and excluded
-  // so a tab left open idle in the background does not inflate the value
-  // the detection engine uses for ratio-based features (planning_pause_ratio, etc.).
-  const INACTIVITY_GAP_MS = 60000; // 60 s of silence = idle, not counted
-  let firstEventTime = null;  // performance.now() of first real user event
-  let lastEventTime  = null;  // performance.now() of most recent user event
-  let accumulatedIdleMs = 0;  // total idle-gap time subtracted from active window
-
-  // --- Active-Tab Gating ---
-  // Only the foreground tab collects events and sends telemetry.
-  let isCollecting = document.visibilityState === 'visible';
-
-  function isTabVisible() {
-    return document.visibilityState === 'visible';
-  }
-
-  function onTabHidden() {
-    isCollecting = false;
-    // Exclude time spent in the background from active engagement metrics.
-    if (lastEventTime !== null) {
-      accumulatedIdleMs += performance.now() - lastEventTime;
-      lastEventTime = null;
-    }
-  }
-
-  function onTabVisible() {
-    isCollecting = true;
-  }
-
-  document.addEventListener('visibilitychange', function () {
-    if (isTabVisible()) {
-      onTabVisible();
-    } else {
-      onTabHidden();
-    }
-  });
-
-  function recordActivity() {
-    if (!isCollecting) return;
+  function recordActivity(visit) {
+    if (isYieldingToSdk || !isCollecting || !isTabActive() || !visit) return;
     const now = performance.now();
-    if (firstEventTime === null) {
-      firstEventTime = now;
-    } else if (lastEventTime !== null) {
-      const gap = now - lastEventTime;
+    if (visit.firstEventTime === null) {
+      visit.firstEventTime = now;
+    } else if (visit.lastEventTime !== null) {
+      const gap = now - visit.lastEventTime;
       if (gap > INACTIVITY_GAP_MS) {
-        accumulatedIdleMs += gap;
+        visit.accumulatedIdleMs += gap;
       }
     }
-    lastEventTime = now;
+    visit.lastEventTime = now;
+    try {
+      sessionStorage.setItem(JOURNEY_TIME_KEY, String(Date.now()));
+    } catch (_) {}
   }
 
-  function getActiveDurationMs() {
-    if (firstEventTime === null || lastEventTime === null) return 0;
-    return Math.max(0, Math.round((lastEventTime - firstEventTime) - accumulatedIdleMs));
+  function getActiveDurationMs(visit) {
+    if (!visit || visit.firstEventTime === null || visit.lastEventTime === null) return 0;
+    return Math.max(0, Math.round(visit.lastEventTime - visit.firstEventTime - visit.accumulatedIdleMs));
   }
 
-  // --- Mouse Movement ---
+  function hasMinimumInteraction(visit) {
+    if (!visit) return false;
+    if (visit.clickEvents.length >= 1) return true;
+    if (visit.keyboardEvents.length >= 2) return true;
+    if (visit.scrollEvents.length >= 2) return true;
+    if (visit.mouseEvents.length >= 8) {
+      const first = visit.mouseEvents[0];
+      const last = visit.mouseEvents[visit.mouseEvents.length - 1];
+      const dx = last.x - first.x;
+      const dy = last.y - first.y;
+      if (Math.sqrt(dx * dx + dy * dy) >= 15) return true;
+    }
+    return (visit.mouseEvents.length + visit.keyboardEvents.length + visit.scrollEvents.length + visit.clickEvents.length) >= 5;
+  }
+
+  function hasPendingEvents(visit) {
+    if (!visit) return false;
+    return (
+      visit.mouseEvents.length > 0 ||
+      visit.keyboardEvents.length > 0 ||
+      visit.scrollEvents.length > 0 ||
+      visit.clickEvents.length > 0 ||
+      visit.taskActions.length > 0
+    );
+  }
+
+  // --- Event Listeners ---
   window.addEventListener('mousemove', function (e) {
-    if (!isCollecting) return;
+    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
     const now = performance.now();
     if (now - lastMouseMoveTime < 25) return;
     lastMouseMoveTime = now;
-    recordActivity();
-    if (mouseEvents.length < 500) {
-      mouseEvents.push({
+    recordActivity(currentVisit);
+
+    if (currentVisit.mouseEvents.length < 300) {
+      currentVisit.mouseEvents.push({
         x: Math.round(e.clientX),
         y: Math.round(e.clientY),
-        t: Math.round(now - startTime),
+        t: Math.round(now - currentVisit.startTime),
         type: 'move'
       });
     }
   }, { passive: true });
 
-  // --- Click Events ---
   window.addEventListener('click', function (e) {
-    if (!isCollecting) return;
-    recordActivity();
+    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    recordActivity(currentVisit);
     const tag = (e.target.tagName || '').toLowerCase();
     let category = 'other';
-    if (['button', 'input', 'a'].includes(tag) || e.target.closest('button, a')) {
-      category = tag === 'a' || e.target.closest('a') ? 'link' : 'button';
+    const interactive = e.target.closest('button, a, input, select, textarea, [role="button"]');
+    if (['button', 'input', 'a'].includes(tag) || interactive) {
+      category = tag === 'a' || (interactive && interactive.tagName.toLowerCase() === 'a') ? 'link' : 'button';
     }
-    clickEvents.push({
-      x: Math.round(e.clientX),
-      y: Math.round(e.clientY),
-      t: Math.round(performance.now() - startTime),
-      target_category: category
-    });
+    if (currentVisit.clickEvents.length < 50) {
+      currentVisit.clickEvents.push({
+        x: Math.round(e.clientX),
+        y: Math.round(e.clientY),
+        t: Math.round(performance.now() - currentVisit.startTime),
+        target_category: category
+      });
+    }
+
+    // Capture semantic DOM task action for meaningful user interactions
+    if (interactive && currentVisit.taskActions.length < 50) {
+      const el = interactive;
+      const elTag = el.tagName.toLowerCase();
+      let act = 'element_click';
+      if (elTag === 'a') act = 'link_navigate';
+      else if (elTag === 'button' || el.getAttribute('role') === 'button') act = 'button_trigger';
+      else if (elTag === 'input' && (el.type === 'submit' || el.type === 'button')) act = 'form_action';
+      else if (elTag === 'input' || elTag === 'select' || elTag === 'textarea') act = 'input_focus';
+
+      const label = (el.getAttribute('aria-label') || el.name || el.id || el.textContent || '').trim().slice(0, 40);
+      currentVisit.taskActions.push({
+        action: act,
+        t: Math.round(performance.now() - currentVisit.startTime),
+        details: { tag: elTag, label: label, trusted: e.isTrusted }
+      });
+    }
   }, { passive: true });
 
-  // --- Keyboard Timing (Zero text / characters) ---
+  window.addEventListener('submit', function (e) {
+    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    recordActivity(currentVisit);
+    if (currentVisit.taskActions.length < 50) {
+      currentVisit.taskActions.push({
+        action: 'form_submitted',
+        t: Math.round(performance.now() - currentVisit.startTime),
+        details: { target: (e.target.id || e.target.name || 'form').slice(0, 40) }
+      });
+    }
+  }, { passive: true });
+
+  // Keyboard dynamics with per-code hold tracking (P10 Fix)
   window.addEventListener('keydown', function (e) {
-    if (!isCollecting) return;
+    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
     if (e.target && (e.target.type === 'password' || e.target.dataset.private === 'true')) return;
-    recordActivity();
+    if (e.repeat) return; // Discard synthetic repeats
+
+    recordActivity(currentVisit);
     const now = performance.now();
     const interval = lastKeyDownTime > 0 ? Math.round(now - lastKeyDownTime) : 0;
     lastKeyDownTime = now;
-    activeKeys.set(e.code, now);
 
-    if (keyboardEvents.length < 300) {
-      keyboardEvents.push({
-        t: Math.round(now - startTime),
+    const code = e.code || ('k_' + Math.random().toString(36).slice(2, 6));
+    currentVisit.activeKeys.set(code, now);
+
+    if (currentVisit.keyboardEvents.length < 200) {
+      currentVisit.keyboardEvents.push({
+        t: Math.round(now - currentVisit.startTime),
         interval: interval,
-        hold: 50.0,
-        is_paste: false
+        hold: 0,
+        is_paste: false,
+        _code: code
       });
     }
   }, { passive: true });
 
   window.addEventListener('keyup', function (e) {
-    if (!isCollecting) return;
-    if (activeKeys.has(e.code)) {
-      const downTime = activeKeys.get(e.code);
-      const hold = Math.round(performance.now() - downTime);
-      activeKeys.delete(e.code);
-      if (keyboardEvents.length > 0) {
-        keyboardEvents[keyboardEvents.length - 1].hold = hold;
+    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    if (e.target && (e.target.type === 'password' || e.target.dataset.private === 'true')) return;
+
+    const code = e.code;
+    if (code && currentVisit.activeKeys.has(code)) {
+      const downTime = currentVisit.activeKeys.get(code);
+      const hold = Math.max(1, Math.round(performance.now() - downTime));
+      currentVisit.activeKeys.delete(code);
+
+      // Attribute hold time to the matching key event (P10 rollover fix)
+      for (let i = currentVisit.keyboardEvents.length - 1; i >= 0; i--) {
+        if (currentVisit.keyboardEvents[i]._code === code) {
+          currentVisit.keyboardEvents[i].hold = hold;
+          break;
+        }
       }
     }
   }, { passive: true });
 
-  // --- Scroll Dynamics ---
+  // Paste event detection (P10 Fix)
+  window.addEventListener('paste', function (e) {
+    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    if (e.target && (e.target.type === 'password' || e.target.dataset.private === 'true')) return;
+    const now = performance.now();
+    recordActivity(currentVisit);
+    if (currentVisit.keyboardEvents.length < 200) {
+      currentVisit.keyboardEvents.push({
+        t: Math.round(now - currentVisit.startTime),
+        interval: 0,
+        hold: 0,
+        is_paste: true
+      });
+    }
+  }, { passive: true });
+
   window.addEventListener('scroll', function () {
-    if (!isCollecting) return;
+    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
     const now = performance.now();
     if (now - lastScrollTime < 50) return;
-    recordActivity();
-    const lastScrollY = scrollEvents.length > 0 ? scrollEvents[scrollEvents.length - 1].scroll_y : 0;
+    recordActivity(currentVisit);
+    const lastScrollY = currentVisit.scrollEvents.length > 0
+      ? currentVisit.scrollEvents[currentVisit.scrollEvents.length - 1].scroll_y
+      : 0;
     const currentY = Math.round(window.scrollY);
     lastScrollTime = now;
-    if (scrollEvents.length < 200) {
-      scrollEvents.push({
-        t: Math.round(now - startTime),
+    if (currentVisit.scrollEvents.length < 150) {
+      currentVisit.scrollEvents.push({
+        t: Math.round(now - currentVisit.startTime),
         scroll_y: currentY,
         delta_y: currentY - lastScrollY
       });
     }
   }, { passive: true });
 
-  // --- Build & Transmit Telemetry ---
-  function buildPayload() {
+  // Visibility and Window Focus / Blur Lifecycle (True Active Tab Guarantee)
+  function updateActiveState() {
+    const active = isTabActive();
+    if (active) {
+      if (!isCollecting) {
+        isCollecting = true;
+        if (currentVisit && currentVisit.lastEventTime === null) {
+          currentVisit.lastEventTime = performance.now();
+        }
+      }
+    } else {
+      if (isCollecting && currentVisit && currentVisit.lastEventTime !== null) {
+        currentVisit.accumulatedIdleMs += performance.now() - currentVisit.lastEventTime;
+        currentVisit.lastEventTime = null;
+      }
+      isCollecting = false;
+      // Transmit intermediate delta when tab is switched or blurred
+      if (currentVisit && !isYieldingToSdk) {
+        flushTelemetry(currentVisit, false);
+      }
+    }
+  }
+
+  document.addEventListener('visibilitychange', updateActiveState);
+  window.addEventListener('focus', updateActiveState);
+  window.addEventListener('blur', updateActiveState);
+
+  // --- Build Delta Chunk Payload ---
+  function assembleExtensionPayload(visit, seq, isFinal, events) {
+    let referrerPath = '';
+    try {
+      if (document.referrer) referrerPath = new URL(document.referrer).pathname;
+    } catch (_) {}
+
+    const cleanKeyboard = events.keyboard.map((k) => ({
+      t: k.t,
+      interval: k.interval,
+      hold: k.hold,
+      is_paste: k.is_paste
+    }));
+
+    const durationMs = Math.round(performance.now() - visit.startTime);
+
     return {
-      session_id: sessionId,
-      site_id: siteId,
+      session_id: visit.sessionId,
+      page_visit_id: visit.sessionId,
+      journey_id: getJourneyId(),
+      previous_visit_id: visit.previousVisitId,
+      site_id: EXTENSION_SITE_ID,
       visitor_id: visitorId,
       task: 'general',
-      client_context: getClientContext(),
-      // start_time = approximate page-load unix time in ms
-      start_time: Date.now() - Math.round(performance.now() - startTime),
+      seq: seq,
+      final: Boolean(isFinal),
+      client_context: {
+        tab_id: tabId,
+        page_path: location.pathname,
+        page_title: document.title || '',
+        // P11 Fix: omit query string and hash from URL by default
+        page_url: (location.origin + location.pathname).slice(0, 512),
+        referrer_path: referrerPath,
+        visibility_state: document.visibilityState,
+        transmission_seq: seq,
+        sdk_version: 'extension-2.1'
+      },
+      start_time: visit.startUnixTime,
       end_time: Date.now(),
-      // Raw tab-open lifetime (kept for diagnostics; may include background idle time)
-      duration_ms: Math.round(performance.now() - startTime),
-      // Bounded active engagement window: excludes idle gaps > 60 s.
-      // The detection engine uses this field for all ratio-based features.
-      active_duration_ms: getActiveDurationMs(),
+      duration_ms: durationMs,
+      active_duration_ms: getActiveDurationMs(visit),
       data_source: 'chrome_extension',
       browser_signals: {
-        webdriver: !!navigator.webdriver,
-        screen_width: window.screen.width,
-        screen_height: window.screen.height,
-        viewport_width: window.innerWidth,
-        viewport_height: window.innerHeight,
-        user_agent: navigator.userAgent
+        webdriver: Boolean(navigator.webdriver),
+        screen_width: window.screen ? window.screen.width : 1920,
+        screen_height: window.screen ? window.screen.height : 1080,
+        viewport_width: window.innerWidth || 1280,
+        viewport_height: window.innerHeight || 720,
+        user_agent: navigator.userAgent || ''
       },
-      mouse_events: mouseEvents,
-      keyboard_events: keyboardEvents,
-      scroll_events: scrollEvents,
-      click_events: clickEvents,
-      task_actions: taskActions
+      mouse_events: events.mouse,
+      keyboard_events: cleanKeyboard,
+      scroll_events: events.scroll,
+      click_events: events.clicks,
+      task_actions: events.actions
     };
   }
 
-  // --- Minimum Interaction Gating ---
-  // A session represents one real, continuous visit with actual human interaction.
-  // Idle tabs with zero interaction (or mere layout-shift / sensor noise) never transmit.
-  const MIN_MOUSE_EVENTS = 5;
-  const MIN_MOUSE_DISPLACEMENT_PX = 15;
-  const MIN_TOTAL_EVENTS = 5;
-
-  function hasMinimumInteraction() {
-    // 1. Deliberate click interaction
-    if (clickEvents.length > 0) return true;
-    // 2. Keyboard interaction
-    if (keyboardEvents.length > 0) return true;
-    // 3. Multi-point scroll interaction
-    if (scrollEvents.length >= 2) return true;
-    // 4. Mouse movement with measurable trajectory (>15px displacement across >= 5 points)
-    // Filters out stationary cursor landing on load, trackpad jitter, and 1-pixel sensor drift
-    if (mouseEvents.length >= MIN_MOUSE_EVENTS) {
-      const first = mouseEvents[0];
-      const last = mouseEvents[mouseEvents.length - 1];
-      const dx = last.x - first.x;
-      const dy = last.y - first.y;
-      if (Math.sqrt(dx * dx + dy * dy) >= MIN_MOUSE_DISPLACEMENT_PX) {
-        return true;
+  // --- Reliable Flushing Logic (P2, P4, P5 Fix) ---
+  function flushTelemetry(visit, isFinal) {
+    if (isYieldingToSdk || checkSdkPresence() || window.__WEBSENSE_COLLECTOR_ACTIVE__ || !visit || visit.isFlushing) {
+      if (!isYieldingToSdk && (checkSdkPresence() || window.__WEBSENSE_COLLECTOR_ACTIVE__)) {
+        yieldToSdk('flush presence check');
       }
+      return;
     }
-    // 5. Total combined interactions threshold
-    const total = mouseEvents.length + keyboardEvents.length + scrollEvents.length + clickEvents.length;
-    return total >= MIN_TOTAL_EVENTS;
-  }
 
-  async function flushTelemetry(force) {
-    if (!force && !isTabVisible()) return;
-    if (!hasMinimumInteraction()) return;
+    // P4 Fix: Never create empty sessions for background tabs without interactions
+    if (isFinal) {
+      if (visit.totalEventsTransmitted === 0 && (!hasPendingEvents(visit) || !hasMinimumInteraction(visit))) {
+        return; // Zero interaction tab close — do not transmit empty session
+      }
+    } else {
+      if (visit.totalEventsTransmitted === 0 && !hasMinimumInteraction(visit)) return;
+      if (visit.totalEventsTransmitted > 0 && !hasPendingEvents(visit) && !visit.inFlight) return;
+    }
+
+    // Assemble new in-flight chunk if none is waiting for retry
+    if (!visit.inFlight) {
+      if (!hasPendingEvents(visit) && !isFinal) return;
+
+      const seq = visit.transmissionSeq;
+      const deltaMouse = visit.mouseEvents.splice(0, visit.mouseEvents.length);
+      const deltaKeyboard = visit.keyboardEvents.splice(0, visit.keyboardEvents.length);
+      const deltaScroll = visit.scrollEvents.splice(0, visit.scrollEvents.length);
+      const deltaClicks = visit.clickEvents.splice(0, visit.clickEvents.length);
+      const deltaTasks = visit.taskActions.splice(0, visit.taskActions.length);
+
+      const payload = assembleExtensionPayload(visit, seq, isFinal, {
+        mouse: deltaMouse,
+        keyboard: deltaKeyboard,
+        scroll: deltaScroll,
+        clicks: deltaClicks,
+        actions: deltaTasks
+      });
+
+      visit.inFlight = {
+        seq: seq,
+        payload: payload,
+        isFinal: Boolean(isFinal),
+        eventCount: deltaMouse.length + deltaKeyboard.length + deltaScroll.length + deltaClicks.length
+      };
+    }
+
+    const inFlight = visit.inFlight;
+    visit.isFlushing = true;
+
     try {
-      const response = await fetch(DEFAULT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload())
-      });
-      if (response.ok) {
-        latestVerdict = await response.json();
-        chrome.runtime.sendMessage({
-          type: 'VERDICT_UPDATE',
-          url: window.location.href,
-          hostname: window.location.hostname,
-          verdict: latestVerdict,
-          counts: {
-            mouse: mouseEvents.length,
-            keys: keyboardEvents.length,
-            scroll: scrollEvents.length,
-            clicks: clickEvents.length
+      chrome.runtime.sendMessage(
+        {
+          type: 'INGEST_TELEMETRY',
+          endpoint: DEFAULT_ENDPOINT,
+          payload: inFlight.payload
+        },
+        (res) => {
+          visit.isFlushing = false;
+          if (res && res.success) {
+            // Acknowledged: increment seq, advance counters, clear inFlight
+            visit.totalEventsTransmitted += inFlight.eventCount;
+            visit.transmissionSeq++;
+            visit.inFlight = null;
+
+            if (res.verdict) {
+              latestVerdict = res.verdict;
+            }
+          } else if (res && res.status >= 400 && res.status < 500 && res.status !== 429) {
+            // Permanent 4xx client rejection: drop chunk and advance
+            console.warn('[WebSense Extension] Chunk seq ' + inFlight.seq + ' rejected (' + res.status + '); dropping.');
+            visit.transmissionSeq++;
+            visit.inFlight = null;
+          } else {
+            // Transient failure / offline: keep inFlight intact for retry
+            console.warn('[WebSense Extension] Telemetry send failed; will retry chunk seq ' + inFlight.seq);
           }
-        });
-      }
-    } catch (err) {
-      // Backend offline or unreachable
+        }
+      );
+    } catch (_) {
+      visit.isFlushing = false;
     }
   }
 
-  // Periodic flush every 5 seconds (active tab only) & on unload
-  setInterval(function () { flushTelemetry(false); }, 5000);
-  window.addEventListener('pagehide', function () { flushTelemetry(true); });
+  // --- SPA Navigation & Route Changes (P5 Fix) ---
+  function handlePageVisitTransition() {
+    const oldVisit = currentVisit;
+    if (oldVisit) {
+      oldVisit.isFinalized = true;
+      flushTelemetry(oldVisit, true);
+    }
 
-  // Message listener for popup requests
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg.type === 'GET_PAGE_STATUS') {
-      sendResponse({
-        url: window.location.href,
-        hostname: window.location.hostname,
-        sessionId: sessionId,
-        siteId: siteId,
-        events: {
-          mouse: mouseEvents.length,
-          keys: keyboardEvents.length,
-          scroll: scrollEvents.length,
-          clicks: clickEvents.length
-        },
-        activeDurationMs: getActiveDurationMs(),
-        isCollecting: isCollecting,
-        verdict: latestVerdict
-      });
+    const prevId = oldVisit ? oldVisit.sessionId : null;
+    currentVisit = createExtensionVisit(prevId);
+  }
+
+  let lastPathname = location.pathname;
+  function checkPathChange() {
+    if (location.pathname !== lastPathname) {
+      lastPathname = location.pathname;
+      handlePageVisitTransition();
+    }
+  }
+
+  const origPushState = history.pushState;
+  if (origPushState) {
+    history.pushState = function () {
+      origPushState.apply(history, arguments);
+      checkPathChange();
+    };
+  }
+
+  const origReplaceState = history.replaceState;
+  if (origReplaceState) {
+    history.replaceState = function () {
+      origReplaceState.apply(history, arguments);
+      checkPathChange();
+    };
+  }
+
+  window.addEventListener('popstate', checkPathChange);
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) {
+      handlePageVisitTransition();
     }
   });
+
+  // Periodic flush every 5s while active
+  setInterval(() => {
+    if (currentVisit && isCollecting) {
+      flushTelemetry(currentVisit, false);
+    }
+  }, 5000);
+
+  // Unload flush with final=true
+  window.addEventListener('pagehide', () => {
+    if (currentVisit && !currentVisit.isFinalized) {
+      flushTelemetry(currentVisit, true);
+    }
+  });
+
+  setupMessageResponder();
+
+  // --- Message Responder for Extension Popup ---
+  function setupMessageResponder() {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (msg.type === 'GET_PAGE_STATUS') {
+        const visit = currentVisit;
+        sendResponse({
+          url: (location.origin + location.pathname).slice(0, 512),
+          hostname: window.location.hostname,
+          sessionId: isYieldingToSdk ? sdkSessionId : (visit ? visit.sessionId : null),
+          siteId: isYieldingToSdk ? 'site_meridian_prod' : EXTENSION_SITE_ID,
+          source: isYieldingToSdk ? 'sdk_passthrough' : 'chrome_extension',
+          events: {
+            mouse: visit ? visit.mouseEvents.length : 0,
+            keys: visit ? visit.keyboardEvents.length : 0,
+            scroll: visit ? visit.scrollEvents.length : 0,
+            clicks: visit ? visit.clickEvents.length : 0,
+            totalTransmitted: visit ? visit.totalEventsTransmitted : 0
+          },
+          activeDurationMs: visit ? getActiveDurationMs(visit) : 0,
+          isCollecting: isCollecting && !isYieldingToSdk,
+          verdict: latestVerdict
+        });
+      }
+    });
+  }
 
 })();

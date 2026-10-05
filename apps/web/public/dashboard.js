@@ -192,6 +192,14 @@ async function fetchOverviewStats() {
       distributionChart.update();
     }
 
+    if (timelineChart && Array.isArray(data.detection_timeline) && data.detection_timeline.length > 0) {
+      timelineChart.data.labels = data.detection_timeline.map(b => b.bucket);
+      timelineChart.data.datasets[0].data = data.detection_timeline.map(b => b.human || 0);
+      timelineChart.data.datasets[1].data = data.detection_timeline.map(b => b.automation || 0);
+      timelineChart.data.datasets[2].data = data.detection_timeline.map(b => b.agentic || 0);
+      timelineChart.update();
+    }
+
     renderRecentOverviewTable(data.recent_activity || []);
   } catch (err) {
     console.warn("Failed to fetch stats:", err);
