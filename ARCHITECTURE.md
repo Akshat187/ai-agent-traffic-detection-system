@@ -45,7 +45,7 @@ WebSense is a multi-layered security intelligence and traffic classification pla
 |   - Calibrated class probabilities & feature importance                           |
 |                                                                                   |
 |  [Layer 3: Behavioral Anomaly Detection]                                          |
-|   - Isolation Forest & Mahalanobis baseline distance                              |
+|   - Multi-variate Mahalanobis baseline kinematic distance                         |
 |   - Detects out-of-distribution deviations from normal human interactions          |
 |                                                                                   |
 |  [Layer 4: Historical Replay Defense]                                             |

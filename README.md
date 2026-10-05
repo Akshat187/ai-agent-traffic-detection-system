@@ -17,7 +17,7 @@ Inspired by contemporary research (*FP-Agent: Fingerprinting AI Browsing Agents,
 1. **5-Layer Multi-Defense Engine**:
    - **Layer 1: Rule-Based Heuristics** — Rapid detection of `navigator.webdriver`, zero-movement click events, and impossible sub-second form completion.
    - **Layer 2: Supervised Behavioral ML** — Random Forest and Decision Tree classifiers operating over 15 physical kinematic features (acceleration, jerk, straightness ratio, micro-corrections, typing coefficient of variation).
-   - **Layer 3: Behavioral Anomaly Detection** — Isolation Forest & Mahalanobis baseline distance measuring out-of-distribution deviation from organic human interaction.
+   - **Layer 3: Behavioral Anomaly Detection** — Multi-variate Mahalanobis baseline distance and kinematic outlier scoring measuring out-of-distribution deviation from organic human interaction distributions.
    - **Layer 4: Historical Replay Defense** — Trajectory bounding-box normalization, equidistant arc-length resampling, and Dynamic Time Warping (DTW) similarity matching to detect synthetic replay attacks (>94% match).
    - **Layer 5: Contextual Task Validation** — Finite-state workflow validation catching out-of-order interactions and clicks landing on non-interactive regions.
 

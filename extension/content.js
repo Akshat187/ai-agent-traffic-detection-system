@@ -30,8 +30,21 @@
   function checkSdkPresence() {
     return (
       document.documentElement.dataset.wsOwner === 'sdk' ||
+      window.__WEBSENSE_COLLECTOR_ACTIVE__ === true ||
       !!document.querySelector('script[src*="sentinel.js"], script[src*="collector.js"]')
     );
+  }
+
+  function yieldToSdk(reason) {
+    if (isYieldingToSdk) return;
+    isYieldingToSdk = true;
+    isCollecting = false;
+    if (currentVisit) {
+      currentVisit.inFlight = null;
+      currentVisit.isFinalized = true;
+    }
+    console.info('[WebSense Extension] Yielded telemetry collection to native website SDK (' + reason + ').');
+    setupMessageResponder();
   }
 
   // Listen for SDK verdict broadcasts via postMessage
@@ -46,24 +59,55 @@
           verdict: latestVerdict
         });
       } catch (_) {}
+    } else if (event.data && event.data.type === 'WEBSENSE_SDK_ACTIVATED') {
+      yieldToSdk('postMessage WEBSENSE_SDK_ACTIVATED');
     }
   });
 
+  // Listen for native SDK activation events
+  window.addEventListener('ws:collector_activated', () => {
+    yieldToSdk('ws:collector_activated event');
+  });
+
+  window.addEventListener('ws:claimed', (e) => {
+    if (e.detail && e.detail.owner === 'sdk') {
+      yieldToSdk('ws:claimed event');
+    }
+  });
+
+  // Watch for dynamic injection of collector/sentinel scripts after consent
+  try {
+    const observer = new MutationObserver((mutations) => {
+      if (isYieldingToSdk) {
+        observer.disconnect();
+        return;
+      }
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = node.tagName ? node.tagName.toLowerCase() : '';
+            if (tag === 'script') {
+              const src = node.getAttribute('src') || '';
+              if (src.includes('sentinel.js') || src.includes('collector.js')) {
+                yieldToSdk('dynamic script element added');
+                observer.disconnect();
+                return;
+              }
+            }
+          }
+        }
+      }
+    });
+    observer.observe(document.documentElement || document, { childList: true, subtree: true });
+  } catch (_) {}
+
   if (checkSdkPresence()) {
-    isYieldingToSdk = true;
-    setupMessageResponder();
+    yieldToSdk('initial DOM inspection');
     return;
   }
 
   // Claim ownership if SDK is not present
   document.documentElement.dataset.wsOwner = 'extension';
-
-  // Listen in case SDK is injected asynchronously later
-  window.addEventListener('ws:claimed', (e) => {
-    if (e.detail && e.detail.owner === 'sdk') {
-      isYieldingToSdk = true;
-    }
-  });
 
   // --- Constants & IDs ---
   const VISITOR_KEY = 'ws_visitor_id';
@@ -162,14 +206,18 @@
     }
   })();
 
+  function isTabActive() {
+    return document.visibilityState === 'visible' && (typeof document.hasFocus === 'function' ? document.hasFocus() : true);
+  }
+
   let currentVisit = createExtensionVisit(initialPreviousVisitId);
-  let isCollecting = document.visibilityState === 'visible';
+  let isCollecting = isTabActive();
   let lastMouseMoveTime = 0;
   let lastScrollTime = 0;
   let lastKeyDownTime = 0;
 
   function recordActivity(visit) {
-    if (!isCollecting || !visit) return;
+    if (isYieldingToSdk || !isCollecting || !isTabActive() || !visit) return;
     const now = performance.now();
     if (visit.firstEventTime === null) {
       visit.firstEventTime = now;
@@ -363,22 +411,32 @@
     }
   }, { passive: true });
 
-  // Visibility and Tab Lifecycle
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') {
-      isCollecting = true;
+  // Visibility and Window Focus / Blur Lifecycle (True Active Tab Guarantee)
+  function updateActiveState() {
+    const active = isTabActive();
+    if (active) {
+      if (!isCollecting) {
+        isCollecting = true;
+        if (currentVisit && currentVisit.lastEventTime === null) {
+          currentVisit.lastEventTime = performance.now();
+        }
+      }
     } else {
-      isCollecting = false;
-      if (currentVisit && currentVisit.lastEventTime !== null) {
+      if (isCollecting && currentVisit && currentVisit.lastEventTime !== null) {
         currentVisit.accumulatedIdleMs += performance.now() - currentVisit.lastEventTime;
         currentVisit.lastEventTime = null;
       }
-      // P10 Fix: transmit intermediate delta when tab is switched
-      if (currentVisit) {
+      isCollecting = false;
+      // Transmit intermediate delta when tab is switched or blurred
+      if (currentVisit && !isYieldingToSdk) {
         flushTelemetry(currentVisit, false);
       }
     }
-  });
+  }
+
+  document.addEventListener('visibilitychange', updateActiveState);
+  window.addEventListener('focus', updateActiveState);
+  window.addEventListener('blur', updateActiveState);
 
   // --- Build Delta Chunk Payload ---
   function assembleExtensionPayload(visit, seq, isFinal, events) {
@@ -440,7 +498,12 @@
 
   // --- Reliable Flushing Logic (P2, P4, P5 Fix) ---
   function flushTelemetry(visit, isFinal) {
-    if (isYieldingToSdk || !visit || visit.isFlushing) return;
+    if (isYieldingToSdk || checkSdkPresence() || window.__WEBSENSE_COLLECTOR_ACTIVE__ || !visit || visit.isFlushing) {
+      if (!isYieldingToSdk && (checkSdkPresence() || window.__WEBSENSE_COLLECTOR_ACTIVE__)) {
+        yieldToSdk('flush presence check');
+      }
+      return;
+    }
 
     // P4 Fix: Never create empty sessions for background tabs without interactions
     if (isFinal) {

@@ -34,7 +34,11 @@
   window.__WEBSENSE_COLLECTOR_ACTIVE__ = true;
 
   // Notify extension or other observers that SDK owns collection
-  window.dispatchEvent(new CustomEvent('ws:claimed', { detail: { owner: 'sdk' } }));
+  try {
+    window.dispatchEvent(new CustomEvent('ws:collector_activated', { detail: { owner: 'sdk', timestamp: Date.now() } }));
+    window.dispatchEvent(new CustomEvent('ws:claimed', { detail: { owner: 'sdk' } }));
+    window.postMessage({ type: 'WEBSENSE_SDK_ACTIVATED' }, '*');
+  } catch (_) {}
 
   // 1. Discover configuration from script tag
   const currentScript = document.currentScript || (function () {

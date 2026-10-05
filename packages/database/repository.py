@@ -20,6 +20,7 @@ from typing import Optional, Dict, Any, List, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DBSession
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy import or_
 
 from packages.database.models import (
@@ -218,8 +219,15 @@ def _data_quality(events: Dict[str, List], is_synthetic: bool) -> str:
     n_key = len(events.get("keyboard_events", []))
     n_scroll = len(events.get("scroll_events", []))
     n_click = len(events.get("click_events", []))
-    total = n_mouse + n_key + n_scroll + n_click
-    has_signal = n_click > 0 or n_key > 0 or n_scroll >= 2 or n_mouse >= 5
+    n_tasks = len(events.get("task_actions", []))
+    total = n_mouse + n_key + n_scroll + n_click + n_tasks
+    has_signal = (
+        (n_mouse >= 5)
+        or n_key >= 3
+        or n_tasks >= 2
+        or (total >= 5 and (n_click >= 2 or n_scroll >= 2))
+        or total >= 10
+    )
     return "standard" if is_synthetic or (has_signal and total >= 5) else "low_signal"
 
 
@@ -553,20 +561,32 @@ def ingest_chunk(
     telem.click_events = merged["click_events"][-500:]
     telem.task_actions = merged["task_actions"][-500:]
     telem.browser_signals = browser_signals
+    flag_modified(telem, "mouse_events")
+    flag_modified(telem, "keyboard_events")
+    flag_modified(telem, "scroll_events")
+    flag_modified(telem, "click_events")
+    flag_modified(telem, "task_actions")
+    flag_modified(telem, "browser_signals")
+    db.add(telem)
 
     feat = rec.features
     if feat is None:
-        db.add(_build_feature_record(sid, features))
+        feat = _build_feature_record(sid, features)
+        db.add(feat)
     else:
         for k, v in _feature_fields(features).items():
             setattr(feat, k, v)
+        flag_modified(feat, "all_features_json")
+        db.add(feat)
 
     det = rec.verdict
     if det is None:
-        db.add(_build_verdict_record(sid, verdict))
+        det = _build_verdict_record(sid, verdict)
+        db.add(det)
     else:
         for k, v in _verdict_fields(verdict).items():
             setattr(det, k, v)
+        db.add(det)
 
     rec.predicted_label = verdict["final_verdict"]
     rec.confidence = verdict["confidence"]

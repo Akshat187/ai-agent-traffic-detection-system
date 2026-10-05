@@ -201,19 +201,88 @@ def test_data_quality_low_signal_gating():
     }
     ingest_res = client.post("/api/v1/sessions", json=low_payload)
     assert ingest_res.status_code == 200
+    assert ingest_res.json()["predicted_label"] == "UNCERTAIN"
 
-    # 2. Check session detail: data_quality must be 'low_signal'
+    # 2. Check session detail: data_quality must be 'low_signal' and verdict 'UNCERTAIN'
     detail_res = client.get(f"/api/v1/sessions/{low_sid}")
     assert detail_res.status_code == 200
     session_data = detail_res.json()["session"]
     assert session_data["data_quality"] == "low_signal", (
         f"Expected data_quality='low_signal', got {session_data['data_quality']}"
     )
+    assert session_data["predicted_label"] == "UNCERTAIN"
 
     # 3. Overview stats default excludes low_signal sessions
     stats_clean = client.get("/api/v1/stats/overview").json()
     stats_all = client.get("/api/v1/stats/overview?include_low_signal=true").json()
     assert stats_all["total_sessions"] > stats_clean["total_sessions"]
     assert stats_clean["low_signal_count"] > 0
+
+
+def test_session_delta_updates_raw_telemetry_and_features():
+    """Verifies that subsequent delta chunks synchronously update raw telemetry and feature child records."""
+    import uuid
+    sid = f"test_delta_sync_{uuid.uuid4().hex[:8]}"
+
+    chunk1 = {
+        "session_id": sid,
+        "site_id": "site_meridian_prod",
+        "task": "shopping",
+        "seq": 1,
+        "is_delta": True,
+        "start_time": 1700000000.0,
+        "end_time": 1700000002.0,
+        "duration_ms": 2000.0,
+        "is_synthetic": False,
+        "data_source": "realtime_sdk",
+        "browser_signals": {"webdriver": False},
+        "mouse_events": [
+            {"x": 100 + i * 10, "y": 100 + i * 5, "t": 100 * i, "type": "move"}
+            for i in range(6)
+        ],
+        "keyboard_events": [],
+        "scroll_events": [],
+        "click_events": [],
+        "task_actions": []
+    }
+    r1 = client.post("/api/v1/sessions", json=chunk1)
+    assert r1.status_code == 200
+
+    detail1 = client.get(f"/api/v1/sessions/{sid}").json()
+    assert len(detail1["telemetry"]["mouse_events"]) == 6
+
+    chunk2 = {
+        "session_id": sid,
+        "site_id": "site_meridian_prod",
+        "task": "shopping",
+        "seq": 2,
+        "is_delta": True,
+        "final": True,
+        "start_time": 1700000000.0,
+        "end_time": 1700000005.0,
+        "duration_ms": 5000.0,
+        "is_synthetic": False,
+        "data_source": "realtime_sdk",
+        "browser_signals": {"webdriver": False},
+        "mouse_events": [
+            {"x": 200 + i * 10, "y": 200 + i * 5, "t": 1000 + 100 * i, "type": "move"}
+            for i in range(6)
+        ],
+        "keyboard_events": [],
+        "scroll_events": [],
+        "click_events": [{"x": 260, "y": 230, "t": 1800, "target_category": "button"}],
+        "task_actions": []
+    }
+    r2 = client.post("/api/v1/sessions", json=chunk2)
+    assert r2.status_code == 200
+
+    detail2 = client.get(f"/api/v1/sessions/{sid}").json()
+    # Telemetry must contain all 12 events accumulated across both chunks
+    assert len(detail2["telemetry"]["mouse_events"]) == 12
+    assert len(detail2["telemetry"]["click_events"]) == 1
+    # Features must be populated and non-empty
+    assert detail2["features"].get("straightness_ratio") is not None
+    assert detail2["session"]["last_seq"] == 2
+
 
 

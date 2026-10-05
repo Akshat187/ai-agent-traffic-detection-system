@@ -51,20 +51,26 @@ class DecisionEngine:
         self._bootstrap_ml()
 
     def _bootstrap_ml(self):
-        """Pre-trains behavioral classifier on standard physically grounded baseline distributions."""
+        """Pre-trains behavioral classifier across all diverse operational profiles and subtypes."""
         try:
             from packages.generators.seed_data import generate_synthetic_session
             from packages.core.features import extract_all_features
             import random
             rng = random.Random(42)
             X, y = [], []
-            for cls in ["HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI"]:
+            subtypes = {
+                "HUMAN": ["organic_mouse", "keyboard_focused"],
+                "TRADITIONAL_AUTOMATION": ["deterministic", "randomized", "evasive", "headless_dom"],
+                "AGENTIC_AI": ["trajectory_agent", "dom_agent", "hybrid_agent"],
+            }
+            for cls, st_list in subtypes.items():
                 for task in ["shopping", "travel", "forum"]:
-                    for i in range(12):
-                        s = generate_synthetic_session(cls, task, index=i, seed=rng.randint(0, 1000000))
-                        f = extract_all_features(s)
-                        X.append(self.ml.extract_feature_vector(f))
-                        y.append(cls)
+                    for st in st_list:
+                        for i in range(5):
+                            s = generate_synthetic_session(cls, task, index=i, subtype=st, seed=rng.randint(0, 1000000))
+                            f = extract_all_features(s)
+                            X.append(self.ml.extract_feature_vector(f))
+                            y.append(cls)
             self.ml.train(X, y)
         except Exception as e:
             print(f"[WebSense] WARNING: ML bootstrap failed — classifier will use heuristic fallback. Error: {e}")
@@ -89,31 +95,66 @@ class DecisionEngine:
           - Environmental signals (webdriver) are supporting only
           - No single signal determines the final class
         """
-        # Check for zero interaction / empty event payload
+        n_mouse = len(session_data.get("mouse_events", []))
+        n_key = len(session_data.get("keyboard_events", []))
+        n_click = len(session_data.get("click_events", []))
+        n_scroll = len(session_data.get("scroll_events", []))
+        n_tasks = len(session_data.get("task_actions", []))
         total_interactions = (
-            len(session_data.get("mouse_events", []))
-            + len(session_data.get("keyboard_events", []))
-            + len(session_data.get("click_events", []))
-            + len(session_data.get("scroll_events", []))
+            n_mouse + n_key + n_click + n_scroll + n_tasks
             + features.get("total_event_count", 0)
         )
-        if total_interactions == 0:
+
+        is_synthetic = bool(session_data.get("is_synthetic"))
+
+        # Layer 1 Rules: evaluate flags and environmental signals
+        rule_score, rule_flags, rule_mitigations = self.rules.evaluate(features)
+
+        # Minimum interaction gating:
+        # A session must have minimum behavioral signal to perform reliable classification.
+        # Sparse sessions (< 5 total events or single isolated click/key without trajectory)
+        # have degenerate statistical distributions and cannot distinguish Human vs Bot vs Agent.
+        has_sufficient_signal = is_synthetic or (
+            (n_mouse >= 5 and features.get("path_length", 0) >= 15)
+            or n_key >= 3
+            or n_tasks >= 2
+            or (total_interactions >= 5 and (n_click >= 2 or n_scroll >= 2))
+            or total_interactions >= 10
+        )
+
+        if total_interactions == 0 or not has_sufficient_signal:
+            reason = (
+                "zero events recorded"
+                if total_interactions == 0
+                else f"insufficient events ({total_interactions} recorded; minimum 5 diverse events required for kinematic analysis)"
+            )
             return {
                 "final_verdict": "UNCERTAIN",
                 "confidence": 50.0,
                 "risk_score": 0.0,
-                "l1_rule_score": 0.0,
+                "l1_rule_score": rule_score if rule_score > 0 else 0.0,
+                "l1_flags": rule_flags,
                 "l2_ml_pred": "UNCERTAIN",
                 "l2_ml_confidence": 50.0,
                 "l2_ml_probabilities": {"UNCERTAIN": 1.0},
                 "l3_anomaly_score": 0.0,
                 "l3_is_anomaly": False,
+                "l4_replay_similarity": 0.0,
+                "l4_matched_session_id": None,
                 "l4_is_replay": False,
                 "l5_context_valid": True,
                 "l5_status": "not_applicable",
-                "contributing_signals": ["Insufficient interaction data to evaluate behavior (zero events recorded)."],
+                "contributing_signals": [
+                    f"Low-signal telemetry: {reason}. Classified as UNCERTAIN to prevent false positive attribution on sparse interaction data."
+                ],
                 "counter_signals": [],
-                "human_explanation": "Insufficient interaction data. No behavioral kinematics recorded yet.",
+                "human_explanation": (
+                    f"Classification is Uncertain (50% confidence). "
+                    f"Low-signal telemetry: {reason}. "
+                    f"The session does not contain sufficient kinematic or temporal data to reliably determine actor class. "
+                    f"Classification is an evidence-based behavioral estimate."
+                ),
+                "fallback_used": True,
                 "model_version": MODEL_VERSION,
             }
 
@@ -158,14 +199,14 @@ class DecisionEngine:
         key_hold = features.get("key_mean_hold_time", 0.0)
         has_robotic_hold = (0.0 < key_hold < 35.0)
 
-        if straightness > 0.95 and features.get("path_length", 0) > 100:
+        if straightness > 0.95 and features.get("micro_corrections", 0) <= 2 and features.get("path_length", 0) > 100:
             contributing_signals.append(
                 f"Abnormally linear mouse trajectory (straightness: {straightness:.2f}) — consistent with scripted automation"
             )
             risk += 25.0
-        elif (straightness < 0.90 and features.get("micro_corrections", 0) >= 2) and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold)):
+        elif (straightness < 0.90 or features.get("micro_corrections", 0) >= 3) and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold)):
             counter_signals.append(
-                f"Natural human trajectory curvature with {features.get('micro_corrections', 0)} micro-corrections"
+                f"Natural human trajectory dynamics with {features.get('micro_corrections', 0)} micro-corrections"
             )
             risk -= 25.0
 
@@ -254,20 +295,33 @@ class DecisionEngine:
         # caused virtually every real extension session to be misclassified as AGENTIC_AI.
         # Checked FIRST — agent sessions can also have moderately linear per-segment motion,
         # so they must be captured before the broader automation check.
+        # Organic human kinematics protection: humans naturally have micro-corrections (hand tremor)
+        # and curved Bézier paths. An organic human pausing to read must not be called AGENTIC_AI.
+        is_organic_human_kinematics = (
+            features.get("path_length", 0) > 80
+            and (features.get("micro_corrections", 0) >= 4 or (features.get("micro_corrections", 0) >= 2 and straightness < 0.88))
+            and not features.get("webdriver_flag")
+            and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold))
+        )
+
         has_agency_signal = (
             planning_pause_ratio > 0.15 or
             nav_segments >= 2 or
             adaptation_score > 0.35 or
             action_interval_var > 800
         )
-        is_agentic_profile = has_agency_signal and (
-            (planning_pause_ratio > 0.30 and nav_segments >= 3) or
-            (adaptation_score > 0.45 and features.get("micro_corrections", 0) <= 2 and nav_segments >= 3) or
-            (features.get("first_action_delay_ms", 0) > 500 and nav_segments >= 4 and straightness > 0.80) or
-            (action_interval_var > 1200 and nav_segments >= 3) or  # Strong LLM inference-delay signature
-            (len(task_actions) >= 2 and action_interval_var > 800 and planning_pause_ratio > 0.20) or  # Workflow / computer-use agent
-            (features.get("path_length", 0) < 50 and len(task_actions) >= 2 and planning_pause_ratio > 0.20) or  # DOM-driven agent without cursor trajectory
-            (ml_pred == "AGENTIC_AI" and ml_conf >= 70.0 and rule_score < 60.0)  # Corroborated ML prediction
+        is_agentic_profile = (
+            has_agency_signal
+            and not is_organic_human_kinematics
+            and (
+                (planning_pause_ratio > 0.30 and nav_segments >= 3 and straightness > 0.80) or
+                (adaptation_score > 0.45 and features.get("micro_corrections", 0) <= 2 and nav_segments >= 3) or
+                (features.get("first_action_delay_ms", 0) > 500 and nav_segments >= 4 and straightness > 0.80) or
+                (action_interval_var > 1200 and nav_segments >= 3 and straightness > 0.80) or  # Strong LLM inference-delay signature
+                (len(task_actions) >= 2 and action_interval_var > 800 and planning_pause_ratio > 0.20 and features.get("micro_corrections", 0) <= 2) or  # Workflow / computer-use agent
+                (features.get("path_length", 0) < 50 and len(task_actions) >= 2 and planning_pause_ratio > 0.20) or  # DOM-driven agent without cursor trajectory
+                (ml_pred == "AGENTIC_AI" and ml_conf >= 70.0 and rule_score < 60.0)  # Corroborated ML prediction
+            )
         )
 
         # Traditional automation profile: highly uniform, deterministic behavior.
