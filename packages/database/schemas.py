@@ -86,6 +86,7 @@ class ClickEventSchema(BaseModel):
 
 class BrowserSignalsSchema(BaseModel):
     webdriver: bool = False
+    pointer_type: Optional[str] = "mouse"
     screen_width: int = 1920
     screen_height: int = 1080
     viewport_width: int = 1280

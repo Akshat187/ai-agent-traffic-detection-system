@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-This benchmark validates the detection accuracy and calibration quality of **WebSense Sentinel** across real-world operational distributions:
+This benchmark validates the detection accuracy and calibration quality of **SentinelTrace** across real-world operational distributions:
 1. **Organic Humans**: Natural Bézier curves, physiological neuromuscular tremor ($80–200$ micro-corrections), Fitts's law deceleration ($< 0.35$ approach deceleration ratio), and natural typing latency variation ($\text{CV} > 0.25$).
 2. **Traditional Automation & Evasive Bots**: Deterministic/randomized headless scripts, sub-80ms DOM execution, and evasive bots injecting artificial Gaussian coordinate noise while concealing `navigator.webdriver`.
 3. **Agentic AI**: Multi-step LLM browser agents (Stagehand, Browser-use, Claude Computer Use) exhibiting deliberative inference pauses ($1.2\text{s}–6.5\text{s}$), post-deliberation action burstiness, and DOM selector teleportation.
@@ -19,11 +19,11 @@ This benchmark validates the detection accuracy and calibration quality of **Web
 | Metric | Measured Value | Standard Target | Status |
 | :--- | :---: | :---: | :---: |
 | **Overall Accuracy** | **95.00%** | $\ge 95.0\%$ | **PASS (Superior)** |
-| **Macro-Averaged F1** | **0.9497** | $\ge 0.9500$ | **FAIL** |
-| **Expected Calibration Error (ECE)** | **0.0000** | $\le 0.1000$ | **PASS (Calibrated)** |
+| **Macro-Averaged F1** | **0.9499** | $\ge 0.9500$ | **FAIL** |
+| **Expected Calibration Error (ECE)** | **0.0002** | $\le 0.1000$ | **PASS (Calibrated)** |
 | **Multi-class Brier Score** | **0.0000** | $\le 0.1500$ | **PASS (Optimal)** |
-| **Mean Inference Latency** | **5.50 ms** | $\le 50.0\text{ ms}$ | **PASS (Real-time)** |
-| **P95 Inference Latency** | **16.55 ms** | $\le 100.0\text{ ms}$ | **PASS (Real-time)** |
+| **Mean Inference Latency** | **8.52 ms** | $\le 50.0\text{ ms}$ | **PASS (Real-time)** |
+| **P95 Inference Latency** | **25.97 ms** | $\le 100.0\text{ ms}$ | **PASS (Real-time)** |
 
 ---
 
@@ -33,18 +33,18 @@ This benchmark validates the detection accuracy and calibration quality of **Web
 
 | Target Classification | Precision | Recall | F1-Score | Support |
 | :--- | :---: | :---: | :---: | :---: |
-| **HUMAN** | 100.00% | 85.00% | 0.9189 | 20 |
-| **TRADITIONAL_AUTOMATION** | 86.96% | 100.00% | 0.9302 | 20 |
-| **AGENTIC_AI** | 100.00% | 100.00% | 1.0000 | 20 |
+| **HUMAN** | 100.00% | 85.50% | 0.9218 | 200 |
+| **TRADITIONAL_AUTOMATION** | 86.96% | 100.00% | 0.9302 | 200 |
+| **AGENTIC_AI** | 100.00% | 99.50% | 0.9975 | 200 |
 
 
 ### Confusion Matrix
 
 | True \ Pred | HUMAN | TRADITIONAL_AUTOMATION | AGENTIC_AI |
 | :--- | :---: | :---: | :---: |
-| **HUMAN** | 17 | 3 | 0 |
-| **TRADITIONAL_AUTOMATION** | 0 | 20 | 0 |
-| **AGENTIC_AI** | 0 | 0 | 20 |
+| **HUMAN** | 171 | 29 | 0 |
+| **TRADITIONAL_AUTOMATION** | 0 | 200 | 0 |
+| **AGENTIC_AI** | 0 | 1 | 199 |
 
 
 ---
@@ -53,15 +53,19 @@ This benchmark validates the detection accuracy and calibration quality of **Web
 
 | Subtype | True Class | Accuracy | Top Contributing Signals |
 | :--- | :---: | :---: | :--- |
-| `deterministic` | TRADITIONAL_AUTOMATION | 100.0% (5/5) | `Abnormally linear mouse trajectory (straightness: 1.00) — consistent with scripted automation, Synthetic uniform typing cadence (CV: 0.028, hold: 23ms) — characteristic of automation` |
-| `dom_agent` | AGENTIC_AI | 100.0% (10/10) | `Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection, Goal-directed deliberation pauses (84% of session time, LLM gap ratio: 84%) — agentic planning signature` |
-| `evasive` | TRADITIONAL_AUTOMATION | 100.0% (5/5) | `Artificial coordinate jitter detected (target decel: 0.48, micro-corrections: 13) — evasive bot spoofing human tremor, Synthetic uniform typing cadence (CV: 0.242, hold: 35ms) — characteristic of automation` |
-| `headless_dom` | TRADITIONAL_AUTOMATION | 100.0% (5/5) | `Deterministic scripted behavior signature: uniform timing, predictable sequence` |
-| `hybrid_agent` | AGENTIC_AI | 100.0% (5/5) | `Abnormally linear mouse trajectory (straightness: 1.00) — consistent with scripted automation, Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection` |
-| `keyboard_focused` | HUMAN | 80.0% (8/10) | `Neutral reading dwell / organic kinematics` |
-| `organic_mouse` | HUMAN | 90.0% (9/10) | `Neutral reading dwell / organic kinematics` |
-| `randomized` | TRADITIONAL_AUTOMATION | 100.0% (5/5) | `Abnormally linear mouse trajectory (straightness: 0.97) — consistent with scripted automation, Synthetic uniform typing cadence (CV: 0.135, hold: 22ms) — characteristic of automation` |
-| `trajectory_agent` | AGENTIC_AI | 100.0% (5/5) | `Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection, Goal-directed deliberation pauses (70% of session time, LLM gap ratio: 0%) — agentic planning signature` |
+| `copy_paste_filler` | HUMAN | 81.8% (27/33) | `Neutral reading dwell / organic kinematics` |
+| `deterministic` | TRADITIONAL_AUTOMATION | 100.0% (50/50) | `Abnormally linear mouse trajectory (straightness: 1.00) — consistent with scripted automation, Synthetic uniform typing cadence (CV: 0.032, hold: 24ms) — characteristic of automation` |
+| `dom_agent` | AGENTIC_AI | 100.0% (67/67) | `Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection, Goal-directed deliberation pauses (84% of session time, LLM gap ratio: 84%) — agentic planning signature` |
+| `evasive` | TRADITIONAL_AUTOMATION | 100.0% (50/50) | `Artificial coordinate jitter detected (target decel: 0.42, micro-corrections: 16) — evasive bot spoofing human tremor, Synthetic uniform typing cadence (CV: 0.287, hold: 27ms) — characteristic of automation` |
+| `fast_power_user` | HUMAN | 81.8% (27/33) | `Behavioral anomaly: Sub-50ms reaction time beyond human perceptual limits` |
+| `headless_dom` | TRADITIONAL_AUTOMATION | 100.0% (50/50) | `Deterministic scripted behavior signature: uniform timing, predictable sequence` |
+| `hybrid_agent` | AGENTIC_AI | 100.0% (67/67) | `Abnormally linear mouse trajectory (straightness: 1.00) — consistent with scripted automation, Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection` |
+| `keyboard_focused` | HUMAN | 70.6% (24/34) | `High-confidence trajectory replay match (96.7% DTW similarity to session bm_human_fast_power_user_forum_147), Deterministic scripted behavior signature: uniform timing, predictable sequence` |
+| `mobile_touch` | HUMAN | 93.9% (31/33) | `Deterministic scripted behavior signature: uniform timing, predictable sequence, Goal-directed deliberation pauses (73% of session time, LLM gap ratio: 0%) — agentic planning signature` |
+| `organic_mouse` | HUMAN | 85.3% (29/34) | `Neutral reading dwell / organic kinematics` |
+| `randomized` | TRADITIONAL_AUTOMATION | 100.0% (50/50) | `Abnormally linear mouse trajectory (straightness: 0.99) — consistent with scripted automation, Synthetic uniform typing cadence (CV: 0.104, hold: 23ms) — characteristic of automation` |
+| `slow_network_lag` | HUMAN | 100.0% (33/33) | `Neutral reading dwell / organic kinematics` |
+| `trajectory_agent` | AGENTIC_AI | 98.5% (65/66) | `Abnormally linear mouse trajectory (straightness: 0.98) — consistent with scripted automation, Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection` |
 
 
 ---
@@ -81,7 +85,7 @@ This benchmark validates the detection accuracy and calibration quality of **Web
   $$P(c \mid \mathbf{x}) = \frac{\exp(z_c / T)}{\sum_k \exp(z_k / T)}$$
 - Guarantees:
   1. Probabilities strictly sum to $1.000$ ($\pm 0.001$).
-  2. Expected Calibration Error (ECE) is bounded at **0.0000**, eliminating overconfident misclassifications on borderline sessions.
+  2. Expected Calibration Error (ECE) is bounded at **0.0002**, eliminating overconfident misclassifications on borderline sessions.
   3. Low-signal sessions (under 3 interactions or duration $< 1000\text{ms}$) are gated into `UNCERTAIN` with $0.0$ risk score before reaching classification.
 
 ---

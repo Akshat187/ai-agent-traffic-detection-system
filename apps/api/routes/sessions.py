@@ -34,6 +34,7 @@ from packages.database.schemas import (
 )
 from apps.api.dependencies import get_detection_engine, DecisionEngine
 from apps.api.config import settings
+from apps.api.observability import correlation_session_id, correlation_site_id, metrics_registry
 from apps.api.routes.ws import ws_manager
 from packages.database.repository import build_session_summary, ingest_chunk, IngestError, apply_source_filter
 
@@ -223,58 +224,64 @@ def ingest_session(
     current verdict with ``duplicate=true`` and writes nothing.
     """
     site_id = site.site_id if site else payload.site_id
+    tok_sid = correlation_session_id.set(payload.session_id)
+    tok_site = correlation_site_id.set(site_id or "-")
+    try:
+        # 1. Throttle: per page visit first, then per-(site_id, client_ip) tenant-isolated guard.
+        if not _session_limiter.hit(payload.session_id):
+            raise HTTPException(status_code=429, detail="Too many chunks for this session; slow down.")
+        tenant_ip_key = f"{site_id or 'default'}:{_client_ip(request)}"
+        if not _site_ip_limiter.hit(tenant_ip_key):
+            raise HTTPException(status_code=429, detail="Too many requests for this site from this address.")
 
-    # 1. Throttle: per page visit first, then per-(site_id, client_ip) tenant-isolated guard.
-    if not _session_limiter.hit(payload.session_id):
-        raise HTTPException(status_code=429, detail="Too many chunks for this session; slow down.")
-    tenant_ip_key = f"{site_id or 'default'}:{_client_ip(request)}"
-    if not _site_ip_limiter.hit(tenant_ip_key):
-        raise HTTPException(status_code=429, detail="Too many requests for this site from this address.")
+        # 2. Single idempotent write path. Retry once if a concurrent request won
+        #    the race to create a child row (possible on PostgreSQL).
+        for attempt in (1, 2):
+            try:
+                result = ingest_chunk(
+                    db, payload, site_id, engine,
+                    max_chunks_per_session=settings.INGEST_MAX_CHUNKS_PER_SESSION,
+                )
+                db.commit()
+                break
+            except IngestError as e:
+                db.rollback()
+                raise HTTPException(status_code=e.status_code, detail=e.detail)
+            except IntegrityError:
+                db.rollback()
+                if attempt == 2:
+                    logger.exception("ingest_integrity_error session_id=%s", payload.session_id)
+                    raise HTTPException(status_code=409, detail="Concurrent write conflict; retry.")
 
-    # 2. Single idempotent write path. Retry once if a concurrent request won
-    #    the race to create a child row (possible on PostgreSQL).
-    for attempt in (1, 2):
-        try:
-            result = ingest_chunk(
-                db, payload, site_id, engine,
-                max_chunks_per_session=settings.INGEST_MAX_CHUNKS_PER_SESSION,
-            )
-            db.commit()
-            break
-        except IngestError as e:
-            db.rollback()
-            raise HTTPException(status_code=e.status_code, detail=e.detail)
-        except IntegrityError:
-            db.rollback()
-            if attempt == 2:
-                logger.exception("ingest_integrity_error session_id=%s", payload.session_id)
-                raise HTTPException(status_code=409, detail="Concurrent write conflict; retry.")
+        action = _compute_mitigation_action(
+            site,
+            result.get("predicted_label", "UNCERTAIN"),
+            float(result.get("risk_score", 0.0)),
+        )
+        result["action"] = action
+        metrics_registry.record_classification(result.get("predicted_label", "UNCERTAIN"))
 
-    action = _compute_mitigation_action(
-        site,
-        result.get("predicted_label", "UNCERTAIN"),
-        float(result.get("risk_score", 0.0)),
-    )
-    result["action"] = action
+        if not result.get("duplicate") and not result.get("stale"):
+            ws_event = {
+                "session_id": result["session_id"],
+                "site_id": site_id,
+                "predicted_label": result["predicted_label"],
+                "risk_score": result["risk_score"],
+                "confidence": result["confidence"],
+                "action": action,
+                "timestamp": time.time(),
+            }
+            background_tasks.add_task(ws_manager.broadcast, ws_event)
 
-    if not result.get("duplicate") and not result.get("stale"):
-        ws_event = {
-            "session_id": result["session_id"],
-            "site_id": site_id,
-            "predicted_label": result["predicted_label"],
-            "risk_score": result["risk_score"],
-            "confidence": result["confidence"],
-            "action": action,
-            "timestamp": time.time(),
-        }
-        background_tasks.add_task(ws_manager.broadcast, ws_event)
+            threshold = (site.risk_threshold if site and site.risk_threshold is not None else 80)
+            is_high_risk = (float(result.get("risk_score", 0.0)) >= threshold) or (result.get("predicted_label") == "AGENTIC_AI")
+            if site and site.webhook_url and is_high_risk:
+                background_tasks.add_task(_send_webhook_alert, site.webhook_url, site.api_key or "", ws_event)
 
-        threshold = (site.risk_threshold if site and site.risk_threshold is not None else 80)
-        is_high_risk = (float(result.get("risk_score", 0.0)) >= threshold) or (result.get("predicted_label") == "AGENTIC_AI")
-        if site and site.webhook_url and is_high_risk:
-            background_tasks.add_task(_send_webhook_alert, site.webhook_url, site.api_key or "", ws_event)
-
-    return ClassificationResponse(**result)
+        return ClassificationResponse(**result)
+    finally:
+        correlation_session_id.reset(tok_sid)
+        correlation_site_id.reset(tok_site)
 
 
 @router.get("", response_model=List[SessionSummary])

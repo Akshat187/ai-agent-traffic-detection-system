@@ -1,0 +1,237 @@
+{
+  "session_id": "bm_traditional_automation_deterministic_shopping_133",
+  "visitor_id": "vis_traditional_automation_133",
+  "task": "shopping",
+  "start_time": 1724907980000,
+  "end_time": 1724907980556,
+  "duration_ms": 556.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_deterministic",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 200,
+      "y": 200,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 243,
+      "y": 229,
+      "t": 32,
+      "type": "move"
+    },
+    {
+      "x": 286,
+      "y": 257,
+      "t": 63,
+      "type": "move"
+    },
+    {
+      "x": 329,
+      "y": 286,
+      "t": 95,
+      "type": "move"
+    },
+    {
+      "x": 371,
+      "y": 314,
+      "t": 127,
+      "type": "move"
+    },
+    {
+      "x": 414,
+      "y": 343,
+      "t": 159,
+      "type": "move"
+    },
+    {
+      "x": 457,
+      "y": 371,
+      "t": 190,
+      "type": "move"
+    },
+    {
+      "x": 500,
+      "y": 400,
+      "t": 222,
+      "type": "move"
+    },
+    {
+      "x": 543,
+      "y": 429,
+      "t": 254,
+      "type": "move"
+    },
+    {
+      "x": 586,
+      "y": 457,
+      "t": 285,
+      "type": "move"
+    },
+    {
+      "x": 629,
+      "y": 486,
+      "t": 317,
+      "type": "move"
+    },
+    {
+      "x": 671,
+      "y": 514,
+      "t": 349,
+      "type": "move"
+    },
+    {
+      "x": 714,
+      "y": 543,
+      "t": 381,
+      "type": "move"
+    },
+    {
+      "x": 757,
+      "y": 571,
+      "t": 412,
+      "type": "move"
+    },
+    {
+      "x": 800,
+      "y": 600,
+      "t": 444,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 89,
+      "interval": 39,
+      "hold": 17,
+      "is_paste": false
+    },
+    {
+      "t": 126,
+      "interval": 37,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 165,
+      "interval": 39,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 204,
+      "interval": 39,
+      "hold": 30,
+      "is_paste": false
+    },
+    {
+      "t": 240,
+      "interval": 36,
+      "hold": 26,
+      "is_paste": false
+    },
+    {
+      "t": 278,
+      "interval": 38,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 314,
+      "interval": 36,
+      "hold": 28,
+      "is_paste": false
+    },
+    {
+      "t": 351,
+      "interval": 37,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 390,
+      "interval": 39,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 427,
+      "interval": 37,
+      "hold": 22,
+      "is_paste": false
+    },
+    {
+      "t": 465,
+      "interval": 38,
+      "hold": 20,
+      "is_paste": false
+    },
+    {
+      "t": 505,
+      "interval": 40,
+      "hold": 23,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 27,
+      "scroll_y": 384,
+      "delta_y": 384
+    },
+    {
+      "t": 128,
+      "scroll_y": 768,
+      "delta_y": 384
+    },
+    {
+      "t": 292,
+      "scroll_y": 1152,
+      "delta_y": 384
+    },
+    {
+      "t": 457,
+      "scroll_y": 1536,
+      "delta_y": 384
+    }
+  ],
+  "click_events": [
+    {
+      "x": 800,
+      "y": 600,
+      "t": 472,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "filter_applied",
+      "t": 194,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 333,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 444,
+      "details": {}
+    }
+  ]
+}

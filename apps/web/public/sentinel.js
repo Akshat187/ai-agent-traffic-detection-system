@@ -87,7 +87,7 @@
 
   const MOUSE_THROTTLE_MS = 25;
   const SCROLL_THROTTLE_MS = 50;
-  const MAX_MOUSE_DELTA = 300;
+  const MAX_MOUSE_DELTA = 500;
   const MAX_KEYBOARD_DELTA = 200;
   const MAX_SCROLL_DELTA = 150;
   const MAX_CLICK_DELTA = 50;
@@ -233,9 +233,12 @@
   }
 
   // 6. Browser Signals & Client Context
+  let lastPointerType = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) ? 'touch' : 'mouse';
+
   function getBrowserSignals() {
     return {
       webdriver: Boolean(navigator.webdriver),
+      pointer_type: lastPointerType,
       screen_width: window.screen ? window.screen.width : 1920,
       screen_height: window.screen ? window.screen.height : 1080,
       viewport_width: window.innerWidth || 1280,
@@ -277,6 +280,14 @@
   function attachListeners() {
     if (listenersAttached || !consentGranted) return;
     listenersAttached = true;
+
+    // Pointer type tracking (mouse | touch | pen) for mobile/a11y false-positive protection
+    window.addEventListener('pointerdown', function (e) {
+      if (e && e.pointerType) lastPointerType = e.pointerType;
+    }, { passive: true });
+    window.addEventListener('touchstart', function () {
+      lastPointerType = 'touch';
+    }, { passive: true });
 
     // Mouse dynamics
     window.addEventListener('mousemove', function (e) {
@@ -498,6 +509,20 @@
     }
 
     const inFlight = visit.inFlight;
+
+    // On final/unload flushes, prefer navigator.sendBeacon() so browser tab close
+    // does not abort the request before delivery.
+    if (isFinal && navigator.sendBeacon) {
+      try {
+        const blob = new Blob([inFlight.bodyStr], { type: 'application/json' });
+        if (navigator.sendBeacon(apiEndpoint, blob)) {
+          visit.transmissionSeq++;
+          visit.inFlight = null;
+          return null;
+        }
+      } catch (_) {}
+    }
+
     visit.isSending = true;
 
     // Timeout guard: 10s timeout ensures isSending never gets permanently stuck

@@ -67,11 +67,32 @@ class RuleEngine:
         # ── BEHAVIORAL SIGNALS (primary) ──────────────────────────────────────
 
         # 1. Clicks present but zero or almost no mouse movement
+        # Mobile/touch users and keyboard-only a11y/screen-reader users naturally lack mouse hover paths.
         click_count = features.get("click_count", 0)
         mouse_count = features.get("mouse_event_count", 0)
+        key_count = features.get("key_event_count", 0)
+        key_cv = features.get("key_latency_cv", 0.0)
+        key_hold = features.get("key_mean_hold_time", 0.0)
+        has_robotic_hold = (0.0 < key_hold < 35.0)
+        is_touch_session = (
+            features.get("pointer_type") == "touch"
+            or features.get("touch_support", 0.0) == 1.0
+        ) and not features.get("webdriver_flag")
+        is_a11y_keyboard = (
+            mouse_count < 3
+            and key_count >= 4
+            and key_cv >= 0.20
+            and not has_robotic_hold
+            and not features.get("webdriver_flag")
+        )
         if click_count > 0 and mouse_count < 3:
-            risk += self.config["zero_mouse_with_clicks_penalty"]
-            flags.append("DOM_CLICKS_WITHOUT_MOUSE_TRAJECTORY")
+            if is_touch_session:
+                mitigations.append("MOBILE_TOUCH_INTERACTION")
+            elif is_a11y_keyboard:
+                mitigations.append("ACCESSIBILITY_KEYBOARD_NAVIGATION")
+            else:
+                risk += self.config["zero_mouse_with_clicks_penalty"]
+                flags.append("DOM_CLICKS_WITHOUT_MOUSE_TRAJECTORY")
 
         # 2. Perfectly straight mouse movements (automation signature)
         straightness = features.get("straightness_ratio", 1.0)
@@ -81,10 +102,6 @@ class RuleEngine:
             flags.append("ABNORMAL_LINEAR_MOUSE_PATH")
 
         # 3. Uniform typing cadence or superhuman key hold speed
-        key_count = features.get("key_event_count", 0)
-        key_cv = features.get("key_latency_cv", 0.0)
-        key_hold = features.get("key_mean_hold_time", 0.0)
-        has_robotic_hold = (0.0 < key_hold < 35.0)
         if key_count >= 4 and (key_cv < 0.18 or has_robotic_hold):
             risk += self.config["uniform_keystrokes_penalty"]
             flags.append("SYNTHETIC_UNIFORM_KEYSTROKE_CADENCE")

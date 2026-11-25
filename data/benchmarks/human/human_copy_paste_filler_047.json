@@ -1,0 +1,790 @@
+{
+  "session_id": "bm_human_copy_paste_filler_travel_047",
+  "visitor_id": "vis_human_047",
+  "task": "travel",
+  "start_time": 1724902820000,
+  "end_time": 1724902823988,
+  "duration_ms": 3988.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_copy_paste_filler",
+  "browser_signals": {
+    "webdriver": false,
+    "screen_width": 1920,
+    "screen_height": 864,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 4,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 90,
+      "y": 145,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 93,
+      "y": 150,
+      "t": 1,
+      "type": "move"
+    },
+    {
+      "x": 98,
+      "y": 153,
+      "t": 2,
+      "type": "move"
+    },
+    {
+      "x": 103,
+      "y": 158,
+      "t": 5,
+      "type": "move"
+    },
+    {
+      "x": 109,
+      "y": 162,
+      "t": 10,
+      "type": "move"
+    },
+    {
+      "x": 113,
+      "y": 165,
+      "t": 15,
+      "type": "move"
+    },
+    {
+      "x": 119,
+      "y": 169,
+      "t": 22,
+      "type": "move"
+    },
+    {
+      "x": 123,
+      "y": 173,
+      "t": 29,
+      "type": "move"
+    },
+    {
+      "x": 129,
+      "y": 178,
+      "t": 38,
+      "type": "move"
+    },
+    {
+      "x": 135,
+      "y": 181,
+      "t": 49,
+      "type": "move"
+    },
+    {
+      "x": 141,
+      "y": 186,
+      "t": 60,
+      "type": "move"
+    },
+    {
+      "x": 146,
+      "y": 188,
+      "t": 72,
+      "type": "move"
+    },
+    {
+      "x": 157,
+      "y": 199,
+      "t": 86,
+      "type": "move"
+    },
+    {
+      "x": 161,
+      "y": 201,
+      "t": 101,
+      "type": "move"
+    },
+    {
+      "x": 169,
+      "y": 202,
+      "t": 116,
+      "type": "move"
+    },
+    {
+      "x": 173,
+      "y": 209,
+      "t": 133,
+      "type": "move"
+    },
+    {
+      "x": 180,
+      "y": 211,
+      "t": 151,
+      "type": "move"
+    },
+    {
+      "x": 189,
+      "y": 220,
+      "t": 170,
+      "type": "move"
+    },
+    {
+      "x": 191,
+      "y": 223,
+      "t": 190,
+      "type": "move"
+    },
+    {
+      "x": 201,
+      "y": 225,
+      "t": 212,
+      "type": "move"
+    },
+    {
+      "x": 210,
+      "y": 230,
+      "t": 234,
+      "type": "move"
+    },
+    {
+      "x": 220,
+      "y": 236,
+      "t": 257,
+      "type": "move"
+    },
+    {
+      "x": 225,
+      "y": 239,
+      "t": 281,
+      "type": "move"
+    },
+    {
+      "x": 233,
+      "y": 242,
+      "t": 306,
+      "type": "move"
+    },
+    {
+      "x": 242,
+      "y": 250,
+      "t": 332,
+      "type": "move"
+    },
+    {
+      "x": 249,
+      "y": 255,
+      "t": 359,
+      "type": "move"
+    },
+    {
+      "x": 257,
+      "y": 256,
+      "t": 387,
+      "type": "move"
+    },
+    {
+      "x": 263,
+      "y": 266,
+      "t": 415,
+      "type": "move"
+    },
+    {
+      "x": 277,
+      "y": 269,
+      "t": 445,
+      "type": "move"
+    },
+    {
+      "x": 284,
+      "y": 273,
+      "t": 475,
+      "type": "move"
+    },
+    {
+      "x": 292,
+      "y": 277,
+      "t": 506,
+      "type": "move"
+    },
+    {
+      "x": 300,
+      "y": 282,
+      "t": 537,
+      "type": "move"
+    },
+    {
+      "x": 310,
+      "y": 284,
+      "t": 570,
+      "type": "move"
+    },
+    {
+      "x": 319,
+      "y": 290,
+      "t": 603,
+      "type": "move"
+    },
+    {
+      "x": 330,
+      "y": 298,
+      "t": 637,
+      "type": "move"
+    },
+    {
+      "x": 338,
+      "y": 304,
+      "t": 671,
+      "type": "move"
+    },
+    {
+      "x": 346,
+      "y": 309,
+      "t": 706,
+      "type": "move"
+    },
+    {
+      "x": 353,
+      "y": 312,
+      "t": 741,
+      "type": "move"
+    },
+    {
+      "x": 364,
+      "y": 314,
+      "t": 777,
+      "type": "move"
+    },
+    {
+      "x": 376,
+      "y": 321,
+      "t": 814,
+      "type": "move"
+    },
+    {
+      "x": 385,
+      "y": 330,
+      "t": 851,
+      "type": "move"
+    },
+    {
+      "x": 394,
+      "y": 333,
+      "t": 888,
+      "type": "move"
+    },
+    {
+      "x": 401,
+      "y": 342,
+      "t": 926,
+      "type": "move"
+    },
+    {
+      "x": 414,
+      "y": 341,
+      "t": 964,
+      "type": "move"
+    },
+    {
+      "x": 419,
+      "y": 348,
+      "t": 1002,
+      "type": "move"
+    },
+    {
+      "x": 432,
+      "y": 352,
+      "t": 1041,
+      "type": "move"
+    },
+    {
+      "x": 444,
+      "y": 356,
+      "t": 1080,
+      "type": "move"
+    },
+    {
+      "x": 458,
+      "y": 363,
+      "t": 1119,
+      "type": "move"
+    },
+    {
+      "x": 460,
+      "y": 366,
+      "t": 1158,
+      "type": "move"
+    },
+    {
+      "x": 472,
+      "y": 373,
+      "t": 1197,
+      "type": "move"
+    },
+    {
+      "x": 483,
+      "y": 383,
+      "t": 1237,
+      "type": "move"
+    },
+    {
+      "x": 497,
+      "y": 385,
+      "t": 1276,
+      "type": "move"
+    },
+    {
+      "x": 506,
+      "y": 388,
+      "t": 1316,
+      "type": "move"
+    },
+    {
+      "x": 513,
+      "y": 398,
+      "t": 1355,
+      "type": "move"
+    },
+    {
+      "x": 524,
+      "y": 402,
+      "t": 1395,
+      "type": "move"
+    },
+    {
+      "x": 532,
+      "y": 403,
+      "t": 1434,
+      "type": "move"
+    },
+    {
+      "x": 545,
+      "y": 413,
+      "t": 1473,
+      "type": "move"
+    },
+    {
+      "x": 553,
+      "y": 413,
+      "t": 1512,
+      "type": "move"
+    },
+    {
+      "x": 563,
+      "y": 422,
+      "t": 1551,
+      "type": "move"
+    },
+    {
+      "x": 573,
+      "y": 425,
+      "t": 1590,
+      "type": "move"
+    },
+    {
+      "x": 581,
+      "y": 435,
+      "t": 1628,
+      "type": "move"
+    },
+    {
+      "x": 596,
+      "y": 438,
+      "t": 1666,
+      "type": "move"
+    },
+    {
+      "x": 607,
+      "y": 444,
+      "t": 1704,
+      "type": "move"
+    },
+    {
+      "x": 615,
+      "y": 449,
+      "t": 1741,
+      "type": "move"
+    },
+    {
+      "x": 627,
+      "y": 455,
+      "t": 1778,
+      "type": "move"
+    },
+    {
+      "x": 637,
+      "y": 461,
+      "t": 1815,
+      "type": "move"
+    },
+    {
+      "x": 644,
+      "y": 464,
+      "t": 1851,
+      "type": "move"
+    },
+    {
+      "x": 657,
+      "y": 474,
+      "t": 1886,
+      "type": "move"
+    },
+    {
+      "x": 668,
+      "y": 479,
+      "t": 1921,
+      "type": "move"
+    },
+    {
+      "x": 675,
+      "y": 479,
+      "t": 1955,
+      "type": "move"
+    },
+    {
+      "x": 689,
+      "y": 490,
+      "t": 1989,
+      "type": "move"
+    },
+    {
+      "x": 694,
+      "y": 492,
+      "t": 2022,
+      "type": "move"
+    },
+    {
+      "x": 706,
+      "y": 501,
+      "t": 2055,
+      "type": "move"
+    },
+    {
+      "x": 715,
+      "y": 507,
+      "t": 2086,
+      "type": "move"
+    },
+    {
+      "x": 727,
+      "y": 511,
+      "t": 2117,
+      "type": "move"
+    },
+    {
+      "x": 736,
+      "y": 521,
+      "t": 2147,
+      "type": "move"
+    },
+    {
+      "x": 747,
+      "y": 523,
+      "t": 2177,
+      "type": "move"
+    },
+    {
+      "x": 752,
+      "y": 528,
+      "t": 2205,
+      "type": "move"
+    },
+    {
+      "x": 767,
+      "y": 535,
+      "t": 2233,
+      "type": "move"
+    },
+    {
+      "x": 775,
+      "y": 537,
+      "t": 2260,
+      "type": "move"
+    },
+    {
+      "x": 776,
+      "y": 550,
+      "t": 2286,
+      "type": "move"
+    },
+    {
+      "x": 788,
+      "y": 553,
+      "t": 2311,
+      "type": "move"
+    },
+    {
+      "x": 797,
+      "y": 559,
+      "t": 2335,
+      "type": "move"
+    },
+    {
+      "x": 805,
+      "y": 563,
+      "t": 2358,
+      "type": "move"
+    },
+    {
+      "x": 815,
+      "y": 573,
+      "t": 2380,
+      "type": "move"
+    },
+    {
+      "x": 828,
+      "y": 576,
+      "t": 2402,
+      "type": "move"
+    },
+    {
+      "x": 835,
+      "y": 581,
+      "t": 2422,
+      "type": "move"
+    },
+    {
+      "x": 843,
+      "y": 586,
+      "t": 2441,
+      "type": "move"
+    },
+    {
+      "x": 853,
+      "y": 592,
+      "t": 2459,
+      "type": "move"
+    },
+    {
+      "x": 863,
+      "y": 600,
+      "t": 2476,
+      "type": "move"
+    },
+    {
+      "x": 867,
+      "y": 604,
+      "t": 2491,
+      "type": "move"
+    },
+    {
+      "x": 875,
+      "y": 609,
+      "t": 2506,
+      "type": "move"
+    },
+    {
+      "x": 882,
+      "y": 615,
+      "t": 2520,
+      "type": "move"
+    },
+    {
+      "x": 892,
+      "y": 624,
+      "t": 2532,
+      "type": "move"
+    },
+    {
+      "x": 900,
+      "y": 629,
+      "t": 2543,
+      "type": "move"
+    },
+    {
+      "x": 907,
+      "y": 637,
+      "t": 2554,
+      "type": "move"
+    },
+    {
+      "x": 916,
+      "y": 642,
+      "t": 2563,
+      "type": "move"
+    },
+    {
+      "x": 922,
+      "y": 648,
+      "t": 2570,
+      "type": "move"
+    },
+    {
+      "x": 929,
+      "y": 654,
+      "t": 2577,
+      "type": "move"
+    },
+    {
+      "x": 936,
+      "y": 660,
+      "t": 2582,
+      "type": "move"
+    },
+    {
+      "x": 942,
+      "y": 666,
+      "t": 2587,
+      "type": "move"
+    },
+    {
+      "x": 949,
+      "y": 672,
+      "t": 2590,
+      "type": "move"
+    },
+    {
+      "x": 955,
+      "y": 678,
+      "t": 2591,
+      "type": "move"
+    },
+    {
+      "x": 962,
+      "y": 684,
+      "t": 2592,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 944,
+      "interval": 219.5,
+      "hold": 86,
+      "is_paste": true
+    },
+    {
+      "t": 1144,
+      "interval": 200.0,
+      "hold": 74,
+      "is_paste": true
+    },
+    {
+      "t": 1373,
+      "interval": 229.1,
+      "hold": 86,
+      "is_paste": false
+    },
+    {
+      "t": 1558,
+      "interval": 185.4,
+      "hold": 50,
+      "is_paste": false
+    },
+    {
+      "t": 1705,
+      "interval": 147.2,
+      "hold": 40,
+      "is_paste": false
+    },
+    {
+      "t": 1814,
+      "interval": 109.7,
+      "hold": 99,
+      "is_paste": false
+    },
+    {
+      "t": 2069,
+      "interval": 255.0,
+      "hold": 57,
+      "is_paste": false
+    },
+    {
+      "t": 2221,
+      "interval": 152.3,
+      "hold": 49,
+      "is_paste": false
+    },
+    {
+      "t": 2356,
+      "interval": 135.1,
+      "hold": 71,
+      "is_paste": false
+    },
+    {
+      "t": 2559,
+      "interval": 203.0,
+      "hold": 79,
+      "is_paste": false
+    },
+    {
+      "t": 2708,
+      "interval": 149.8,
+      "hold": 96,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 398,
+      "scroll_y": 170,
+      "delta_y": 170
+    },
+    {
+      "t": 702,
+      "scroll_y": 218,
+      "delta_y": 48
+    },
+    {
+      "t": 1021,
+      "scroll_y": 289,
+      "delta_y": 71
+    },
+    {
+      "t": 1310,
+      "scroll_y": 329,
+      "delta_y": 40
+    },
+    {
+      "t": 1909,
+      "scroll_y": 409,
+      "delta_y": 80
+    },
+    {
+      "t": 2394,
+      "scroll_y": 456,
+      "delta_y": 47
+    },
+    {
+      "t": 2935,
+      "scroll_y": 570,
+      "delta_y": 114
+    },
+    {
+      "t": 3367,
+      "scroll_y": 675,
+      "delta_y": 105
+    }
+  ],
+  "click_events": [
+    {
+      "x": 950,
+      "y": 668,
+      "t": 2791,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 598,
+      "details": {}
+    },
+    {
+      "action": "filter_applied",
+      "t": 1595,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 2592,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 3509,
+      "details": {}
+    }
+  ]
+}

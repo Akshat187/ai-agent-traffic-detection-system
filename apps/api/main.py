@@ -11,14 +11,17 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 
 import packages.database.db as db_module
 from packages.database.models import SessionRecord, SiteRecord
 from apps.api.config import settings
+from apps.api.observability import configure_structured_logging, metrics_registry
 from apps.api.routes import sessions, stats, experiments, adversarial, seed, sites, ws
+
+configure_structured_logging()
 
 # Setup base directories
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -130,14 +133,24 @@ async def log_request_timing(request: Request, call_next):
     start = time.perf_counter()
     response = await call_next(request)
     duration_ms = round((time.perf_counter() - start) * 1000, 1)
+    metrics_registry.record_http(request.method, response.status_code)
     http_logger.info(
-        "%s %s → %s  duration_ms=%s",
+        "%s %s -> %s duration_ms=%s",
         request.method,
         request.url.path,
         response.status_code,
         duration_ms,
     )
     return response
+
+
+@app.get("/metrics", tags=["Observability"])
+def prometheus_metrics():
+    """Exposes Prometheus-format metrics for HTTP requests, errors, verdicts, and L1-L5 latency."""
+    return PlainTextResponse(
+        content=metrics_registry.render_prometheus(),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
 
 
 # CORS Middleware (Supports external embedded sites)

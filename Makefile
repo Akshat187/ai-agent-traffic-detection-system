@@ -46,7 +46,10 @@ docker-up:
 	docker compose -f docker/docker-compose.yml up -d
 
 migrate:
-	$(PYTHON) -c "from packages.database.db import init_db; init_db()"
+	$(PYTHON) -m alembic upgrade head
+
+prune:
+	$(PYTHON) scripts/prune_telemetry.py --ttl-days 14
 
 seed:
 	$(PYTHON) demo_seed.py

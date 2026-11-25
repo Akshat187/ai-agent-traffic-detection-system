@@ -1,0 +1,199 @@
+{
+  "session_id": "bm_human_mobile_touch_shopping_016",
+  "visitor_id": "vis_human_016",
+  "task": "shopping",
+  "start_time": 1724900960000,
+  "end_time": 1724900964926,
+  "duration_ms": 4926.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_mobile_touch",
+  "browser_signals": {
+    "webdriver": false,
+    "screen_width": 390,
+    "screen_height": 844,
+    "viewport_width": 1200,
+    "viewport_height": 680,
+    "device_pixel_ratio": 1.0,
+    "touch_support": true,
+    "hardware_concurrency": 16,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "pointer_type": "touch"
+  },
+  "mouse_events": [],
+  "keyboard_events": [
+    {
+      "t": 1279,
+      "interval": 230.1,
+      "hold": 63,
+      "is_paste": false
+    },
+    {
+      "t": 1518,
+      "interval": 239.7,
+      "hold": 84,
+      "is_paste": false
+    },
+    {
+      "t": 1803,
+      "interval": 285.9,
+      "hold": 72,
+      "is_paste": false
+    },
+    {
+      "t": 2041,
+      "interval": 238.4,
+      "hold": 51,
+      "is_paste": false
+    },
+    {
+      "t": 2311,
+      "interval": 270.1,
+      "hold": 61,
+      "is_paste": false
+    },
+    {
+      "t": 2529,
+      "interval": 218.5,
+      "hold": 89,
+      "is_paste": false
+    },
+    {
+      "t": 2600,
+      "interval": 71.9,
+      "hold": 55,
+      "is_paste": false
+    },
+    {
+      "t": 2820,
+      "interval": 220.6,
+      "hold": 61,
+      "is_paste": false
+    },
+    {
+      "t": 2998,
+      "interval": 178.3,
+      "hold": 60,
+      "is_paste": false
+    },
+    {
+      "t": 3259,
+      "interval": 261.3,
+      "hold": 45,
+      "is_paste": false
+    },
+    {
+      "t": 3428,
+      "interval": 169.1,
+      "hold": 103,
+      "is_paste": false
+    },
+    {
+      "t": 3574,
+      "interval": 146.5,
+      "hold": 52,
+      "is_paste": false
+    },
+    {
+      "t": 3788,
+      "interval": 214.5,
+      "hold": 84,
+      "is_paste": false
+    },
+    {
+      "t": 3974,
+      "interval": 186.6,
+      "hold": 85,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 492,
+      "scroll_y": 101,
+      "delta_y": 101
+    },
+    {
+      "t": 957,
+      "scroll_y": 279,
+      "delta_y": 178
+    },
+    {
+      "t": 1168,
+      "scroll_y": 436,
+      "delta_y": 157
+    },
+    {
+      "t": 1600,
+      "scroll_y": 558,
+      "delta_y": 122
+    },
+    {
+      "t": 1792,
+      "scroll_y": 702,
+      "delta_y": 144
+    },
+    {
+      "t": 2115,
+      "scroll_y": 881,
+      "delta_y": 179
+    },
+    {
+      "t": 2667,
+      "scroll_y": 984,
+      "delta_y": 103
+    },
+    {
+      "t": 3011,
+      "scroll_y": 1061,
+      "delta_y": 77
+    },
+    {
+      "t": 3601,
+      "scroll_y": 1165,
+      "delta_y": 104
+    },
+    {
+      "t": 3906,
+      "scroll_y": 1233,
+      "delta_y": 68
+    },
+    {
+      "t": 4279,
+      "scroll_y": 1396,
+      "delta_y": 163
+    }
+  ],
+  "click_events": [
+    {
+      "x": 876,
+      "y": 756,
+      "t": 3448,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 738,
+      "details": {}
+    },
+    {
+      "action": "filter_applied",
+      "t": 1970,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 3201,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 4334,
+      "details": {}
+    }
+  ]
+}

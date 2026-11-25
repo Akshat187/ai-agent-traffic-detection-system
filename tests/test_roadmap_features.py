@@ -108,3 +108,59 @@ def test_analyst_feedback_endpoint():
     fb_data = fb_res.json()
     assert fb_data["session_id"] == sid
     assert fb_data["analyst_label"] == "AGENTIC_AI"
+
+
+def test_mobile_touch_and_a11y_keyboard_not_penalized():
+    """Touchscreen and keyboard-only a11y users must not trigger zero-mouse bot penalties."""
+    engine = DecisionEngine()
+
+    touch_session = {
+        "session_id": "touch_human_001",
+        "task": "shopping",
+        "duration_ms": 4500.0,
+        "browser_signals": {"webdriver": False, "touch_support": True, "pointer_type": "touch"},
+        "mouse_events": [],
+        "click_events": [{"x": 180, "y": 420, "t": 1200}, {"x": 200, "y": 600, "t": 2800}],
+        "keyboard_events": [],
+        "scroll_events": [{"t": 800, "scroll_y": 240, "delta_y": 240}],
+        "task_actions": [],
+    }
+    touch_feats = extract_all_features(touch_session)
+    touch_verdict = engine.evaluate_session("touch_human_001", "shopping", touch_session, touch_feats)
+    assert "DOM_CLICKS_WITHOUT_MOUSE_TRAJECTORY" not in touch_verdict["l1_flags"]
+    assert touch_verdict["final_verdict"] == "HUMAN"
+
+    a11y_session = {
+        "session_id": "a11y_kb_001",
+        "task": "forum",
+        "duration_ms": 5000.0,
+        "browser_signals": {"webdriver": False, "touch_support": False, "pointer_type": "mouse"},
+        "mouse_events": [],
+        "click_events": [{"x": 150, "y": 300, "t": 3200}],
+        "keyboard_events": [
+            {"t": 400, "interval": 160, "hold": 85, "is_paste": False},
+            {"t": 720, "interval": 320, "hold": 110, "is_paste": False},
+            {"t": 880, "interval": 160, "hold": 75, "is_paste": False},
+            {"t": 1310, "interval": 430, "hold": 95, "is_paste": False},
+            {"t": 1550, "interval": 240, "hold": 80, "is_paste": False},
+        ],
+        "scroll_events": [],
+        "task_actions": [],
+    }
+    a11y_feats = extract_all_features(a11y_session)
+    a11y_verdict = engine.evaluate_session("a11y_kb_001", "forum", a11y_session, a11y_feats)
+    assert "DOM_CLICKS_WITHOUT_MOUSE_TRAJECTORY" not in a11y_verdict["l1_flags"]
+
+
+def test_prometheus_metrics_endpoint():
+    """Verify GET /metrics returns Prometheus text format with HTTP, verdict, and L1-L5 latency metrics."""
+    # Trigger at least one classification so verdict & layer metrics are populated
+    payload = generate_synthetic_session(label="HUMAN", task="shopping", index=888123)
+    client.post("/api/v1/sessions", json=payload)
+
+    res = client.get("/metrics")
+    assert res.status_code == 200
+    body = res.text
+    assert "sentineltrace_http_requests_total" in body
+    assert "sentineltrace_classifications_total" in body
+    assert "sentineltrace_layer_latency_ms_sum" in body

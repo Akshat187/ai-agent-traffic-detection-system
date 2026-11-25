@@ -1,0 +1,356 @@
+{
+  "session_id": "bm_human_mobile_touch_shopping_052",
+  "visitor_id": "vis_human_052",
+  "task": "shopping",
+  "start_time": 1724903120000,
+  "end_time": 1724903134281,
+  "duration_ms": 14281.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_mobile_touch",
+  "browser_signals": {
+    "webdriver": false,
+    "screen_width": 390,
+    "screen_height": 844,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.5,
+    "touch_support": true,
+    "hardware_concurrency": 12,
+    "platform": "MacIntel",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "pointer_type": "touch"
+  },
+  "mouse_events": [],
+  "keyboard_events": [
+    {
+      "t": 3151,
+      "interval": 131.8,
+      "hold": 49,
+      "is_paste": false
+    },
+    {
+      "t": 3231,
+      "interval": 80.0,
+      "hold": 58,
+      "is_paste": false
+    },
+    {
+      "t": 3392,
+      "interval": 161.4,
+      "hold": 89,
+      "is_paste": false
+    },
+    {
+      "t": 3547,
+      "interval": 155.2,
+      "hold": 68,
+      "is_paste": false
+    },
+    {
+      "t": 3849,
+      "interval": 302.8,
+      "hold": 64,
+      "is_paste": false
+    },
+    {
+      "t": 3917,
+      "interval": 68.5,
+      "hold": 52,
+      "is_paste": false
+    },
+    {
+      "t": 4216,
+      "interval": 299.4,
+      "hold": 98,
+      "is_paste": false
+    },
+    {
+      "t": 4532,
+      "interval": 316.6,
+      "hold": 42,
+      "is_paste": false
+    },
+    {
+      "t": 4756,
+      "interval": 224.9,
+      "hold": 70,
+      "is_paste": false
+    },
+    {
+      "t": 4933,
+      "interval": 177.4,
+      "hold": 86,
+      "is_paste": false
+    },
+    {
+      "t": 5129,
+      "interval": 196.3,
+      "hold": 88,
+      "is_paste": false
+    },
+    {
+      "t": 5339,
+      "interval": 210.1,
+      "hold": 48,
+      "is_paste": false
+    },
+    {
+      "t": 5535,
+      "interval": 196.0,
+      "hold": 95,
+      "is_paste": false
+    },
+    {
+      "t": 5571,
+      "interval": 36.8,
+      "hold": 40,
+      "is_paste": false
+    },
+    {
+      "t": 5713,
+      "interval": 142.8,
+      "hold": 99,
+      "is_paste": false
+    },
+    {
+      "t": 5963,
+      "interval": 250.0,
+      "hold": 100,
+      "is_paste": false
+    },
+    {
+      "t": 6215,
+      "interval": 252.4,
+      "hold": 52,
+      "is_paste": false
+    },
+    {
+      "t": 6325,
+      "interval": 110.9,
+      "hold": 51,
+      "is_paste": false
+    },
+    {
+      "t": 6507,
+      "interval": 182.9,
+      "hold": 65,
+      "is_paste": false
+    },
+    {
+      "t": 6645,
+      "interval": 138.5,
+      "hold": 94,
+      "is_paste": false
+    },
+    {
+      "t": 6780,
+      "interval": 135.9,
+      "hold": 80,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 1428,
+      "scroll_y": 35,
+      "delta_y": 35
+    },
+    {
+      "t": 1828,
+      "scroll_y": 186,
+      "delta_y": 151
+    },
+    {
+      "t": 2213,
+      "scroll_y": 293,
+      "delta_y": 107
+    },
+    {
+      "t": 2696,
+      "scroll_y": 326,
+      "delta_y": 33
+    },
+    {
+      "t": 3072,
+      "scroll_y": 368,
+      "delta_y": 42
+    },
+    {
+      "t": 3419,
+      "scroll_y": 406,
+      "delta_y": 38
+    },
+    {
+      "t": 3592,
+      "scroll_y": 480,
+      "delta_y": 74
+    },
+    {
+      "t": 4099,
+      "scroll_y": 640,
+      "delta_y": 160
+    },
+    {
+      "t": 4358,
+      "scroll_y": 737,
+      "delta_y": 97
+    },
+    {
+      "t": 4730,
+      "scroll_y": 904,
+      "delta_y": 167
+    },
+    {
+      "t": 5005,
+      "scroll_y": 985,
+      "delta_y": 81
+    },
+    {
+      "t": 5335,
+      "scroll_y": 1060,
+      "delta_y": 75
+    },
+    {
+      "t": 5670,
+      "scroll_y": 1188,
+      "delta_y": 128
+    },
+    {
+      "t": 6118,
+      "scroll_y": 1270,
+      "delta_y": 82
+    },
+    {
+      "t": 6376,
+      "scroll_y": 1384,
+      "delta_y": 114
+    },
+    {
+      "t": 6965,
+      "scroll_y": 1492,
+      "delta_y": 108
+    },
+    {
+      "t": 7351,
+      "scroll_y": 1625,
+      "delta_y": 133
+    },
+    {
+      "t": 7646,
+      "scroll_y": 1739,
+      "delta_y": 114
+    },
+    {
+      "t": 8106,
+      "scroll_y": 1914,
+      "delta_y": 175
+    },
+    {
+      "t": 8658,
+      "scroll_y": 1949,
+      "delta_y": 35
+    },
+    {
+      "t": 8863,
+      "scroll_y": 2096,
+      "delta_y": 147
+    },
+    {
+      "t": 9343,
+      "scroll_y": 2159,
+      "delta_y": 63
+    },
+    {
+      "t": 9734,
+      "scroll_y": 2270,
+      "delta_y": 111
+    },
+    {
+      "t": 9954,
+      "scroll_y": 2314,
+      "delta_y": 44
+    },
+    {
+      "t": 10290,
+      "scroll_y": 2478,
+      "delta_y": 164
+    },
+    {
+      "t": 10548,
+      "scroll_y": 2607,
+      "delta_y": 129
+    },
+    {
+      "t": 10732,
+      "scroll_y": 2712,
+      "delta_y": 105
+    },
+    {
+      "t": 11151,
+      "scroll_y": 2847,
+      "delta_y": 135
+    },
+    {
+      "t": 11454,
+      "scroll_y": 2955,
+      "delta_y": 108
+    },
+    {
+      "t": 11700,
+      "scroll_y": 3087,
+      "delta_y": 132
+    },
+    {
+      "t": 11881,
+      "scroll_y": 3131,
+      "delta_y": 44
+    },
+    {
+      "t": 12341,
+      "scroll_y": 3161,
+      "delta_y": 30
+    },
+    {
+      "t": 12625,
+      "scroll_y": 3263,
+      "delta_y": 102
+    },
+    {
+      "t": 12795,
+      "scroll_y": 3296,
+      "delta_y": 33
+    }
+  ],
+  "click_events": [
+    {
+      "x": 696,
+      "y": 525,
+      "t": 9996,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 2142,
+      "details": {}
+    },
+    {
+      "action": "filter_applied",
+      "t": 5712,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 9282,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 12567,
+      "details": {}
+    }
+  ]
+}

@@ -1,0 +1,301 @@
+{
+  "session_id": "bm_traditional_automation_randomized_forum_102",
+  "visitor_id": "vis_traditional_automation_102",
+  "task": "forum",
+  "start_time": 1724906120000,
+  "end_time": 1724906120831,
+  "duration_ms": 831.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_randomized",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 197,
+      "y": 201,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 227,
+      "y": 211,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 254,
+      "y": 234,
+      "t": 60,
+      "type": "move"
+    },
+    {
+      "x": 279,
+      "y": 252,
+      "t": 91,
+      "type": "move"
+    },
+    {
+      "x": 311,
+      "y": 270,
+      "t": 121,
+      "type": "move"
+    },
+    {
+      "x": 336,
+      "y": 290,
+      "t": 151,
+      "type": "move"
+    },
+    {
+      "x": 368,
+      "y": 314,
+      "t": 181,
+      "type": "move"
+    },
+    {
+      "x": 389,
+      "y": 327,
+      "t": 211,
+      "type": "move"
+    },
+    {
+      "x": 412,
+      "y": 344,
+      "t": 241,
+      "type": "move"
+    },
+    {
+      "x": 444,
+      "y": 362,
+      "t": 272,
+      "type": "move"
+    },
+    {
+      "x": 468,
+      "y": 383,
+      "t": 302,
+      "type": "move"
+    },
+    {
+      "x": 505,
+      "y": 399,
+      "t": 332,
+      "type": "move"
+    },
+    {
+      "x": 533,
+      "y": 417,
+      "t": 362,
+      "type": "move"
+    },
+    {
+      "x": 556,
+      "y": 435,
+      "t": 392,
+      "type": "move"
+    },
+    {
+      "x": 579,
+      "y": 453,
+      "t": 423,
+      "type": "move"
+    },
+    {
+      "x": 610,
+      "y": 483,
+      "t": 453,
+      "type": "move"
+    },
+    {
+      "x": 636,
+      "y": 489,
+      "t": 483,
+      "type": "move"
+    },
+    {
+      "x": 664,
+      "y": 513,
+      "t": 513,
+      "type": "move"
+    },
+    {
+      "x": 692,
+      "y": 523,
+      "t": 543,
+      "type": "move"
+    },
+    {
+      "x": 715,
+      "y": 547,
+      "t": 573,
+      "type": "move"
+    },
+    {
+      "x": 749,
+      "y": 556,
+      "t": 604,
+      "type": "move"
+    },
+    {
+      "x": 774,
+      "y": 582,
+      "t": 634,
+      "type": "move"
+    },
+    {
+      "x": 796,
+      "y": 598,
+      "t": 664,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 102,
+      "interval": 52,
+      "hold": 26,
+      "is_paste": false
+    },
+    {
+      "t": 163,
+      "interval": 61,
+      "hold": 30,
+      "is_paste": false
+    },
+    {
+      "t": 222,
+      "interval": 59,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 264,
+      "interval": 42,
+      "hold": 28,
+      "is_paste": false
+    },
+    {
+      "t": 302,
+      "interval": 38,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 363,
+      "interval": 61,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 427,
+      "interval": 64,
+      "hold": 30,
+      "is_paste": false
+    },
+    {
+      "t": 476,
+      "interval": 49,
+      "hold": 19,
+      "is_paste": false
+    },
+    {
+      "t": 519,
+      "interval": 43,
+      "hold": 17,
+      "is_paste": false
+    },
+    {
+      "t": 580,
+      "interval": 61,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 624,
+      "interval": 44,
+      "hold": 28,
+      "is_paste": false
+    },
+    {
+      "t": 663,
+      "interval": 39,
+      "hold": 22,
+      "is_paste": false
+    },
+    {
+      "t": 729,
+      "interval": 66,
+      "hold": 22,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 41,
+      "scroll_y": 413,
+      "delta_y": 413
+    },
+    {
+      "t": 178,
+      "scroll_y": 826,
+      "delta_y": 413
+    },
+    {
+      "t": 286,
+      "scroll_y": 1239,
+      "delta_y": 413
+    },
+    {
+      "t": 479,
+      "scroll_y": 1652,
+      "delta_y": 413
+    },
+    {
+      "t": 608,
+      "scroll_y": 2065,
+      "delta_y": 413
+    },
+    {
+      "t": 732,
+      "scroll_y": 2478,
+      "delta_y": 413
+    }
+  ],
+  "click_events": [
+    {
+      "x": 800,
+      "y": 600,
+      "t": 706,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "filter_applied",
+      "t": 290,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 498,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 664,
+      "details": {}
+    }
+  ]
+}

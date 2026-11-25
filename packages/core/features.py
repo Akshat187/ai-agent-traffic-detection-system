@@ -457,6 +457,9 @@ def extract_all_features(session_data: Dict[str, Any]) -> Dict[str, Any]:
     # Environment signals — lowest weight, supporting evidence only
     webdriver = bool(browser.get("webdriver", False))
     touch = bool(browser.get("touch_support", False))
+    pointer_type = str(browser.get("pointer_type", "mouse") or "mouse").lower()
+    if pointer_type == "touch":
+        touch = True
     hardware_threads = int(browser.get("hardware_concurrency", 4) or 4)
 
     features = {
@@ -468,6 +471,7 @@ def extract_all_features(session_data: Dict[str, Any]) -> Dict[str, Any]:
         # Environmental signals (supporting evidence — not primary classifiers)
         "webdriver_flag": 1.0 if webdriver else 0.0,
         "touch_support": 1.0 if touch else 0.0,
+        "pointer_type": pointer_type,
         "hardware_concurrency": float(hardware_threads),
         # Expose both durations for dashboard display and diagnostics
         "active_duration_ms": round(effective_duration_ms, 2),

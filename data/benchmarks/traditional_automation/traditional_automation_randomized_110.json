@@ -1,0 +1,395 @@
+{
+  "session_id": "bm_traditional_automation_randomized_travel_110",
+  "visitor_id": "vis_traditional_automation_110",
+  "task": "travel",
+  "start_time": 1724906600000,
+  "end_time": 1724906601323,
+  "duration_ms": 1323.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_randomized",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 199,
+      "y": 206,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 211,
+      "y": 212,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 227,
+      "y": 230,
+      "t": 60,
+      "type": "move"
+    },
+    {
+      "x": 245,
+      "y": 227,
+      "t": 91,
+      "type": "move"
+    },
+    {
+      "x": 272,
+      "y": 243,
+      "t": 121,
+      "type": "move"
+    },
+    {
+      "x": 282,
+      "y": 255,
+      "t": 151,
+      "type": "move"
+    },
+    {
+      "x": 297,
+      "y": 275,
+      "t": 181,
+      "type": "move"
+    },
+    {
+      "x": 316,
+      "y": 269,
+      "t": 212,
+      "type": "move"
+    },
+    {
+      "x": 330,
+      "y": 306,
+      "t": 242,
+      "type": "move"
+    },
+    {
+      "x": 362,
+      "y": 309,
+      "t": 272,
+      "type": "move"
+    },
+    {
+      "x": 368,
+      "y": 312,
+      "t": 302,
+      "type": "move"
+    },
+    {
+      "x": 393,
+      "y": 326,
+      "t": 333,
+      "type": "move"
+    },
+    {
+      "x": 410,
+      "y": 334,
+      "t": 363,
+      "type": "move"
+    },
+    {
+      "x": 424,
+      "y": 344,
+      "t": 393,
+      "type": "move"
+    },
+    {
+      "x": 446,
+      "y": 359,
+      "t": 423,
+      "type": "move"
+    },
+    {
+      "x": 455,
+      "y": 376,
+      "t": 453,
+      "type": "move"
+    },
+    {
+      "x": 475,
+      "y": 386,
+      "t": 484,
+      "type": "move"
+    },
+    {
+      "x": 490,
+      "y": 390,
+      "t": 514,
+      "type": "move"
+    },
+    {
+      "x": 515,
+      "y": 413,
+      "t": 544,
+      "type": "move"
+    },
+    {
+      "x": 522,
+      "y": 420,
+      "t": 574,
+      "type": "move"
+    },
+    {
+      "x": 538,
+      "y": 418,
+      "t": 605,
+      "type": "move"
+    },
+    {
+      "x": 568,
+      "y": 428,
+      "t": 635,
+      "type": "move"
+    },
+    {
+      "x": 574,
+      "y": 444,
+      "t": 665,
+      "type": "move"
+    },
+    {
+      "x": 590,
+      "y": 467,
+      "t": 695,
+      "type": "move"
+    },
+    {
+      "x": 614,
+      "y": 473,
+      "t": 725,
+      "type": "move"
+    },
+    {
+      "x": 629,
+      "y": 493,
+      "t": 756,
+      "type": "move"
+    },
+    {
+      "x": 649,
+      "y": 497,
+      "t": 786,
+      "type": "move"
+    },
+    {
+      "x": 664,
+      "y": 498,
+      "t": 816,
+      "type": "move"
+    },
+    {
+      "x": 682,
+      "y": 528,
+      "t": 846,
+      "type": "move"
+    },
+    {
+      "x": 698,
+      "y": 538,
+      "t": 877,
+      "type": "move"
+    },
+    {
+      "x": 717,
+      "y": 543,
+      "t": 907,
+      "type": "move"
+    },
+    {
+      "x": 733,
+      "y": 558,
+      "t": 937,
+      "type": "move"
+    },
+    {
+      "x": 753,
+      "y": 558,
+      "t": 967,
+      "type": "move"
+    },
+    {
+      "x": 770,
+      "y": 579,
+      "t": 998,
+      "type": "move"
+    },
+    {
+      "x": 792,
+      "y": 593,
+      "t": 1028,
+      "type": "move"
+    },
+    {
+      "x": 808,
+      "y": 605,
+      "t": 1058,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 123,
+      "interval": 73,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 184,
+      "interval": 61,
+      "hold": 21,
+      "is_paste": false
+    },
+    {
+      "t": 265,
+      "interval": 81,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 334,
+      "interval": 69,
+      "hold": 28,
+      "is_paste": false
+    },
+    {
+      "t": 421,
+      "interval": 87,
+      "hold": 22,
+      "is_paste": false
+    },
+    {
+      "t": 503,
+      "interval": 82,
+      "hold": 22,
+      "is_paste": false
+    },
+    {
+      "t": 588,
+      "interval": 85,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 676,
+      "interval": 88,
+      "hold": 26,
+      "is_paste": false
+    },
+    {
+      "t": 741,
+      "interval": 65,
+      "hold": 25,
+      "is_paste": false
+    },
+    {
+      "t": 814,
+      "interval": 73,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 886,
+      "interval": 72,
+      "hold": 20,
+      "is_paste": false
+    },
+    {
+      "t": 965,
+      "interval": 79,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 1027,
+      "interval": 62,
+      "hold": 28,
+      "is_paste": false
+    },
+    {
+      "t": 1096,
+      "interval": 69,
+      "hold": 26,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 66,
+      "scroll_y": 349,
+      "delta_y": 349
+    },
+    {
+      "t": 228,
+      "scroll_y": 698,
+      "delta_y": 349
+    },
+    {
+      "t": 391,
+      "scroll_y": 1047,
+      "delta_y": 349
+    },
+    {
+      "t": 498,
+      "scroll_y": 1396,
+      "delta_y": 349
+    },
+    {
+      "t": 693,
+      "scroll_y": 1745,
+      "delta_y": 349
+    },
+    {
+      "t": 809,
+      "scroll_y": 2094,
+      "delta_y": 349
+    },
+    {
+      "t": 1006,
+      "scroll_y": 2443,
+      "delta_y": 349
+    },
+    {
+      "t": 1152,
+      "scroll_y": 2792,
+      "delta_y": 349
+    }
+  ],
+  "click_events": [
+    {
+      "x": 800,
+      "y": 600,
+      "t": 1124,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "filter_applied",
+      "t": 463,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 793,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 1058,
+      "details": {}
+    }
+  ]
+}

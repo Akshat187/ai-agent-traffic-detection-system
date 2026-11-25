@@ -1,0 +1,274 @@
+{
+  "session_id": "bm_agentic_ai_trajectory_agent_forum_084",
+  "visitor_id": "vis_agentic_ai_084",
+  "task": "forum",
+  "start_time": 1724905040000,
+  "end_time": 1724905045151,
+  "duration_ms": 5151.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_trajectory_agent",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 4,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 150,
+      "y": 200,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 197,
+      "y": 216,
+      "t": 104,
+      "type": "move"
+    },
+    {
+      "x": 244,
+      "y": 231,
+      "t": 208,
+      "type": "move"
+    },
+    {
+      "x": 291,
+      "y": 246,
+      "t": 312,
+      "type": "move"
+    },
+    {
+      "x": 338,
+      "y": 262,
+      "t": 416,
+      "type": "move"
+    },
+    {
+      "x": 384,
+      "y": 278,
+      "t": 520,
+      "type": "move"
+    },
+    {
+      "x": 431,
+      "y": 293,
+      "t": 624,
+      "type": "move"
+    },
+    {
+      "x": 478,
+      "y": 308,
+      "t": 728,
+      "type": "move"
+    },
+    {
+      "x": 525,
+      "y": 324,
+      "t": 832,
+      "type": "move"
+    },
+    {
+      "x": 525,
+      "y": 324,
+      "t": 1201,
+      "type": "move"
+    },
+    {
+      "x": 542,
+      "y": 350,
+      "t": 1353,
+      "type": "move"
+    },
+    {
+      "x": 558,
+      "y": 376,
+      "t": 1506,
+      "type": "move"
+    },
+    {
+      "x": 575,
+      "y": 402,
+      "t": 1658,
+      "type": "move"
+    },
+    {
+      "x": 592,
+      "y": 427,
+      "t": 1810,
+      "type": "move"
+    },
+    {
+      "x": 608,
+      "y": 453,
+      "t": 1962,
+      "type": "move"
+    },
+    {
+      "x": 625,
+      "y": 479,
+      "t": 2115,
+      "type": "move"
+    },
+    {
+      "x": 625,
+      "y": 479,
+      "t": 2402,
+      "type": "move"
+    },
+    {
+      "x": 651,
+      "y": 492,
+      "t": 2488,
+      "type": "move"
+    },
+    {
+      "x": 676,
+      "y": 505,
+      "t": 2574,
+      "type": "move"
+    },
+    {
+      "x": 702,
+      "y": 517,
+      "t": 2660,
+      "type": "move"
+    },
+    {
+      "x": 727,
+      "y": 530,
+      "t": 2746,
+      "type": "move"
+    },
+    {
+      "x": 753,
+      "y": 543,
+      "t": 2831,
+      "type": "move"
+    },
+    {
+      "x": 779,
+      "y": 556,
+      "t": 2917,
+      "type": "move"
+    },
+    {
+      "x": 804,
+      "y": 569,
+      "t": 3003,
+      "type": "move"
+    },
+    {
+      "x": 830,
+      "y": 581,
+      "t": 3089,
+      "type": "move"
+    },
+    {
+      "x": 855,
+      "y": 594,
+      "t": 3175,
+      "type": "move"
+    },
+    {
+      "x": 881,
+      "y": 607,
+      "t": 3261,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 1350,
+      "interval": 63,
+      "hold": 40,
+      "is_paste": false
+    },
+    {
+      "t": 1723,
+      "interval": 373,
+      "hold": 31,
+      "is_paste": false
+    },
+    {
+      "t": 1849,
+      "interval": 126,
+      "hold": 28,
+      "is_paste": false
+    },
+    {
+      "t": 1983,
+      "interval": 134,
+      "hold": 41,
+      "is_paste": false
+    },
+    {
+      "t": 2060,
+      "interval": 77,
+      "hold": 42,
+      "is_paste": false
+    },
+    {
+      "t": 2190,
+      "interval": 130,
+      "hold": 31,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 1030,
+      "scroll_y": 294,
+      "delta_y": 294
+    },
+    {
+      "t": 2310,
+      "scroll_y": 562,
+      "delta_y": 268
+    }
+  ],
+  "click_events": [
+    {
+      "x": 525,
+      "y": 324,
+      "t": 1802,
+      "target_category": "input"
+    },
+    {
+      "x": 881,
+      "y": 607,
+      "t": 4120,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 1030,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 2575,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 3863,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 4635,
+      "details": {}
+    }
+  ]
+}

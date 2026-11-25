@@ -199,25 +199,38 @@ class DecisionEngine:
                 "model_version": MODEL_VERSION,
             }
 
+        import time
+        from apps.api.observability import metrics_registry
+
         # --- Layer 1: Rules ---
+        t_l1 = time.perf_counter()
         rule_score, rule_flags, rule_mitigations = self.rules.evaluate(features)
+        metrics_registry.record_layer_latency("L1", (time.perf_counter() - t_l1) * 1000.0)
 
         # --- Layer 2: Behavioral ML ---
+        t_l2 = time.perf_counter()
         ml_pred, ml_conf, ml_probs = self.ml.predict(features)
+        metrics_registry.record_layer_latency("L2", (time.perf_counter() - t_l2) * 1000.0)
 
         # --- Layer 3: Anomaly Detection ---
+        t_l3 = time.perf_counter()
         anom_score, is_anom, anom_reasons = self.anomaly.score(features)
+        metrics_registry.record_layer_latency("L3", (time.perf_counter() - t_l3) * 1000.0)
 
         # --- Layer 4: Replay Detection ---
+        t_l4 = time.perf_counter()
         mouse_events = session_data.get("mouse_events", [])
         replay_sim, matched_id, is_replay = self.replay.check_replay(session_id, mouse_events)
         if register_replay:
             self.replay.register_session(session_id, mouse_events)
+        metrics_registry.record_layer_latency("L4", (time.perf_counter() - t_l4) * 1000.0)
 
         # --- Layer 5: Contextual Validation ---
+        t_l5 = time.perf_counter()
         task_actions = session_data.get("task_actions", [])
         click_events = session_data.get("click_events", [])
         ctx_valid, ctx_violations = self.context.validate(task, task_actions, click_events, features)
+        metrics_registry.record_layer_latency("L5", (time.perf_counter() - t_l5) * 1000.0)
         if ctx_violations:
             l5_status = "violated"
         elif task in WORKFLOW_TASKS:
@@ -289,6 +302,18 @@ class DecisionEngine:
         if is_keyboard_human:
             counter_signals.append(
                 f"Organic keyboard-only interaction pattern (CV: {key_cv:.2f}) — assistive or keyboard-centric navigation"
+            )
+            risk -= 15.0
+
+        # Mobile / touch interaction: touchscreens do not emit continuous mousemove trajectories
+        is_touch_human = (
+            (features.get("pointer_type") == "touch" or features.get("touch_support", 0.0) == 1.0)
+            and not features.get("webdriver_flag")
+            and not is_artificial_jitter
+        )
+        if is_touch_human:
+            counter_signals.append(
+                "Mobile/touch pointer interaction detected — zero-mouse trajectory penalty suppressed"
             )
             risk -= 15.0
 
@@ -387,6 +412,7 @@ class DecisionEngine:
         is_agentic_profile = (
             has_agency_signal
             and not is_organic_human_kinematics
+            and not (is_touch_human and action_burst <= 0.30)
             and (
                 has_llm_deliberation or
                 (planning_pause_ratio > 0.30 and nav_segments >= 3 and straightness > 0.80) or
@@ -409,7 +435,7 @@ class DecisionEngine:
                 (key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0))) or
                 (straightness > 0.92 and key_count >= 4 and (key_cv < 0.20 or features.get("micro_corrections", 0) <= 1)) or
                 (features.get("duration_ms", 1000) < 500 and features.get("total_event_count", 0) >= 5) or
-                (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0 and not is_keyboard_human)
+                (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0 and not is_keyboard_human and not is_touch_human)
             ) and not is_agentic_profile and not has_llm_deliberation  # Never override agentic LLM evidence
         )
 
@@ -458,7 +484,7 @@ class DecisionEngine:
                 confidence = 48.0
                 fallback_used = True
 
-        elif risk_score <= 30.0 and rule_score < 30.0 and (ml_pred == "HUMAN" or is_keyboard_human):
+        elif risk_score <= 30.0 and rule_score < 30.0 and (ml_pred == "HUMAN" or is_keyboard_human or is_touch_human):
             final_verdict = "HUMAN"
             c_target = ml_probs.get("HUMAN", calibrated_conf / 100.0) * 100.0 if ml_probs else calibrated_conf
             heuristic_conf = min(98.0, max(68.0, 100.0 - (risk_score * 1.1)))

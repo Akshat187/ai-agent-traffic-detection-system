@@ -1,0 +1,242 @@
+{
+  "session_id": "bm_traditional_automation_deterministic_shopping_061",
+  "visitor_id": "vis_traditional_automation_061",
+  "task": "shopping",
+  "start_time": 1724903660000,
+  "end_time": 1724903660693,
+  "duration_ms": 693.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_deterministic",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 200,
+      "y": 200,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 233,
+      "y": 222,
+      "t": 31,
+      "type": "move"
+    },
+    {
+      "x": 267,
+      "y": 244,
+      "t": 62,
+      "type": "move"
+    },
+    {
+      "x": 300,
+      "y": 267,
+      "t": 92,
+      "type": "move"
+    },
+    {
+      "x": 333,
+      "y": 289,
+      "t": 123,
+      "type": "move"
+    },
+    {
+      "x": 367,
+      "y": 311,
+      "t": 154,
+      "type": "move"
+    },
+    {
+      "x": 400,
+      "y": 333,
+      "t": 185,
+      "type": "move"
+    },
+    {
+      "x": 433,
+      "y": 356,
+      "t": 215,
+      "type": "move"
+    },
+    {
+      "x": 467,
+      "y": 378,
+      "t": 246,
+      "type": "move"
+    },
+    {
+      "x": 500,
+      "y": 400,
+      "t": 277,
+      "type": "move"
+    },
+    {
+      "x": 533,
+      "y": 422,
+      "t": 308,
+      "type": "move"
+    },
+    {
+      "x": 567,
+      "y": 444,
+      "t": 339,
+      "type": "move"
+    },
+    {
+      "x": 600,
+      "y": 467,
+      "t": 369,
+      "type": "move"
+    },
+    {
+      "x": 633,
+      "y": 489,
+      "t": 400,
+      "type": "move"
+    },
+    {
+      "x": 667,
+      "y": 511,
+      "t": 431,
+      "type": "move"
+    },
+    {
+      "x": 700,
+      "y": 533,
+      "t": 462,
+      "type": "move"
+    },
+    {
+      "x": 733,
+      "y": 556,
+      "t": 492,
+      "type": "move"
+    },
+    {
+      "x": 767,
+      "y": 578,
+      "t": 523,
+      "type": "move"
+    },
+    {
+      "x": 800,
+      "y": 600,
+      "t": 554,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 100,
+      "interval": 50,
+      "hold": 18,
+      "is_paste": false
+    },
+    {
+      "t": 152,
+      "interval": 52,
+      "hold": 18,
+      "is_paste": false
+    },
+    {
+      "t": 200,
+      "interval": 48,
+      "hold": 25,
+      "is_paste": false
+    },
+    {
+      "t": 248,
+      "interval": 48,
+      "hold": 20,
+      "is_paste": false
+    },
+    {
+      "t": 296,
+      "interval": 48,
+      "hold": 24,
+      "is_paste": false
+    },
+    {
+      "t": 345,
+      "interval": 49,
+      "hold": 20,
+      "is_paste": false
+    },
+    {
+      "t": 396,
+      "interval": 51,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 446,
+      "interval": 50,
+      "hold": 20,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 34,
+      "scroll_y": 389,
+      "delta_y": 389
+    },
+    {
+      "t": 226,
+      "scroll_y": 778,
+      "delta_y": 389
+    },
+    {
+      "t": 395,
+      "scroll_y": 1167,
+      "delta_y": 389
+    },
+    {
+      "t": 509,
+      "scroll_y": 1556,
+      "delta_y": 389
+    },
+    {
+      "t": 616,
+      "scroll_y": 1945,
+      "delta_y": 389
+    }
+  ],
+  "click_events": [
+    {
+      "x": 800,
+      "y": 600,
+      "t": 589,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "filter_applied",
+      "t": 242,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 415,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 554,
+      "details": {}
+    }
+  ]
+}

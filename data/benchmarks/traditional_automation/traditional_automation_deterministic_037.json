@@ -1,0 +1,238 @@
+{
+  "session_id": "bm_traditional_automation_deterministic_shopping_037",
+  "visitor_id": "vis_traditional_automation_037",
+  "task": "shopping",
+  "start_time": 1724902220000,
+  "end_time": 1724902220591,
+  "duration_ms": 591.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_deterministic",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 200,
+      "y": 200,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 240,
+      "y": 227,
+      "t": 31,
+      "type": "move"
+    },
+    {
+      "x": 280,
+      "y": 253,
+      "t": 63,
+      "type": "move"
+    },
+    {
+      "x": 320,
+      "y": 280,
+      "t": 94,
+      "type": "move"
+    },
+    {
+      "x": 360,
+      "y": 307,
+      "t": 126,
+      "type": "move"
+    },
+    {
+      "x": 400,
+      "y": 333,
+      "t": 157,
+      "type": "move"
+    },
+    {
+      "x": 440,
+      "y": 360,
+      "t": 189,
+      "type": "move"
+    },
+    {
+      "x": 480,
+      "y": 387,
+      "t": 220,
+      "type": "move"
+    },
+    {
+      "x": 520,
+      "y": 413,
+      "t": 252,
+      "type": "move"
+    },
+    {
+      "x": 560,
+      "y": 440,
+      "t": 283,
+      "type": "move"
+    },
+    {
+      "x": 600,
+      "y": 467,
+      "t": 315,
+      "type": "move"
+    },
+    {
+      "x": 640,
+      "y": 493,
+      "t": 346,
+      "type": "move"
+    },
+    {
+      "x": 680,
+      "y": 520,
+      "t": 378,
+      "type": "move"
+    },
+    {
+      "x": 720,
+      "y": 547,
+      "t": 409,
+      "type": "move"
+    },
+    {
+      "x": 760,
+      "y": 573,
+      "t": 441,
+      "type": "move"
+    },
+    {
+      "x": 800,
+      "y": 600,
+      "t": 472,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 88,
+      "interval": 38,
+      "hold": 19,
+      "is_paste": false
+    },
+    {
+      "t": 129,
+      "interval": 41,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 168,
+      "interval": 39,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 208,
+      "interval": 40,
+      "hold": 25,
+      "is_paste": false
+    },
+    {
+      "t": 246,
+      "interval": 38,
+      "hold": 20,
+      "is_paste": false
+    },
+    {
+      "t": 287,
+      "interval": 41,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 325,
+      "interval": 38,
+      "hold": 18,
+      "is_paste": false
+    },
+    {
+      "t": 364,
+      "interval": 39,
+      "hold": 19,
+      "is_paste": false
+    },
+    {
+      "t": 405,
+      "interval": 41,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 446,
+      "interval": 41,
+      "hold": 19,
+      "is_paste": false
+    },
+    {
+      "t": 484,
+      "interval": 38,
+      "hold": 15,
+      "is_paste": false
+    },
+    {
+      "t": 524,
+      "interval": 40,
+      "hold": 30,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 29,
+      "scroll_y": 300,
+      "delta_y": 300
+    },
+    {
+      "t": 210,
+      "scroll_y": 600,
+      "delta_y": 300
+    },
+    {
+      "t": 390,
+      "scroll_y": 900,
+      "delta_y": 300
+    }
+  ],
+  "click_events": [
+    {
+      "x": 800,
+      "y": 600,
+      "t": 502,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "filter_applied",
+      "t": 206,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 354,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 472,
+      "details": {}
+    }
+  ]
+}

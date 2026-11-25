@@ -1,0 +1,361 @@
+{
+  "session_id": "bm_human_mobile_touch_shopping_040",
+  "visitor_id": "vis_human_040",
+  "task": "shopping",
+  "start_time": 1724902400000,
+  "end_time": 1724902415198,
+  "duration_ms": 15198.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_mobile_touch",
+  "browser_signals": {
+    "webdriver": false,
+    "screen_width": 390,
+    "screen_height": 844,
+    "viewport_width": 1200,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": true,
+    "hardware_concurrency": 16,
+    "platform": "MacIntel",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "pointer_type": "touch"
+  },
+  "mouse_events": [],
+  "keyboard_events": [
+    {
+      "t": 3165,
+      "interval": 179.7,
+      "hold": 48,
+      "is_paste": false
+    },
+    {
+      "t": 3335,
+      "interval": 171.0,
+      "hold": 96,
+      "is_paste": false
+    },
+    {
+      "t": 3454,
+      "interval": 119.9,
+      "hold": 105,
+      "is_paste": false
+    },
+    {
+      "t": 3535,
+      "interval": 81.6,
+      "hold": 79,
+      "is_paste": false
+    },
+    {
+      "t": 3631,
+      "interval": 96.8,
+      "hold": 89,
+      "is_paste": false
+    },
+    {
+      "t": 3773,
+      "interval": 142.2,
+      "hold": 57,
+      "is_paste": false
+    },
+    {
+      "t": 3962,
+      "interval": 189.6,
+      "hold": 96,
+      "is_paste": false
+    },
+    {
+      "t": 4077,
+      "interval": 115.1,
+      "hold": 56,
+      "is_paste": false
+    },
+    {
+      "t": 4201,
+      "interval": 124.4,
+      "hold": 60,
+      "is_paste": false
+    },
+    {
+      "t": 4272,
+      "interval": 71.2,
+      "hold": 52,
+      "is_paste": false
+    },
+    {
+      "t": 4465,
+      "interval": 193.2,
+      "hold": 81,
+      "is_paste": false
+    },
+    {
+      "t": 4632,
+      "interval": 167.9,
+      "hold": 91,
+      "is_paste": false
+    },
+    {
+      "t": 4781,
+      "interval": 149.4,
+      "hold": 102,
+      "is_paste": false
+    },
+    {
+      "t": 4909,
+      "interval": 128.1,
+      "hold": 58,
+      "is_paste": false
+    },
+    {
+      "t": 5051,
+      "interval": 142.5,
+      "hold": 56,
+      "is_paste": false
+    },
+    {
+      "t": 5243,
+      "interval": 192.3,
+      "hold": 91,
+      "is_paste": false
+    },
+    {
+      "t": 5429,
+      "interval": 186.7,
+      "hold": 104,
+      "is_paste": false
+    },
+    {
+      "t": 5595,
+      "interval": 166.9,
+      "hold": 100,
+      "is_paste": false
+    },
+    {
+      "t": 5739,
+      "interval": 144.6,
+      "hold": 58,
+      "is_paste": false
+    },
+    {
+      "t": 5774,
+      "interval": 35,
+      "hold": 38,
+      "is_paste": false
+    },
+    {
+      "t": 5954,
+      "interval": 180.1,
+      "hold": 73,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 1519,
+      "scroll_y": 172,
+      "delta_y": 172
+    },
+    {
+      "t": 1765,
+      "scroll_y": 313,
+      "delta_y": 141
+    },
+    {
+      "t": 2260,
+      "scroll_y": 380,
+      "delta_y": 67
+    },
+    {
+      "t": 2564,
+      "scroll_y": 487,
+      "delta_y": 107
+    },
+    {
+      "t": 2923,
+      "scroll_y": 610,
+      "delta_y": 123
+    },
+    {
+      "t": 3266,
+      "scroll_y": 773,
+      "delta_y": 163
+    },
+    {
+      "t": 3597,
+      "scroll_y": 903,
+      "delta_y": 130
+    },
+    {
+      "t": 4149,
+      "scroll_y": 1030,
+      "delta_y": 127
+    },
+    {
+      "t": 4739,
+      "scroll_y": 1205,
+      "delta_y": 175
+    },
+    {
+      "t": 5036,
+      "scroll_y": 1323,
+      "delta_y": 118
+    },
+    {
+      "t": 5349,
+      "scroll_y": 1420,
+      "delta_y": 97
+    },
+    {
+      "t": 5613,
+      "scroll_y": 1500,
+      "delta_y": 80
+    },
+    {
+      "t": 5814,
+      "scroll_y": 1595,
+      "delta_y": 95
+    },
+    {
+      "t": 6250,
+      "scroll_y": 1682,
+      "delta_y": 87
+    },
+    {
+      "t": 6458,
+      "scroll_y": 1736,
+      "delta_y": 54
+    },
+    {
+      "t": 7000,
+      "scroll_y": 1789,
+      "delta_y": 53
+    },
+    {
+      "t": 7269,
+      "scroll_y": 1871,
+      "delta_y": 82
+    },
+    {
+      "t": 7487,
+      "scroll_y": 1979,
+      "delta_y": 108
+    },
+    {
+      "t": 7780,
+      "scroll_y": 2099,
+      "delta_y": 120
+    },
+    {
+      "t": 8069,
+      "scroll_y": 2140,
+      "delta_y": 41
+    },
+    {
+      "t": 8590,
+      "scroll_y": 2295,
+      "delta_y": 155
+    },
+    {
+      "t": 8820,
+      "scroll_y": 2426,
+      "delta_y": 131
+    },
+    {
+      "t": 9081,
+      "scroll_y": 2500,
+      "delta_y": 74
+    },
+    {
+      "t": 9483,
+      "scroll_y": 2545,
+      "delta_y": 45
+    },
+    {
+      "t": 9640,
+      "scroll_y": 2677,
+      "delta_y": 132
+    },
+    {
+      "t": 10017,
+      "scroll_y": 2709,
+      "delta_y": 32
+    },
+    {
+      "t": 10286,
+      "scroll_y": 2749,
+      "delta_y": 40
+    },
+    {
+      "t": 10543,
+      "scroll_y": 2817,
+      "delta_y": 68
+    },
+    {
+      "t": 10873,
+      "scroll_y": 2878,
+      "delta_y": 61
+    },
+    {
+      "t": 11358,
+      "scroll_y": 2989,
+      "delta_y": 111
+    },
+    {
+      "t": 11704,
+      "scroll_y": 3132,
+      "delta_y": 143
+    },
+    {
+      "t": 11980,
+      "scroll_y": 3194,
+      "delta_y": 62
+    },
+    {
+      "t": 12515,
+      "scroll_y": 3325,
+      "delta_y": 131
+    },
+    {
+      "t": 13063,
+      "scroll_y": 3415,
+      "delta_y": 90
+    },
+    {
+      "t": 13251,
+      "scroll_y": 3458,
+      "delta_y": 43
+    }
+  ],
+  "click_events": [
+    {
+      "x": 978,
+      "y": 597,
+      "t": 10638,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 2279,
+      "details": {}
+    },
+    {
+      "action": "filter_applied",
+      "t": 6079,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 9878,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 13374,
+      "details": {}
+    }
+  ]
+}
