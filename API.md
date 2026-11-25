@@ -1,6 +1,6 @@
-﻿# WebSense REST API Reference
+# SentinelTrace REST API Reference
 
-The WebSense backend exposes clean, OpenAPI-compliant REST endpoints for session telemetry ingestion, classification, statistics, and experiments.
+The SentinelTrace backend exposes clean, OpenAPI-compliant REST endpoints for multi-site registration, session telemetry ingestion, classification, statistics, and experiments.
 
 Interactive Swagger documentation is available at:
 `http://localhost:8000/docs`
@@ -61,7 +61,7 @@ Interactive Swagger documentation is available at:
     "Organic typing rhythm variation (CV: 0.32)"
   ],
   "human_explanation": "Classified as Human (94% confidence) with low risk (12/100). Demonstrated organic motor variability...",
-  "model_version": "v1.0.0-defense-in-depth"
+  "model_version": "v1.2.1-actor-inference"
 }
 ```
 
@@ -73,7 +73,7 @@ Interactive Swagger documentation is available at:
 **Query Parameters:**
 - `limit` (int, default=50)
 - `offset` (int, default=0)
-- `label` (string, optional: `HUMAN`, `BOT`, `AI_AGENT`, `UNCERTAIN`)
+- `label` (string, optional: `HUMAN`, `TRADITIONAL_AUTOMATION`, `AGENTIC_AI`, `UNCERTAIN`)
 
 ---
 
@@ -84,7 +84,34 @@ Returns complete session summary, full extracted feature vector, 5-layer verdict
 
 ---
 
-## 2. Statistics API
+## 2. Multi-Site Registration API
+
+### Register a Site
+`POST /api/v1/sites`
+
+Registers a new site for the SentinelTrace embeddable SDK (`sentinel.js`), returning a `site_id` and `api_key` (`ws_live_...`).
+
+**Request Body:**
+```json
+{
+  "name": "Acme Global Store",
+  "allowed_origins": "https://acmestore.com,https://staging.acmestore.com"
+}
+```
+
+### List Registered Sites
+`GET /api/v1/sites`
+
+Returns all registered sites and their session counts.
+
+### Get Site Details
+`GET /api/v1/sites/{site_id}`
+
+Returns metadata and configuration for a specific registered site.
+
+---
+
+## 3. Statistics API
 
 ### Get Platform Overview Metrics
 `GET /api/v1/stats/overview`
@@ -93,12 +120,12 @@ Returns aggregated counts, class percentages, average confidence, average risk s
 
 ---
 
-## 3. Experiments & Adversarial API
+## 4. Experiments & Adversarial API
 
-### Run FP-Agent Benchmark
+### Run 6-Experiment Ablation Suite
 `POST /api/v1/experiments/run`
 
-Runs 4-way comparative evaluation (Browser Only vs Behavioral vs Combined vs 5-Layer Defense-in-Depth) and returns Confusion Matrix and Feature Importance rankings.
+Runs the 6-experiment comparative evaluation and ablation suite (Browser Only vs Behavioral Only vs Full 5-Layer Defense-in-Depth, Feature Importance, Calibration, and Evasive Resistance) and returns Confusion Matrix and Feature Importance rankings.
 
 ### Simulate Adversarial Attack
 `POST /api/v1/adversarial/simulate`

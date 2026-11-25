@@ -1,16 +1,16 @@
-# WebSense Sentinel SDK — Embed & Integration Guide
+# SentinelTrace SDK — Embed & Integration Guide
 
-`sentinel.js` is a lightweight, zero-dependency, privacy-first behavioral telemetry script. It enables any external web application to stream anonymized interaction timing and kinematic dynamics to the WebSense AI detection engine to detect bots and autonomous AI agents in real time.
+`sentinel.js` is a lightweight, zero-dependency, privacy-first behavioral telemetry script. It enables any external web application to stream anonymized interaction timing and kinematic dynamics to the SentinelTrace AI detection engine to detect bots and autonomous AI agents in real time.
 
 ---
 
 ## 1. Quick Start
 
 ### Step 1: Register Your Site
-Register your website domain to generate a unique `site_id` and API key. You can do this via the WebSense REST API or the dashboard:
+Register your website domain to generate a unique `site_id` and API key. You can do this via the SentinelTrace REST API or the dashboard:
 
 ```bash
-curl -X POST https://your-websense-domain.com/api/v1/sites \
+curl -X POST https://your-sentineltrace-domain.com/api/v1/sites \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Acme Global Store",

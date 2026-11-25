@@ -6,27 +6,35 @@ delta chunks with an increasing ``seq``; see IngestSessionRequest for the
 protocol and packages.database.repository.ingest_chunk for the rules.
 """
 
+import hashlib
+import hmac
+import json
 import logging
+import secrets
 import threading
 import time
 from collections import defaultdict, deque
 from typing import Deque, Dict, List, Optional
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from packages.database.db import get_db
-from packages.database.models import SessionRecord, SiteRecord, VerdictHistory
+from packages.database.models import SessionRecord, SiteRecord, VerdictHistory, SessionFeedback
 from packages.database.schemas import (
     IngestSessionRequest,
     ClassificationResponse,
     SessionSummary,
-    SessionDetailResponse
+    SessionDetailResponse,
+    SessionFeedbackRequest,
+    SessionFeedbackResponse,
 )
 from apps.api.dependencies import get_detection_engine, DecisionEngine
 from apps.api.config import settings
+from apps.api.routes.ws import ws_manager
 from packages.database.repository import build_session_summary, ingest_chunk, IngestError, apply_source_filter
 
 router = APIRouter(prefix="/api/v1/sessions", tags=["Sessions"])
@@ -76,7 +84,8 @@ class _SlidingWindowLimiter:
 
 
 _session_limiter = _SlidingWindowLimiter(settings.INGEST_MAX_CHUNKS_PER_SESSION_PER_MIN)
-_ip_limiter = _SlidingWindowLimiter(settings.INGEST_MAX_REQUESTS_PER_IP_PER_MIN)
+_site_ip_limiter = _SlidingWindowLimiter(settings.INGEST_MAX_REQUESTS_PER_IP_PER_MIN)
+_ip_limiter = _site_ip_limiter  # backward-compatible alias for test fixtures
 
 
 def _client_ip(request: Request) -> str:
@@ -87,7 +96,7 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def _validate_site_origin(site: SiteRecord, request: Request):
+def _validate_site_origin(site: SiteRecord, request: Request, require_origin_when_restricted: bool = True):
     """
     Validates that the incoming request origin is authorized for the given site.
     If allowed_origins is '*', all origins are permitted.
@@ -97,7 +106,11 @@ def _validate_site_origin(site: SiteRecord, request: Request):
 
     origin = request.headers.get("origin") or request.headers.get("referer") or ""
     if not origin:
-        # Same-origin or non-browser client
+        if require_origin_when_restricted:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Origin header or Bearer API key required for site '{site.site_id}'."
+            )
         return True
 
     parsed_origin = urlparse(origin)
@@ -120,12 +133,88 @@ def _validate_site_origin(site: SiteRecord, request: Request):
     )
 
 
+def verify_site_access(
+    payload: IngestSessionRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> Optional[SiteRecord]:
+    """
+    Validates site_id + Origin (browser SDK) or Authorization: Bearer ws_live_... (server-to-server).
+    """
+    auth_header = request.headers.get("authorization", "")
+    bearer_token = ""
+    if auth_header.lower().startswith("bearer "):
+        bearer_token = auth_header[7:].strip()
+
+    site_id = payload.site_id
+    site: Optional[SiteRecord] = None
+
+    if site_id:
+        site = db.query(SiteRecord).filter(SiteRecord.site_id == site_id).first()
+        if not site:
+            raise HTTPException(status_code=404, detail=f"Site ID '{site_id}' is not registered.")
+        if not site.is_active:
+            raise HTTPException(status_code=403, detail=f"Site '{site_id}' is currently deactivated.")
+
+        if bearer_token:
+            if not site.api_key or not secrets.compare_digest(bearer_token, site.api_key):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid API key for the specified site.",
+                )
+        else:
+            _validate_site_origin(site, request)
+    elif bearer_token:
+        site = db.query(SiteRecord).filter(SiteRecord.api_key == bearer_token).first()
+        if not site:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid API key.",
+            )
+        if not site.is_active:
+            raise HTTPException(status_code=403, detail=f"Site '{site.site_id}' is currently deactivated.")
+
+    return site
+
+
+def _compute_mitigation_action(site: Optional[SiteRecord], predicted_label: str, risk_score: float) -> str:
+    """Computes active mitigation action (ALLOW | CHALLENGE | BLOCK) from site policy."""
+    if not site:
+        return "ALLOW"
+    threshold = site.risk_threshold if site.risk_threshold is not None else 80
+    mode = (site.enforcement_mode or "monitor").lower()
+    triggered = (risk_score >= threshold) or (predicted_label == "AGENTIC_AI")
+    if not triggered or mode == "monitor":
+        return "ALLOW"
+    if mode == "block":
+        return "BLOCK"
+    if mode == "challenge":
+        return "CHALLENGE"
+    return "ALLOW"
+
+
+def _send_webhook_alert(webhook_url: str, secret_key: str, payload: Dict) -> None:
+    """Sends an HMAC-SHA256 signed webhook alert for high-risk detections."""
+    try:
+        body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        sig = hmac.new(secret_key.encode("utf-8"), body, hashlib.sha256).hexdigest()
+        headers = {
+            "Content-Type": "application/json",
+            "X-SentinelTrace-Signature": f"sha256={sig}",
+        }
+        httpx.post(webhook_url, content=body, headers=headers, timeout=3.0)
+    except Exception as exc:
+        logger.warning("webhook_delivery_failed url=%s err=%s", webhook_url, exc)
+
+
 @router.post("", response_model=ClassificationResponse)
 def ingest_session(
     payload: IngestSessionRequest,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    engine: DecisionEngine = Depends(get_detection_engine)
+    engine: DecisionEngine = Depends(get_detection_engine),
+    site: Optional[SiteRecord] = Depends(verify_site_access),
 ):
     """
     Ingests one telemetry chunk for a page visit, rebuilds features from all
@@ -133,23 +222,16 @@ def ingest_session(
     verdict. Idempotent: re-sending the same (session_id, seq) returns the
     current verdict with ``duplicate=true`` and writes nothing.
     """
-    # 1. Throttle: per page visit first, then a coarse per-IP guard.
+    site_id = site.site_id if site else payload.site_id
+
+    # 1. Throttle: per page visit first, then per-(site_id, client_ip) tenant-isolated guard.
     if not _session_limiter.hit(payload.session_id):
         raise HTTPException(status_code=429, detail="Too many chunks for this session; slow down.")
-    if not _ip_limiter.hit(_client_ip(request)):
-        raise HTTPException(status_code=429, detail="Too many requests from this address.")
+    tenant_ip_key = f"{site_id or 'default'}:{_client_ip(request)}"
+    if not _site_ip_limiter.hit(tenant_ip_key):
+        raise HTTPException(status_code=429, detail="Too many requests for this site from this address.")
 
-    # 2. Validate site_id & origin. Sites must be registered (no auto-creation).
-    site_id = payload.site_id
-    if site_id:
-        site = db.query(SiteRecord).filter(SiteRecord.site_id == site_id).first()
-        if not site:
-            raise HTTPException(status_code=404, detail=f"Site ID '{site_id}' is not registered.")
-        if not site.is_active:
-            raise HTTPException(status_code=403, detail=f"Site '{site_id}' is currently deactivated.")
-        _validate_site_origin(site, request)
-
-    # 3. Single idempotent write path. Retry once if a concurrent request won
+    # 2. Single idempotent write path. Retry once if a concurrent request won
     #    the race to create a child row (possible on PostgreSQL).
     for attempt in (1, 2):
         try:
@@ -167,6 +249,30 @@ def ingest_session(
             if attempt == 2:
                 logger.exception("ingest_integrity_error session_id=%s", payload.session_id)
                 raise HTTPException(status_code=409, detail="Concurrent write conflict; retry.")
+
+    action = _compute_mitigation_action(
+        site,
+        result.get("predicted_label", "UNCERTAIN"),
+        float(result.get("risk_score", 0.0)),
+    )
+    result["action"] = action
+
+    if not result.get("duplicate") and not result.get("stale"):
+        ws_event = {
+            "session_id": result["session_id"],
+            "site_id": site_id,
+            "predicted_label": result["predicted_label"],
+            "risk_score": result["risk_score"],
+            "confidence": result["confidence"],
+            "action": action,
+            "timestamp": time.time(),
+        }
+        background_tasks.add_task(ws_manager.broadcast, ws_event)
+
+        threshold = (site.risk_threshold if site and site.risk_threshold is not None else 80)
+        is_high_risk = (float(result.get("risk_score", 0.0)) >= threshold) or (result.get("predicted_label") == "AGENTIC_AI")
+        if site and site.webhook_url and is_high_risk:
+            background_tasks.add_task(_send_webhook_alert, site.webhook_url, site.api_key or "", ws_event)
 
     return ClassificationResponse(**result)
 
@@ -301,4 +407,36 @@ def get_session_detail(session_id: str, db: Session = Depends(get_db)):
         features=feat_dict,
         verdict=verdict_dict,
         telemetry=telem_dict
+    )
+
+
+@router.post("/{session_id}/feedback", response_model=SessionFeedbackResponse, status_code=status.HTTP_201_CREATED)
+def submit_session_feedback(
+    session_id: str,
+    payload: SessionFeedbackRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Allows analysts on /dashboard to override a misclassified session's label
+    and record notes for active learning and drift monitoring.
+    """
+    session = db.query(SessionRecord).filter(SessionRecord.session_id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    feedback = SessionFeedback(
+        session_id=session_id,
+        analyst_label=payload.analyst_label,
+        notes=payload.notes,
+    )
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+
+    return SessionFeedbackResponse(
+        id=feedback.id,
+        session_id=feedback.session_id,
+        analyst_label=feedback.analyst_label,
+        notes=feedback.notes or "",
+        created_at=feedback.created_at.isoformat() if feedback.created_at else "",
     )

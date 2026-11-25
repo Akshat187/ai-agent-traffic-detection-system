@@ -539,6 +539,18 @@
           seq: inFlight.seq,
         }, '*');
 
+        // Active Mitigation Policy enforcement hook (ALLOW | CHALLENGE | BLOCK)
+        if (data.action && data.action !== 'ALLOW') {
+          window.dispatchEvent(new CustomEvent('sentinel:action', { detail: data }));
+          if (data.action === 'BLOCK' && !document.getElementById('sentinel-block-banner')) {
+            const banner = document.createElement('div');
+            banner.id = 'sentinel-block-banner';
+            banner.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(15,23,42,0.92);color:#fff;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:24px;';
+            banner.innerHTML = '<div><h2 style="font-size:20px;font-weight:700;margin-bottom:8px;">Automated Activity Blocked</h2><p style="font-size:14px;color:#cbd5e1;">SentinelTrace policy engine flagged this session (' + data.predicted_label + ', risk ' + data.risk_score + '/100).</p></div>';
+            if (document.body) document.body.appendChild(banner);
+          }
+        }
+
         return data;
       } else if (resp.status >= 400 && resp.status < 500 && resp.status !== 429) {
         // Permanent 4xx client rejection (e.g. 422 schema validation)

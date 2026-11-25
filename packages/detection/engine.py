@@ -51,11 +51,30 @@ class DecisionEngine:
         self._bootstrap_ml()
 
     def _bootstrap_ml(self):
-        """Pre-trains and calibrates behavioral classifier. Prioritizes persistent benchmark traces from disk."""
+        """Loads pre-trained behavioral classifier artifact if present, else trains & calibrates from disk/seeds."""
         try:
             import json
+            import pickle
             from pathlib import Path
             from packages.core.features import extract_all_features
+
+            model_path = Path(__file__).resolve().parent.parent.parent / "models" / "behavioral_v1.2.joblib"
+            if model_path.exists():
+                try:
+                    try:
+                        import joblib
+                        artifact = joblib.load(model_path)
+                    except ImportError:
+                        with open(model_path, "rb") as mf:
+                            artifact = pickle.load(mf)
+                    if isinstance(artifact, BehavioralClassifier):
+                        self.ml = artifact
+                        return
+                    elif isinstance(artifact, dict) and "classifier" in artifact:
+                        self.ml = artifact["classifier"]
+                        return
+                except Exception:
+                    pass
 
             benchmark_dir = Path(__file__).resolve().parent.parent.parent / "data" / "benchmarks"
             X, y = [], []
@@ -277,26 +296,30 @@ class DecisionEngine:
         planning_pause_ratio = features.get("planning_pause_ratio", 0.0)
         llm_gap_ratio = features.get("llm_inference_gap_ratio", 0.0)
         action_burst = features.get("action_burstiness_score", 0.0)
+        cursor_teleport = features.get("cursor_teleport_ratio", 0.0)
         nav_segments = features.get("nav_segment_count", 0)
         adaptation_score = features.get("adaptation_score", 0.0)
         action_interval_var = features.get("action_interval_variance", 0.0)
         action_interval_mean = features.get("action_interval_mean_ms", 0.0)
         interaction_diversity = features.get("interaction_diversity_score", 0.0)
 
+        # Defer agentic contributing_signals emission until final_verdict is known
+        # so human reading/thinking dwell never leaks agentic planning strings.
+        pending_agentic_signals = []
         if planning_pause_ratio > 0.30 or llm_gap_ratio > 0.25:
-            contributing_signals.append(
+            pending_agentic_signals.append(
                 f"Goal-directed deliberation pauses ({planning_pause_ratio:.0%} of session time, LLM gap ratio: {llm_gap_ratio:.0%}) — agentic planning signature"
             )
             risk += 15.0  # Shifts toward AGENTIC_AI, not TRADITIONAL_AUTOMATION
 
         if nav_segments >= 3:
-            contributing_signals.append(
+            pending_agentic_signals.append(
                 f"Segmented cursor navigation ({nav_segments} distinct path segments) — autonomous task navigation"
             )
             risk += 10.0
 
         if adaptation_score > 0.4:
-            contributing_signals.append(
+            pending_agentic_signals.append(
                 f"Action adaptation pattern detected (score: {adaptation_score:.2f}) — context-sensitive decision making"
             )
 
@@ -451,6 +474,17 @@ class DecisionEngine:
             final_verdict = "UNCERTAIN"
             confidence = round(max(40.0, min(65.0, 50.0 + (calibrated_conf - 50.0) * 0.5)), 1)
             fallback_used = True
+
+        # Gate agentic contributing_signals: only emit when AGENTIC_AI or secondary
+        # burstiness/teleportation condition is met; otherwise classify as neutral reading dwell.
+        has_secondary_burstiness = (action_burst > 0.30 or cursor_teleport > 0.70)
+        if pending_agentic_signals:
+            if final_verdict == "AGENTIC_AI" or has_secondary_burstiness:
+                contributing_signals.extend(pending_agentic_signals)
+            else:
+                counter_signals.append(
+                    f"Neutral reading dwell and cognitive pauses ({planning_pause_ratio:.0%} pause ratio) without post-pause action burstiness"
+                )
 
         # ── GENERATE HUMAN-READABLE EXPLANATION ───────────────────────────────
 

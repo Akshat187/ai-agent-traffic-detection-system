@@ -222,9 +222,35 @@ def extract_agency_profile_features(
     LLM_INFERENCE_MIN_MS = 1200.0
     LLM_INFERENCE_MAX_MS = 6500.0
 
+    # -- Cursor Teleport Ratio ---------------------------------------------------------
+    # In DOM-direct agents (e.g. Stagehand), clicks happen without preceding continuous movement.
+    clicks = click_events or []
+    teleport_count = 0
+    if clicks:
+        if not mouse_events or len(mouse_events) < 3:
+            teleport_count = len(clicks)
+        else:
+            m_points = [(float(m.get("x", 0)), float(m.get("y", 0)), float(m.get("t", 0))) for m in mouse_events]
+            for clk in clicks:
+                cx, cy, ct = float(clk.get("x", 0)), float(clk.get("y", 0)), float(clk.get("t", 0))
+                prior = [p for p in m_points if p[2] <= ct]
+                if not prior:
+                    teleport_count += 1
+                else:
+                    last_m = prior[-1]
+                    dist = math.sqrt((cx - last_m[0]) ** 2 + (cy - last_m[1]) ** 2)
+                    dt = max(1.0, ct - last_m[2])
+                    # If cursor was > 180px away and jumped with dt < 30ms or without points
+                    if dist > 180.0 and dt < 40.0:
+                        teleport_count += 1
+
+    cursor_teleport_ratio = round(teleport_count / len(clicks), 4) if clicks else 0.0
+    has_teleport_signature = cursor_teleport_ratio > 0.70
+
     # -- Action intervals from task_actions (primary bot-vs-agent signal) ---------------
-    # LLM-driven agents have 1-5 s gaps between consecutive actions (model inference wait).
-    # Scripted bots have gaps < 100 ms. Humans have irregular, longer gaps.
+    # LLM-driven agents have 1-5 s gaps between consecutive actions (model inference wait),
+    # typically followed by rapid <400ms action bursts or cursor teleports.
+    # Human reading/thinking pauses lack these low-entropy post-pause bursts.
     action_intervals = []
     action_interval_mean_ms = 0.0
     task_pause_end_times = []
@@ -240,13 +266,19 @@ def extract_agency_profile_features(
                 action_intervals.append(dt)
                 if dt > PLANNING_PAUSE_THRESHOLD_MS:
                     task_pause_end_times.append(float(raw_t_curr))
-                if LLM_INFERENCE_MIN_MS <= dt <= LLM_INFERENCE_MAX_MS:
-                    llm_gaps_ms += dt
                 # Burstiness: rapid follow-up action (<400ms) after an LLM deliberation pause (>1200ms)
                 if i >= 2:
                     prev_dt = float(task_actions[i - 1].get("t", 0)) - float(task_actions[i - 2].get("t", 0))
                     if prev_dt >= LLM_INFERENCE_MIN_MS and dt < 400.0:
                         burst_actions += 1
+
+                # Only count LLM inference gap if followed by a <400ms action burst or high cursor teleportation
+                if LLM_INFERENCE_MIN_MS <= dt <= LLM_INFERENCE_MAX_MS:
+                    next_dt = None
+                    if i + 1 < len(task_actions):
+                        next_dt = float(task_actions[i + 1].get("t", 0)) - float(raw_t_curr)
+                    if has_teleport_signature or (next_dt is not None and 0 < next_dt < 400.0):
+                        llm_gaps_ms += dt
 
     if action_intervals:
         action_interval_mean_ms = round(
@@ -276,7 +308,8 @@ def extract_agency_profile_features(
             if dt > PLANNING_PAUSE_THRESHOLD_MS:
                 planning_pause_ms += dt
                 mouse_pause_end_times.append(float(mouse_events[i].get("t", 0)))
-            if LLM_INFERENCE_MIN_MS <= dt <= LLM_INFERENCE_MAX_MS:
+            # Only count mouse-level LLM gaps when corroborated by action bursts or cursor teleports
+            if LLM_INFERENCE_MIN_MS <= dt <= LLM_INFERENCE_MAX_MS and (has_teleport_signature or burst_actions > 0):
                 llm_gaps_ms += dt
 
     for dt in action_intervals:
@@ -313,30 +346,6 @@ def extract_agency_profile_features(
                 in_segment = True
         if in_segment:
             nav_segments += 1
-
-    # -- Cursor Teleport Ratio ---------------------------------------------------------
-    # In DOM-direct agents (e.g. Stagehand), clicks happen without preceding continuous movement.
-    clicks = click_events or []
-    teleport_count = 0
-    if clicks:
-        if not mouse_events or len(mouse_events) < 3:
-            teleport_count = len(clicks)
-        else:
-            m_points = [(float(m.get("x", 0)), float(m.get("y", 0)), float(m.get("t", 0))) for m in mouse_events]
-            for clk in clicks:
-                cx, cy, ct = float(clk.get("x", 0)), float(clk.get("y", 0)), float(clk.get("t", 0))
-                prior = [p for p in m_points if p[2] <= ct]
-                if not prior:
-                    teleport_count += 1
-                else:
-                    last_m = prior[-1]
-                    dist = math.sqrt((cx - last_m[0]) ** 2 + (cy - last_m[1]) ** 2)
-                    dt = max(1.0, ct - last_m[2])
-                    # If cursor was > 180px away and jumped with dt < 30ms or without points
-                    if dist > 180.0 and dt < 40.0:
-                        teleport_count += 1
-
-    cursor_teleport_ratio = round(teleport_count / len(clicks), 4) if clicks else 0.0
 
     # -- Adaptation score --------------------------------------------------------------
     # Ratio of task actions that occur within 3 s after a planning pause.

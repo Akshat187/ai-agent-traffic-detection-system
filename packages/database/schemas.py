@@ -121,6 +121,9 @@ class ClientContextSchema(BaseModel):
 class SiteCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=128)
     allowed_origins: str = Field(default="*", description="Comma-separated allowed domains e.g. https://example.com,http://localhost:3000")
+    webhook_url: Optional[str] = Field(default=None, max_length=512)
+    risk_threshold: int = Field(default=80, ge=0, le=100)
+    enforcement_mode: Literal["monitor", "challenge", "block"] = "monitor"
 
 
 class SiteResponse(BaseModel):
@@ -128,9 +131,25 @@ class SiteResponse(BaseModel):
     name: str
     allowed_origins: str
     api_key: Optional[str] = None
+    webhook_url: Optional[str] = None
+    risk_threshold: int = 80
+    enforcement_mode: str = "monitor"
     is_active: bool = True
     created_at: str
     total_sessions: int = 0
+
+
+class SessionFeedbackRequest(BaseModel):
+    analyst_label: Literal["HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI", "UNCERTAIN"]
+    notes: str = Field(default="", max_length=1000)
+
+
+class SessionFeedbackResponse(BaseModel):
+    id: int
+    session_id: str
+    analyst_label: str
+    notes: str
+    created_at: str
 
 
 class SiteListResponse(BaseModel):
@@ -225,6 +244,7 @@ class ClassificationResponse(BaseModel):
     counter_signals: List[str]
     human_explanation: str
     model_version: str
+    action: Literal["ALLOW", "CHALLENGE", "BLOCK"] = "ALLOW"
     # Layer 5 status: "valid" | "violated" | "not_applicable"
     l5_status: str = "not_applicable"
     active_duration_ms: Optional[float] = None

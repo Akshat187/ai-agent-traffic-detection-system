@@ -1,6 +1,6 @@
-# WebSense — Architecture & Threat Model Documentation
+# SentinelTrace — Architecture & Threat Model Documentation
 
-WebSense is a multi-layered security intelligence and traffic classification platform built to distinguish between **Human Users**, **Traditional Automation**, and **Agentic AI** using browser and behavioral fingerprinting.
+SentinelTrace is a multi-layered security intelligence and traffic classification platform built to distinguish between **Human Users**, **Traditional Automation**, and **Agentic AI** using browser and behavioral fingerprinting.
 
 ---
 
@@ -40,8 +40,8 @@ WebSense is a multi-layered security intelligence and traffic classification pla
 |   - Uniform keystroke CV < 0.05 (+35 penalty)                                     |
 |                                                                                   |
 |  [Layer 2: Behavioral Machine Learning]                                           |
-|   - Supervised Random Forest / Logistic Regression                                |
-|   - 15 kinematic and timing feature vectors                                       |
+|   - Supervised Random Forest / Native Ensemble + Temperature Calibration (T)       |
+|   - 26 kinematic, agency, and timing feature vectors                               |
 |   - Calibrated class probabilities & feature importance                           |
 |                                                                                   |
 |  [Layer 3: Behavioral Anomaly Detection]                                          |
@@ -62,7 +62,7 @@ WebSense is a multi-layered security intelligence and traffic classification pla
 +-----------------------------------------------------------------------------------+
 |                             UNIFIED DECISION ENGINE                               |
 |  - Synthesizes verdicts across Layers 1-5                                         |
-|  - Assigns: HUMAN | BOT | AI_AGENT | UNCERTAIN                                    |
+|  - Assigns: HUMAN | TRADITIONAL_AUTOMATION | AGENTIC_AI | UNCERTAIN               |
 |  - Computes Calibrated Confidence % (0-100) and Risk Score (0-100)                |
 |  - Generates Plain-English Explainability & Contributing/Counter Signal Lists     |
 +------------------------------------------+----------------------------------------+

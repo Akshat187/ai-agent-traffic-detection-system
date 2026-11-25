@@ -21,14 +21,15 @@ document.addEventListener("DOMContentLoaded", function () {
   fetchSites();
   fetchOverviewStats();
   fetchSessions();
+  initWebSocket();
 
-  // Poll for updates every 4 seconds — active tab only
+  // Fallback poll every 15 seconds (WebSocket pushes live updates instantaneously)
   setInterval(() => {
     if (document.visibilityState === "visible") {
       fetchOverviewStats();
       fetchSessions();
     }
-  }, 4000);
+  }, 15000);
 
   // When the user switches back to this tab, refresh immediately
   // so data isn't stale from while the tab was hidden
@@ -1043,6 +1044,60 @@ function escapeHTML(str) {
   return str.replace(/[&<>'"]/g, tag => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
   }[tag] || tag));
+}
+
+function initWebSocket() {
+  try {
+    const proto = location.protocol === "https:" ? "wss://" : "ws://";
+    const siteParam = encodeURIComponent(selectedSite || "ALL");
+    const ws = new WebSocket(`${proto}${location.host}/ws/sessions?site_id=${siteParam}`);
+
+    ws.onmessage = function (event) {
+      try {
+        const msg = JSON.parse(event.data);
+        if (!msg || !msg.session_id) return;
+
+        // Prepend or update live session in allSessions without full-page refresh
+        const idx = allSessions.findIndex((s) => s.session_id === msg.session_id);
+        const entry = {
+          session_id: msg.session_id,
+          site_id: msg.site_id || selectedSite,
+          task: "live",
+          predicted_label: msg.predicted_label,
+          risk_score: msg.risk_score,
+          confidence: msg.confidence,
+          duration_ms: 0,
+          data_source: "realtime_sdk",
+          action: msg.action || "ALLOW",
+        };
+        if (idx >= 0) {
+          allSessions[idx] = Object.assign({}, allSessions[idx], entry);
+        } else {
+          allSessions.unshift(entry);
+          if (allSessions.length > 200) allSessions.pop();
+          const totalEl = document.getElementById("kpi-total");
+          if (totalEl) totalEl.textContent = String((parseInt(totalEl.textContent, 10) || 0) + 1);
+          const lblMap = {
+            HUMAN: "kpi-human",
+            TRADITIONAL_AUTOMATION: "kpi-bot",
+            AGENTIC_AI: "kpi-agent",
+          };
+          const kpiId = lblMap[msg.predicted_label];
+          if (kpiId) {
+            const el = document.getElementById(kpiId);
+            if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + 1);
+          }
+        }
+        if (typeof applySessionFilters === "function") {
+          applySessionFilters();
+        }
+      } catch (_) {}
+    };
+
+    ws.onclose = function () {
+      setTimeout(initWebSocket, 5000);
+    };
+  } catch (_) {}
 }
 
 // Global Window Exports for Inline HTML Handlers

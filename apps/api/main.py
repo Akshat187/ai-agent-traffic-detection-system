@@ -18,7 +18,7 @@ from sqlalchemy import text
 import packages.database.db as db_module
 from packages.database.models import SessionRecord, SiteRecord
 from apps.api.config import settings
-from apps.api.routes import sessions, stats, experiments, adversarial, seed, sites
+from apps.api.routes import sessions, stats, experiments, adversarial, seed, sites, ws
 
 # Setup base directories
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -160,6 +160,7 @@ app.include_router(experiments.router)
 app.include_router(adversarial.router)
 app.include_router(seed.router)
 app.include_router(sites.router)
+app.include_router(ws.router)
 
 
 # Direct SDK Script Endpoint
