@@ -9,7 +9,11 @@
     "tabs"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "<all_urls>",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://localhost:8000/*",
+    "http://127.0.0.1:8000/*"
   ],
   "icons": {
     "16": "icons/icon-16.png",

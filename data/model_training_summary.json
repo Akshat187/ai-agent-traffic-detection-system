@@ -1,0 +1,141 @@
+{
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "confusion_matrix": [
+    [
+      30,
+      0,
+      0
+    ],
+    [
+      0,
+      16,
+      0
+    ],
+    [
+      0,
+      0,
+      34
+    ]
+  ],
+  "feature_importance": [
+    {
+      "feature": "action_interval_variance",
+      "importance": 0.5644
+    },
+    {
+      "feature": "planning_pause_ratio",
+      "importance": 0.1423
+    },
+    {
+      "feature": "micro_corrections",
+      "importance": 0.0769
+    },
+    {
+      "feature": "adaptation_score",
+      "importance": 0.0667
+    },
+    {
+      "feature": "llm_inference_gap_ratio",
+      "importance": 0.0626
+    },
+    {
+      "feature": "velocity_std",
+      "importance": 0.0553
+    },
+    {
+      "feature": "acceleration_std",
+      "importance": 0.0246
+    },
+    {
+      "feature": "straightness_ratio",
+      "importance": 0.0071
+    },
+    {
+      "feature": "mean_velocity",
+      "importance": 0.0
+    },
+    {
+      "feature": "jerk_mean",
+      "importance": 0.0
+    },
+    {
+      "feature": "direction_changes",
+      "importance": 0.0
+    },
+    {
+      "feature": "pause_time_ratio",
+      "importance": 0.0
+    },
+    {
+      "feature": "jerk_to_velocity_ratio",
+      "importance": 0.0
+    },
+    {
+      "feature": "target_approach_deceleration_ratio",
+      "importance": 0.0
+    },
+    {
+      "feature": "velocity_autocorrelation",
+      "importance": 0.0
+    },
+    {
+      "feature": "key_latency_cv",
+      "importance": 0.0
+    },
+    {
+      "feature": "key_uniformity_score",
+      "importance": 0.0
+    },
+    {
+      "feature": "scroll_velocity_std",
+      "importance": 0.0
+    },
+    {
+      "feature": "scroll_discrete_jump_ratio",
+      "importance": 0.0
+    },
+    {
+      "feature": "interaction_density",
+      "importance": 0.0
+    },
+    {
+      "feature": "first_action_delay_ms",
+      "importance": 0.0
+    },
+    {
+      "feature": "action_burstiness_score",
+      "importance": 0.0
+    },
+    {
+      "feature": "cursor_teleport_ratio",
+      "importance": 0.0
+    },
+    {
+      "feature": "nav_segment_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "interaction_diversity_score",
+      "importance": 0.0
+    },
+    {
+      "feature": "webdriver_flag",
+      "importance": 0.0
+    }
+  ],
+  "model_name": "NativeEnsemble(RandomForest)",
+  "calibration": {
+    "temperature": 0.3,
+    "pre_ece": 0.0321,
+    "post_ece": 0.0062,
+    "ece_reduction_pct": 80.7,
+    "pre_brier": 0.0194,
+    "post_brier": 0.0011,
+    "brier_reduction_pct": 94.3,
+    "status": "calibrated"
+  },
+  "note": "Native Python ensemble \u2014 real holdout metrics with Platt / temperature calibration."
+}

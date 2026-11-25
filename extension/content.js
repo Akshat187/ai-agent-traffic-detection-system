@@ -19,97 +19,10 @@
   if (window.__WEBSENSE_SENTINEL_INJECTED__) return;
   window.__WEBSENSE_SENTINEL_INJECTED__ = true;
 
-  const DEFAULT_ENDPOINT = 'http://localhost:8000/api/v1/sessions';
+  const DEFAULT_ENDPOINT = 'http://127.0.0.1:8000/api/v1/sessions';
   const EXTENSION_SITE_ID = 'site_chrome_extension';
 
-  let latestVerdict = null;
-  let sdkSessionId = null;
-  let isYieldingToSdk = false;
-
-  // --- Check for Native SDK Presence ---
-  function checkSdkPresence() {
-    return (
-      document.documentElement.dataset.wsOwner === 'sdk' ||
-      window.__WEBSENSE_COLLECTOR_ACTIVE__ === true ||
-      !!document.querySelector('script[src*="sentinel.js"], script[src*="collector.js"]')
-    );
-  }
-
-  function yieldToSdk(reason) {
-    if (isYieldingToSdk) return;
-    isYieldingToSdk = true;
-    isCollecting = false;
-    if (currentVisit) {
-      currentVisit.inFlight = null;
-      currentVisit.isFinalized = true;
-    }
-    console.info('[WebSense Extension] Yielded telemetry collection to native website SDK (' + reason + ').');
-    setupMessageResponder();
-  }
-
-  // Listen for SDK verdict broadcasts via postMessage
-  window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'WEBSENSE_VERDICT_UPDATE') {
-      latestVerdict = event.data.verdict;
-      sdkSessionId = event.data.sessionId;
-
-      try {
-        chrome.runtime.sendMessage({
-          type: 'VERDICT_UPDATE',
-          verdict: latestVerdict
-        });
-      } catch (_) {}
-    } else if (event.data && event.data.type === 'WEBSENSE_SDK_ACTIVATED') {
-      yieldToSdk('postMessage WEBSENSE_SDK_ACTIVATED');
-    }
-  });
-
-  // Listen for native SDK activation events
-  window.addEventListener('ws:collector_activated', () => {
-    yieldToSdk('ws:collector_activated event');
-  });
-
-  window.addEventListener('ws:claimed', (e) => {
-    if (e.detail && e.detail.owner === 'sdk') {
-      yieldToSdk('ws:claimed event');
-    }
-  });
-
-  // Watch for dynamic injection of collector/sentinel scripts after consent
-  try {
-    const observer = new MutationObserver((mutations) => {
-      if (isYieldingToSdk) {
-        observer.disconnect();
-        return;
-      }
-      for (const m of mutations) {
-        for (const node of m.addedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const tag = node.tagName ? node.tagName.toLowerCase() : '';
-            if (tag === 'script') {
-              const src = node.getAttribute('src') || '';
-              if (src.includes('sentinel.js') || src.includes('collector.js')) {
-                yieldToSdk('dynamic script element added');
-                observer.disconnect();
-                return;
-              }
-            }
-          }
-        }
-      }
-    });
-    observer.observe(document.documentElement || document, { childList: true, subtree: true });
-  } catch (_) {}
-
-  if (checkSdkPresence()) {
-    yieldToSdk('initial DOM inspection');
-    return;
-  }
-
-  // Claim ownership if SDK is not present
-  document.documentElement.dataset.wsOwner = 'extension';
-
-  // --- Constants & IDs ---
+  // --- Constants & Storage Keys ---
   const VISITOR_KEY = 'ws_visitor_id';
   const JOURNEY_KEY = 'ws_journey_id';
   const JOURNEY_TIME_KEY = 'ws_journey_last_active';
@@ -199,6 +112,7 @@
       inFlight: null,
       isFlushing: false,
       isFinalized: false,
+      hasTriggeredFirstFlush: false,
     };
   }
 
@@ -210,18 +124,103 @@
     }
   })();
 
+  let currentVisit = createExtensionVisit(initialPreviousVisitId);
+  let latestVerdict = null;
+  let sdkSessionId = null;
+  let isYieldingToSdk = false;
+
   function isTabActive() {
-    return document.visibilityState === 'visible' && (typeof document.hasFocus === 'function' ? document.hasFocus() : true);
+    // Only check visibilityState so opening the extension popup doesn't cancel telemetry collection
+    return document.visibilityState === 'visible';
   }
 
-  let currentVisit = createExtensionVisit(initialPreviousVisitId);
   let isCollecting = isTabActive();
   let lastMouseMoveTime = 0;
   let lastScrollTime = 0;
   let lastKeyDownTime = 0;
+  let debounceFlushTimer = null;
+
+  // --- Check for Native SDK Presence ---
+  function checkSdkPresence() {
+    return (
+      document.documentElement.dataset.wsOwner === 'sdk' ||
+      window.__WEBSENSE_COLLECTOR_ACTIVE__ === true ||
+      !!document.querySelector('script[src*="sentinel.js"], script[src*="collector.js"]')
+    );
+  }
+
+  function yieldToSdk(reason) {
+    if (isYieldingToSdk) return;
+    isYieldingToSdk = true;
+    isCollecting = false;
+    if (currentVisit) {
+      currentVisit.inFlight = null;
+      currentVisit.isFinalized = true;
+    }
+    console.info('[WebSense Extension] Yielded telemetry collection to native website SDK (' + reason + ').');
+  }
+
+  // Listen for native SDK verdict broadcasts via postMessage
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'WEBSENSE_VERDICT_UPDATE') {
+      latestVerdict = event.data.verdict;
+      sdkSessionId = event.data.sessionId;
+
+      try {
+        chrome.runtime.sendMessage({
+          type: 'VERDICT_UPDATE',
+          verdict: latestVerdict
+        });
+      } catch (_) {}
+    } else if (event.data && event.data.type === 'WEBSENSE_SDK_ACTIVATED') {
+      yieldToSdk('postMessage WEBSENSE_SDK_ACTIVATED');
+    }
+  });
+
+  window.addEventListener('ws:collector_activated', () => {
+    yieldToSdk('ws:collector_activated event');
+  });
+
+  window.addEventListener('ws:claimed', (e) => {
+    if (e.detail && e.detail.owner === 'sdk') {
+      yieldToSdk('ws:claimed event');
+    }
+  });
+
+  // Watch for dynamic injection of collector/sentinel scripts
+  try {
+    const observer = new MutationObserver((mutations) => {
+      if (isYieldingToSdk) {
+        observer.disconnect();
+        return;
+      }
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = node.tagName ? node.tagName.toLowerCase() : '';
+            if (tag === 'script') {
+              const src = node.getAttribute('src') || '';
+              if (src.includes('sentinel.js') || src.includes('collector.js')) {
+                yieldToSdk('dynamic script element added');
+                observer.disconnect();
+                return;
+              }
+            }
+          }
+        }
+      }
+    });
+    observer.observe(document.documentElement || document, { childList: true, subtree: true });
+  } catch (_) {}
+
+  if (checkSdkPresence()) {
+    yieldToSdk('initial DOM inspection');
+  } else {
+    document.documentElement.dataset.wsOwner = 'extension';
+  }
 
   function recordActivity(visit) {
-    if (isYieldingToSdk || !isCollecting || !isTabActive() || !visit) return;
+    if (isYieldingToSdk || !visit) return;
     const now = performance.now();
     if (visit.firstEventTime === null) {
       visit.firstEventTime = now;
@@ -245,16 +244,10 @@
   function hasMinimumInteraction(visit) {
     if (!visit) return false;
     if (visit.clickEvents.length >= 1) return true;
-    if (visit.keyboardEvents.length >= 2) return true;
-    if (visit.scrollEvents.length >= 2) return true;
-    if (visit.mouseEvents.length >= 8) {
-      const first = visit.mouseEvents[0];
-      const last = visit.mouseEvents[visit.mouseEvents.length - 1];
-      const dx = last.x - first.x;
-      const dy = last.y - first.y;
-      if (Math.sqrt(dx * dx + dy * dy) >= 15) return true;
-    }
-    return (visit.mouseEvents.length + visit.keyboardEvents.length + visit.scrollEvents.length + visit.clickEvents.length) >= 5;
+    if (visit.keyboardEvents.length >= 1) return true;
+    if (visit.scrollEvents.length >= 1) return true;
+    if (visit.mouseEvents.length >= 5) return true;
+    return (visit.mouseEvents.length + visit.keyboardEvents.length + visit.scrollEvents.length + visit.clickEvents.length) >= 4;
   }
 
   function hasPendingEvents(visit) {
@@ -268,9 +261,25 @@
     );
   }
 
+  // Fast debounced flush when enough interaction occurs
+  function scheduleFastFlush(delayMs = 600) {
+    if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
+    if (!hasMinimumInteraction(currentVisit)) return;
+
+    if (!currentVisit.hasTriggeredFirstFlush) {
+      clearTimeout(debounceFlushTimer);
+      debounceFlushTimer = setTimeout(() => {
+        if (currentVisit && !currentVisit.isFinalized) {
+          currentVisit.hasTriggeredFirstFlush = true;
+          flushTelemetry(currentVisit, false);
+        }
+      }, delayMs);
+    }
+  }
+
   // --- Event Listeners ---
   window.addEventListener('mousemove', function (e) {
-    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
     const now = performance.now();
     if (now - lastMouseMoveTime < 25) return;
     lastMouseMoveTime = now;
@@ -285,10 +294,14 @@
         type: 'move'
       });
     }
+
+    if (currentVisit.totalMouse >= 6 && !currentVisit.hasTriggeredFirstFlush) {
+      scheduleFastFlush(500);
+    }
   }, { passive: true });
 
   window.addEventListener('click', function (e) {
-    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
     recordActivity(currentVisit);
     const tag = (e.target.tagName || '').toLowerCase();
     let category = 'other';
@@ -306,7 +319,6 @@
       });
     }
 
-    // Capture semantic DOM task action for meaningful user interactions
     if (interactive && currentVisit.taskActions.length < 50) {
       const el = interactive;
       const elTag = el.tagName.toLowerCase();
@@ -323,10 +335,12 @@
         details: { tag: elTag, label: label, trusted: e.isTrusted }
       });
     }
+
+    scheduleFastFlush(400);
   }, { passive: true });
 
   window.addEventListener('submit', function (e) {
-    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
     recordActivity(currentVisit);
     if (currentVisit.taskActions.length < 50) {
       currentVisit.taskActions.push({
@@ -335,13 +349,13 @@
         details: { target: (e.target.id || e.target.name || 'form').slice(0, 40) }
       });
     }
+    scheduleFastFlush(300);
   }, { passive: true });
 
-  // Keyboard dynamics with per-code hold tracking (P10 Fix)
   window.addEventListener('keydown', function (e) {
-    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
     if (e.target && (e.target.type === 'password' || e.target.dataset.private === 'true')) return;
-    if (e.repeat) return; // Discard synthetic repeats
+    if (e.repeat) return;
 
     recordActivity(currentVisit);
     const now = performance.now();
@@ -361,10 +375,13 @@
         _code: code
       });
     }
+    if (currentVisit.totalKeys >= 3) {
+      scheduleFastFlush(500);
+    }
   }, { passive: true });
 
   window.addEventListener('keyup', function (e) {
-    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
     if (e.target && (e.target.type === 'password' || e.target.dataset.private === 'true')) return;
 
     const code = e.code;
@@ -373,7 +390,6 @@
       const hold = Math.max(1, Math.round(performance.now() - downTime));
       currentVisit.activeKeys.delete(code);
 
-      // Attribute hold time to the matching key event (P10 rollover fix)
       for (let i = currentVisit.keyboardEvents.length - 1; i >= 0; i--) {
         if (currentVisit.keyboardEvents[i]._code === code) {
           currentVisit.keyboardEvents[i].hold = hold;
@@ -383,9 +399,8 @@
     }
   }, { passive: true });
 
-  // Paste event detection (P10 Fix)
   window.addEventListener('paste', function (e) {
-    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
     if (e.target && (e.target.type === 'password' || e.target.dataset.private === 'true')) return;
     const now = performance.now();
     recordActivity(currentVisit);
@@ -398,10 +413,11 @@
         is_paste: true
       });
     }
+    scheduleFastFlush(300);
   }, { passive: true });
 
   window.addEventListener('scroll', function () {
-    if (isYieldingToSdk || !isCollecting || !currentVisit || currentVisit.isFinalized) return;
+    if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
     const now = performance.now();
     if (now - lastScrollTime < 50) return;
     recordActivity(currentVisit);
@@ -420,23 +436,17 @@
     }
   }, { passive: true });
 
-  // Visibility and Window Focus / Blur Lifecycle (True Active Tab Guarantee)
   function updateActiveState() {
-    const active = isTabActive();
-    if (active) {
-      if (!isCollecting) {
-        isCollecting = true;
-        if (currentVisit && currentVisit.lastEventTime === null) {
-          currentVisit.lastEventTime = performance.now();
-        }
+    isCollecting = isTabActive();
+    if (isCollecting) {
+      if (currentVisit && currentVisit.lastEventTime === null) {
+        currentVisit.lastEventTime = performance.now();
       }
     } else {
-      if (isCollecting && currentVisit && currentVisit.lastEventTime !== null) {
+      if (currentVisit && currentVisit.lastEventTime !== null) {
         currentVisit.accumulatedIdleMs += performance.now() - currentVisit.lastEventTime;
         currentVisit.lastEventTime = null;
       }
-      isCollecting = false;
-      // Transmit intermediate delta when tab is switched or blurred
       if (currentVisit && !isYieldingToSdk) {
         flushTelemetry(currentVisit, false);
       }
@@ -444,8 +454,6 @@
   }
 
   document.addEventListener('visibilitychange', updateActiveState);
-  window.addEventListener('focus', updateActiveState);
-  window.addEventListener('blur', updateActiveState);
 
   // --- Build Delta Chunk Payload ---
   function assembleExtensionPayload(visit, seq, isFinal, events) {
@@ -477,7 +485,6 @@
         tab_id: tabId,
         page_path: location.pathname,
         page_title: document.title || '',
-        // P11 Fix: omit query string and hash from URL by default
         page_url: (location.origin + location.pathname).slice(0, 512),
         referrer_path: referrerPath,
         visibility_state: document.visibilityState,
@@ -505,28 +512,37 @@
     };
   }
 
-  // --- Reliable Flushing Logic (P2, P4, P5 Fix) ---
-  function flushTelemetry(visit, isFinal) {
-    if (isYieldingToSdk || checkSdkPresence() || window.__WEBSENSE_COLLECTOR_ACTIVE__ || !visit || visit.isFlushing) {
-      if (!isYieldingToSdk && (checkSdkPresence() || window.__WEBSENSE_COLLECTOR_ACTIVE__)) {
+  // --- Reliable Flushing Logic ---
+  function flushTelemetry(visit, isFinal, onDone = null) {
+    if (isYieldingToSdk || checkSdkPresence() || !visit || visit.isFlushing) {
+      if (!isYieldingToSdk && checkSdkPresence()) {
         yieldToSdk('flush presence check');
       }
+      if (onDone) onDone(latestVerdict);
       return;
     }
 
-    // P4 Fix: Never create empty sessions for background tabs without interactions
     if (isFinal) {
       if (visit.totalEventsTransmitted === 0 && (!hasPendingEvents(visit) || !hasMinimumInteraction(visit))) {
-        return; // Zero interaction tab close — do not transmit empty session
+        if (onDone) onDone(latestVerdict);
+        return;
       }
     } else {
-      if (visit.totalEventsTransmitted === 0 && !hasMinimumInteraction(visit)) return;
-      if (visit.totalEventsTransmitted > 0 && !hasPendingEvents(visit) && !visit.inFlight) return;
+      if (visit.totalEventsTransmitted === 0 && !hasMinimumInteraction(visit)) {
+        if (onDone) onDone(latestVerdict);
+        return;
+      }
+      if (visit.totalEventsTransmitted > 0 && !hasPendingEvents(visit) && !visit.inFlight) {
+        if (onDone) onDone(latestVerdict);
+        return;
+      }
     }
 
-    // Assemble new in-flight chunk if none is waiting for retry
     if (!visit.inFlight) {
-      if (!hasPendingEvents(visit) && !isFinal) return;
+      if (!hasPendingEvents(visit) && !isFinal) {
+        if (onDone) onDone(latestVerdict);
+        return;
+      }
 
       const seq = visit.transmissionSeq;
       const deltaMouse = visit.mouseEvents.splice(0, visit.mouseEvents.length);
@@ -563,8 +579,20 @@
         },
         (res) => {
           visit.isFlushing = false;
+
+          // Check runtime.lastError to prevent "Unchecked runtime.lastError" in DevTools
+          if (chrome.runtime.lastError) {
+            const errMsg = chrome.runtime.lastError.message || '';
+            if (errMsg.includes('Extension context invalidated') || errMsg.includes('message port closed')) {
+              console.warn('[WebSense Extension] Extension connection reset. Please reload this tab (F5) to re-attach.');
+            } else {
+              console.warn('[WebSense Extension] Telemetry runtime error:', errMsg);
+            }
+            if (onDone) onDone(latestVerdict);
+            return;
+          }
+
           if (res && res.success) {
-            // Acknowledged: increment seq, advance counters, clear inFlight
             visit.totalEventsTransmitted += inFlight.eventCount;
             visit.transmissionSeq++;
             visit.inFlight = null;
@@ -572,30 +600,31 @@
             if (res.verdict) {
               latestVerdict = res.verdict;
             }
+            if (onDone) onDone(latestVerdict);
           } else if (res && res.status >= 400 && res.status < 500 && res.status !== 429) {
-            // Permanent 4xx client rejection: drop chunk and advance
             console.warn('[WebSense Extension] Chunk seq ' + inFlight.seq + ' rejected (' + res.status + '); dropping.');
             visit.transmissionSeq++;
             visit.inFlight = null;
+            if (onDone) onDone(latestVerdict);
           } else {
-            // Transient failure / offline: keep inFlight intact for retry
-            console.warn('[WebSense Extension] Telemetry send failed; will retry chunk seq ' + inFlight.seq);
+            console.warn('[WebSense Extension] Telemetry send failed; will retry chunk seq ' + inFlight.seq, res ? res.error : '');
+            if (onDone) onDone(latestVerdict);
           }
         }
       );
     } catch (_) {
       visit.isFlushing = false;
+      if (onDone) onDone(latestVerdict);
     }
   }
 
-  // --- SPA Navigation & Route Changes (P5 Fix) ---
+  // --- SPA Navigation & Route Changes ---
   function handlePageVisitTransition() {
     const oldVisit = currentVisit;
     if (oldVisit) {
       oldVisit.isFinalized = true;
       flushTelemetry(oldVisit, true);
     }
-
     const prevId = oldVisit ? oldVisit.sessionId : null;
     currentVisit = createExtensionVisit(prevId);
   }
@@ -631,51 +660,61 @@
     }
   });
 
-  // Periodic flush every 5s while active
+  // Periodic flush every 5s
   setInterval(() => {
-    if (currentVisit && isCollecting) {
+    if (currentVisit && !isYieldingToSdk) {
       flushTelemetry(currentVisit, false);
     }
   }, 5000);
 
-  // Unload flush with final=true
+  // Unload flush
   window.addEventListener('pagehide', () => {
     if (currentVisit && !currentVisit.isFinalized) {
       flushTelemetry(currentVisit, true);
     }
   });
 
-  let hasSetupResponder = false;
   // --- Message Responder for Extension Popup ---
-  function setupMessageResponder() {
-    if (hasSetupResponder) return;
-    hasSetupResponder = true;
-    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-      if (msg.type === 'GET_PAGE_STATUS') {
-        const visit = currentVisit;
-        sendResponse({
-          url: (location.origin + location.pathname).slice(0, 512),
-          hostname: window.location.hostname,
-          sessionId: isYieldingToSdk ? sdkSessionId : (visit ? visit.sessionId : null),
-          siteId: isYieldingToSdk ? 'site_meridian_prod' : EXTENSION_SITE_ID,
-          source: isYieldingToSdk ? 'sdk_passthrough' : 'chrome_extension',
-          events: {
-            mouse: visit ? visit.mouseEvents.length : 0,
-            mouseTotal: visit ? (visit.totalMouse || 0) : 0,
-            keys: visit ? visit.keyboardEvents.length : 0,
-            keysTotal: visit ? (visit.totalKeys || 0) : 0,
-            scroll: visit ? visit.scrollEvents.length : 0,
-            scrollTotal: visit ? (visit.totalScroll || 0) : 0,
-            clicks: visit ? visit.clickEvents.length : 0,
-            clicksTotal: visit ? (visit.totalClicks || 0) : 0,
-            totalTransmitted: visit ? visit.totalEventsTransmitted : 0
-          },
-          activeDurationMs: visit ? getActiveDurationMs(visit) : 0,
-          isCollecting: isCollecting && !isYieldingToSdk,
-          verdict: latestVerdict
-        });
-      }
-    });
-  }
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === 'GET_PAGE_STATUS') {
+      const visit = currentVisit;
+      sendResponse({
+        url: (location.origin + location.pathname).slice(0, 512),
+        hostname: window.location.hostname,
+        sessionId: isYieldingToSdk ? sdkSessionId : (visit ? visit.sessionId : null),
+        siteId: isYieldingToSdk ? 'site_meridian_prod' : EXTENSION_SITE_ID,
+        source: isYieldingToSdk ? 'sdk_passthrough' : 'chrome_extension',
+        events: {
+          mouse: visit ? visit.mouseEvents.length : 0,
+          mouseTotal: visit ? (visit.totalMouse || 0) : 0,
+          keys: visit ? visit.keyboardEvents.length : 0,
+          keysTotal: visit ? (visit.totalKeys || 0) : 0,
+          scroll: visit ? visit.scrollEvents.length : 0,
+          scrollTotal: visit ? (visit.totalScroll || 0) : 0,
+          clicks: visit ? visit.clickEvents.length : 0,
+          clicksTotal: visit ? (visit.totalClicks || 0) : 0,
+          totalTransmitted: visit ? visit.totalEventsTransmitted : 0
+        },
+        activeDurationMs: visit ? getActiveDurationMs(visit) : 0,
+        isCollecting: !isYieldingToSdk,
+        verdict: latestVerdict
+      });
+      return false;
+    }
 
+    if (msg.type === 'TRIGGER_FLUSH') {
+      if (currentVisit && !isYieldingToSdk) {
+        flushTelemetry(currentVisit, false, (v) => {
+          sendResponse({ success: true, verdict: v });
+        });
+        return true;
+      }
+      sendResponse({ success: false, verdict: latestVerdict });
+      return false;
+    }
+
+    return false;
+  });
+
+  console.info('[WebSense Extension] Sentinel content script initialized successfully.');
 })();
