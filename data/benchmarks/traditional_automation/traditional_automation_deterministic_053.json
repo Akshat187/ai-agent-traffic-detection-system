@@ -3,8 +3,8 @@
   "visitor_id": "vis_traditional_automation_053",
   "task": "travel",
   "start_time": 1724903180000,
-  "end_time": 1724903180491,
-  "duration_ms": 491.0,
+  "end_time": 1724903180505,
+  "duration_ms": 505.0,
   "ground_truth_label": "TRADITIONAL_AUTOMATION",
   "is_synthetic": false,
   "data_source": "benchmark_deterministic",
@@ -31,171 +31,195 @@
     {
       "x": 246,
       "y": 231,
-      "t": 30,
+      "t": 31,
       "type": "move"
     },
     {
       "x": 292,
       "y": 262,
-      "t": 60,
+      "t": 62,
       "type": "move"
     },
     {
       "x": 338,
       "y": 292,
-      "t": 90,
+      "t": 93,
       "type": "move"
     },
     {
       "x": 385,
       "y": 323,
-      "t": 121,
+      "t": 124,
       "type": "move"
     },
     {
       "x": 431,
       "y": 354,
-      "t": 151,
+      "t": 155,
       "type": "move"
     },
     {
       "x": 477,
       "y": 385,
-      "t": 181,
+      "t": 186,
       "type": "move"
     },
     {
       "x": 523,
       "y": 415,
-      "t": 211,
+      "t": 218,
       "type": "move"
     },
     {
       "x": 569,
       "y": 446,
-      "t": 241,
+      "t": 249,
       "type": "move"
     },
     {
       "x": 615,
       "y": 477,
-      "t": 271,
+      "t": 280,
       "type": "move"
     },
     {
       "x": 662,
       "y": 508,
-      "t": 302,
+      "t": 311,
       "type": "move"
     },
     {
       "x": 708,
       "y": 538,
-      "t": 332,
+      "t": 342,
       "type": "move"
     },
     {
       "x": 754,
       "y": 569,
-      "t": 362,
+      "t": 373,
       "type": "move"
     },
     {
       "x": 800,
       "y": 600,
-      "t": 392,
+      "t": 404,
       "type": "move"
     }
   ],
   "keyboard_events": [
     {
-      "t": 94,
-      "interval": 44,
-      "hold": 16,
+      "t": 90,
+      "interval": 40,
+      "hold": 18,
       "is_paste": false
     },
     {
-      "t": 138,
-      "interval": 44,
-      "hold": 29,
-      "is_paste": false
-    },
-    {
-      "t": 179,
-      "interval": 41,
+      "t": 127,
+      "interval": 37,
       "hold": 17,
       "is_paste": false
     },
     {
-      "t": 220,
-      "interval": 41,
-      "hold": 21,
-      "is_paste": false
-    },
-    {
-      "t": 263,
-      "interval": 43,
+      "t": 166,
+      "interval": 39,
       "hold": 25,
       "is_paste": false
     },
     {
-      "t": 304,
-      "interval": 41,
+      "t": 204,
+      "interval": 38,
+      "hold": 21,
+      "is_paste": false
+    },
+    {
+      "t": 242,
+      "interval": 38,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 282,
+      "interval": 40,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 319,
+      "interval": 37,
+      "hold": 24,
+      "is_paste": false
+    },
+    {
+      "t": 359,
+      "interval": 40,
+      "hold": 18,
+      "is_paste": false
+    },
+    {
+      "t": 398,
+      "interval": 39,
+      "hold": 26,
+      "is_paste": false
+    },
+    {
+      "t": 435,
+      "interval": 37,
+      "hold": 17,
+      "is_paste": false
+    },
+    {
+      "t": 474,
+      "interval": 39,
       "hold": 20,
       "is_paste": false
     },
     {
-      "t": 348,
-      "interval": 44,
-      "hold": 27,
-      "is_paste": false
-    },
-    {
-      "t": 392,
-      "interval": 44,
-      "hold": 16,
+      "t": 511,
+      "interval": 37,
+      "hold": 18,
       "is_paste": false
     }
   ],
   "scroll_events": [
     {
-      "t": 24,
-      "scroll_y": 420,
-      "delta_y": 420
+      "t": 25,
+      "scroll_y": 357,
+      "delta_y": 357
     },
     {
-      "t": 173,
-      "scroll_y": 840,
-      "delta_y": 420
+      "t": 177,
+      "scroll_y": 714,
+      "delta_y": 357
     },
     {
-      "t": 306,
-      "scroll_y": 1260,
-      "delta_y": 420
+      "t": 345,
+      "scroll_y": 1071,
+      "delta_y": 357
     }
   ],
   "click_events": [
     {
       "x": 800,
       "y": 600,
-      "t": 417,
+      "t": 429,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "filter_applied",
-      "t": 171,
+      "t": 176,
       "details": {}
     },
     {
       "action": "quantity_updated",
-      "t": 294,
+      "t": 303,
       "details": {}
     },
     {
       "action": "checkout_initiated",
-      "t": 392,
+      "t": 404,
       "details": {}
     }
   ]

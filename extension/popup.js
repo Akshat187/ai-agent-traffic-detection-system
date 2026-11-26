@@ -87,6 +87,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderVerdict(v) {
     if (!v) return;
+    currentVerdict = v;
+    if (v.session_id && !currentSessionId) {
+      currentSessionId = v.session_id;
+    }
     const label = v.predicted_label || 'UNCERTAIN';
     verdictBadge.textContent = label;
     verdictBadge.className = 'verdict-badge ' + label;
@@ -97,6 +101,105 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     confidenceText.textContent = `Confidence: ${Math.round(conf)}%`;
     riskVal.textContent = `${Math.round(v.risk_score || 0)} / 100`;
+    updateFeedbackStrip();
+  }
+
+  const feedbackStrip = document.getElementById('feedback-strip');
+  const fbPrompt = document.getElementById('fb-prompt');
+  const fbPicker = document.getElementById('fb-picker');
+  const fbStatus = document.getElementById('fb-status');
+  const btnFbYes = document.getElementById('btn-fb-yes');
+  const btnFbNo = document.getElementById('btn-fb-no');
+
+  let currentSessionId = null;
+  let currentVerdict = null;
+  const verifiedCache = new Map();
+  const checkedSessions = new Set();
+
+  function showFeedbackStatus(text, isCorrected) {
+    if (!feedbackStrip) return;
+    feedbackStrip.style.display = 'block';
+    if (fbPrompt) fbPrompt.style.display = 'none';
+    if (fbPicker) fbPicker.style.display = 'none';
+    if (fbStatus) {
+      fbStatus.textContent = text;
+      fbStatus.style.color = isCorrected ? '#a78bfa' : '#34d399';
+      fbStatus.style.display = 'block';
+    }
+  }
+
+  function updateFeedbackStrip() {
+    if (!feedbackStrip || !currentSessionId || !currentVerdict || !currentVerdict.predicted_label) return;
+    if (verifiedCache.has(currentSessionId)) {
+      const cached = verifiedCache.get(currentSessionId);
+      const msg = cached.is_correct
+        ? `✓ Confirmed as ${cached.analyst_label}`
+        : `✓ Corrected to ${cached.analyst_label}`;
+      showFeedbackStatus(msg, !cached.is_correct);
+      return;
+    }
+    if (!checkedSessions.has(currentSessionId)) {
+      checkedSessions.add(currentSessionId);
+      chrome.runtime.sendMessage({ type: 'CHECK_FEEDBACK', sessionId: currentSessionId }, (res) => {
+        if (res && res.success && res.data && res.data.verified && res.data.feedback) {
+          verifiedCache.set(currentSessionId, res.data.feedback);
+          updateFeedbackStrip();
+        }
+      });
+    }
+    feedbackStrip.style.display = 'block';
+    if (fbStatus && fbStatus.style.display === 'block') return;
+    if (fbPicker && fbPicker.style.display === 'block') return;
+    if (fbPrompt) fbPrompt.style.display = 'block';
+  }
+
+  function submitPopupFeedback(analystLabel, isCorrect) {
+    if (!currentSessionId) return;
+    chrome.runtime.sendMessage(
+      {
+        type: 'SUBMIT_FEEDBACK',
+        sessionId: currentSessionId,
+        payload: { analyst_label: analystLabel, is_correct: isCorrect, notes: 'Chrome extension popup verification' }
+      },
+      (res) => {
+        if (res && res.success && res.data) {
+          verifiedCache.set(currentSessionId, res.data);
+          const msg = isCorrect
+            ? `✓ Confirmed as ${analystLabel}`
+            : `✓ Corrected to ${analystLabel}`;
+          showFeedbackStatus(msg, !isCorrect);
+        }
+      }
+    );
+  }
+
+  if (btnFbYes) {
+    btnFbYes.addEventListener('click', () => {
+      if (!currentVerdict || !currentVerdict.predicted_label) return;
+      submitPopupFeedback(currentVerdict.predicted_label, true);
+    });
+  }
+
+  if (btnFbNo) {
+    btnFbNo.addEventListener('click', () => {
+      if (fbPrompt) fbPrompt.style.display = 'none';
+      if (fbPicker) {
+        fbPicker.style.display = 'block';
+        const pred = currentVerdict ? currentVerdict.predicted_label : '';
+        fbPicker.querySelectorAll('[data-label]').forEach((btn) => {
+          btn.style.display = btn.getAttribute('data-label') === pred ? 'none' : 'inline-block';
+        });
+      }
+    });
+  }
+
+  if (fbPicker) {
+    fbPicker.querySelectorAll('[data-label]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const chosen = btn.getAttribute('data-label');
+        submitPopupFeedback(chosen, false);
+      });
+    });
   }
 
   function pollStatus() {
@@ -124,6 +227,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
+      if (res.sessionId) {
+        currentSessionId = res.sessionId;
+      }
       if (sessionVal) sessionVal.textContent = res.sessionId ? res.sessionId.slice(0, 16) + '...' : '—';
       if (res.events) {
         evtMouse.textContent = res.events.mouseTotal ?? res.events.mouse ?? 0;
@@ -137,6 +243,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (res.verdict) {
         renderVerdict(res.verdict);
+      } else if (res.lastError) {
+        verdictBadge.textContent = 'ERROR';
+        verdictBadge.className = 'verdict-badge TRADITIONAL_AUTOMATION';
+        confidenceText.textContent = res.lastError;
       } else {
         const totalEvts = res.events
           ? (res.events.mouseTotal ?? res.events.mouse ?? 0) +

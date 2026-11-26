@@ -64,6 +64,7 @@ def generate_benchmark_dataset():
             "subtypes": [
                 "organic_mouse",
                 "keyboard_focused",
+                "prompt_typing",
                 "fast_power_user",
                 "mobile_touch",
                 "copy_paste_filler",

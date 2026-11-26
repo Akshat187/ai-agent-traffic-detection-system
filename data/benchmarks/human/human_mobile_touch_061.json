@@ -1,0 +1,242 @@
+{
+  "session_id": "bm_human_mobile_touch_shopping_061",
+  "visitor_id": "vis_human_061",
+  "task": "shopping",
+  "start_time": 1724903660000,
+  "end_time": 1724903670815,
+  "duration_ms": 10815.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_mobile_touch",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "touch",
+    "screen_width": 390,
+    "screen_height": 844,
+    "viewport_width": 1200,
+    "viewport_height": 680,
+    "device_pixel_ratio": 1.5,
+    "touch_support": true,
+    "hardware_concurrency": 16,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [
+    {
+      "t": 2745,
+      "interval": 183.9,
+      "hold": 71,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2785,
+      "interval": 40.3,
+      "hold": 105,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2939,
+      "interval": 154.6,
+      "hold": 78,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3105,
+      "interval": 167.0,
+      "hold": 41,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3268,
+      "interval": 163.9,
+      "hold": 79,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3342,
+      "interval": 74.9,
+      "hold": 74,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3377,
+      "interval": 35,
+      "hold": 90,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3503,
+      "interval": 126.2,
+      "hold": 95,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 1081,
+      "scroll_y": 88,
+      "delta_y": 88
+    },
+    {
+      "t": 1450,
+      "scroll_y": 247,
+      "delta_y": 159
+    },
+    {
+      "t": 1732,
+      "scroll_y": 392,
+      "delta_y": 145
+    },
+    {
+      "t": 1951,
+      "scroll_y": 508,
+      "delta_y": 116
+    },
+    {
+      "t": 2266,
+      "scroll_y": 649,
+      "delta_y": 141
+    },
+    {
+      "t": 2607,
+      "scroll_y": 695,
+      "delta_y": 46
+    },
+    {
+      "t": 2799,
+      "scroll_y": 874,
+      "delta_y": 179
+    },
+    {
+      "t": 3195,
+      "scroll_y": 1025,
+      "delta_y": 151
+    },
+    {
+      "t": 3718,
+      "scroll_y": 1203,
+      "delta_y": 178
+    },
+    {
+      "t": 4091,
+      "scroll_y": 1379,
+      "delta_y": 176
+    },
+    {
+      "t": 4440,
+      "scroll_y": 1481,
+      "delta_y": 102
+    },
+    {
+      "t": 4760,
+      "scroll_y": 1612,
+      "delta_y": 131
+    },
+    {
+      "t": 4974,
+      "scroll_y": 1693,
+      "delta_y": 81
+    },
+    {
+      "t": 5549,
+      "scroll_y": 1812,
+      "delta_y": 119
+    },
+    {
+      "t": 6100,
+      "scroll_y": 1894,
+      "delta_y": 82
+    },
+    {
+      "t": 6532,
+      "scroll_y": 2007,
+      "delta_y": 113
+    },
+    {
+      "t": 6896,
+      "scroll_y": 2149,
+      "delta_y": 142
+    },
+    {
+      "t": 7395,
+      "scroll_y": 2230,
+      "delta_y": 81
+    },
+    {
+      "t": 7645,
+      "scroll_y": 2355,
+      "delta_y": 125
+    },
+    {
+      "t": 7874,
+      "scroll_y": 2424,
+      "delta_y": 69
+    },
+    {
+      "t": 8377,
+      "scroll_y": 2559,
+      "delta_y": 135
+    },
+    {
+      "t": 8539,
+      "scroll_y": 2717,
+      "delta_y": 158
+    },
+    {
+      "t": 9030,
+      "scroll_y": 2795,
+      "delta_y": 78
+    },
+    {
+      "t": 9432,
+      "scroll_y": 2944,
+      "delta_y": 149
+    },
+    {
+      "t": 9650,
+      "scroll_y": 3007,
+      "delta_y": 63
+    }
+  ],
+  "click_events": [
+    {
+      "x": 581,
+      "y": 560,
+      "t": 7570,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 1622,
+      "details": {}
+    },
+    {
+      "action": "filter_applied",
+      "t": 4326,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 7029,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 9517,
+      "details": {}
+    }
+  ]
+}

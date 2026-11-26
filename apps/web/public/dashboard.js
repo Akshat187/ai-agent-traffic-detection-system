@@ -202,9 +202,23 @@ async function fetchOverviewStats() {
     }
 
     renderRecentOverviewTable(data.recent_activity || []);
+    fetchFeedbackStats();
   } catch (err) {
     console.warn("Failed to fetch stats:", err);
   }
+}
+
+async function fetchFeedbackStats() {
+  try {
+    const res = await fetch("/api/v1/stats/feedback");
+    if (!res.ok) return;
+    const fb = await res.json();
+    const el = document.getElementById("stat-live-accuracy");
+    if (el) {
+      const acc = fb.accuracy_pct !== null && fb.accuracy_pct !== undefined ? `${fb.accuracy_pct.toFixed(1)}%` : "--";
+      el.textContent = `Verified Accuracy: ${acc} (${fb.correct_count}/${fb.total_verified})`;
+    }
+  } catch (_) {}
 }
 
 function formatTabPageCell(s) {
@@ -221,12 +235,102 @@ function formatTabPageCell(s) {
   `;
 }
 
+function shortActorLabel(label) {
+  if (label === "HUMAN") return "Human";
+  if (label === "TRADITIONAL_AUTOMATION") return "Bot";
+  if (label === "AGENTIC_AI") return "AI Agent";
+  return "Uncertain";
+}
+
+function renderVerifyCell(s) {
+  const sid = escapeHTML(s.session_id);
+  const pred = escapeHTML(s.predicted_label || "UNCERTAIN");
+
+  if (s.feedback_is_correct === true) {
+    return `
+      <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Correct</span>
+        <button onclick="openCorrectionPicker(this, '${sid}', '${pred}', true)" class="text-[10px] text-slate-400 hover:text-indigo-600 underline">Edit</button>
+      </div>
+    `;
+  }
+
+  if (s.feedback_is_correct === false && s.feedback_label) {
+    return `
+      <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">✗ Actually: ${shortActorLabel(s.feedback_label)}</span>
+        <button onclick="openCorrectionPicker(this, '${sid}', '${pred}', true)" class="text-[10px] text-slate-400 hover:text-indigo-600 underline">Edit</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="inline-flex items-center gap-1 whitespace-nowrap">
+      <button onclick="submitVerification('${sid}', '${pred}', true)"
+              title="Mark prediction as correct"
+              class="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-bold transition">
+        ✓
+      </button>
+      <button onclick="openCorrectionPicker(this, '${sid}', '${pred}', false)"
+              title="Mark prediction as wrong and pick correct class"
+              class="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold transition">
+        ✗
+      </button>
+    </div>
+  `;
+}
+
+function openCorrectionPicker(btn, sessionId, predictedLabel, includeAll) {
+  const cell = btn.closest("td");
+  if (!cell) return;
+
+  const options = [
+    { value: "HUMAN", label: "Human", cls: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
+    { value: "TRADITIONAL_AUTOMATION", label: "Bot", cls: "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200" },
+    { value: "AGENTIC_AI", label: "AI Agent", cls: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200" },
+  ].filter(o => includeAll || o.value !== predictedLabel);
+
+  cell.innerHTML = `
+    <div class="flex flex-wrap items-center gap-1">
+      ${options.map(o => `
+        <button onclick="submitVerification('${sessionId}', '${o.value}', ${o.value === predictedLabel})"
+                class="px-2 py-0.5 rounded-md border text-[10px] font-bold transition ${o.cls}">
+          ${o.label}
+        </button>
+      `).join("")}
+      <button onclick="fetchOverviewStats(); fetchSessions();"
+              class="px-1.5 py-0.5 text-[10px] text-slate-400 hover:text-slate-700">✕</button>
+    </div>
+  `;
+}
+
+async function submitVerification(sessionId, trueLabel, isCorrect) {
+  try {
+    const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        analyst_label: trueLabel,
+        is_correct: isCorrect,
+        notes: isCorrect ? "Confirmed via dashboard" : "Corrected via dashboard",
+      }),
+    });
+    if (!res.ok) {
+      console.error("Feedback failed:", await res.text());
+      return;
+    }
+    await Promise.all([fetchOverviewStats(), fetchSessions()]);
+  } catch (err) {
+    console.error("Failed to submit verification:", err);
+  }
+}
+
 function renderRecentOverviewTable(sessions) {
   const tbody = document.getElementById("overview-recent-tbody");
   if (!tbody) return;
 
   if (sessions.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-400">No sessions recorded yet for this site. Interact with the Honey Sites or embedded pages!</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-400">No sessions recorded yet for this site. Interact with the Honey Sites or embedded pages!</td></tr>`;
     return;
   }
 
@@ -245,6 +349,7 @@ function renderRecentOverviewTable(sessions) {
         <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? `${s.created_at} UTC` : '—'}</td>
         <td class="py-3 px-3.5 capitalize font-medium text-slate-800">${s.task}</td>
         <td class="py-3 px-3.5"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeClass}">${s.predicted_label}</span></td>
+        <td class="py-3 px-3.5">${renderVerifyCell(s)}</td>
         <td class="py-3 px-3.5 font-mono text-slate-700">${s.confidence.toFixed(1)}%</td>
         <td class="py-3 px-3.5 font-mono ${riskColor}">${s.risk_score.toFixed(0)}/100</td>
         <td class="py-3 px-3.5 font-mono text-xs">${s.webdriver_flag ? '<span class="text-rose-600 font-bold">TRUE</span>' : '<span class="text-slate-400">false</span>'}</td>
@@ -326,7 +431,7 @@ function applySessionFilters() {
   if (!tbody) return;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-slate-400">No matching sessions found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-slate-400">No matching sessions found.</td></tr>`;
     return;
   }
 
@@ -366,6 +471,7 @@ function applySessionFilters() {
         <td class="py-3 px-3.5">${durationCell}</td>
         <td class="py-3 px-3.5">${gtBadge}</td>
         <td class="py-3 px-3.5"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeClass}">${s.predicted_label}</span></td>
+        <td class="py-3 px-3.5">${renderVerifyCell(s)}</td>
         <td class="py-3 px-3.5 font-mono text-slate-700">${s.confidence.toFixed(1)}%</td>
         <td class="py-3 px-3.5 font-mono ${riskColor}">${s.risk_score.toFixed(0)}/100</td>
         <td class="py-3 px-3.5 text-slate-600 truncate max-w-xs">${escapeHTML(s.explanation_snippet || '')}</td>
@@ -595,6 +701,7 @@ async function loadSessionDetails(sessionId) {
       badge.textContent = detail.session.predicted_label;
       badge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getBadgeClass(detail.session.predicted_label)}`;
     }
+    loadExplorerFeedbackState(detail.session.session_id, detail.session.predicted_label);
 
     const timeWrap = document.getElementById("explorer-session-time");
     const timeVal = document.getElementById("explorer-session-time-value");
@@ -1100,7 +1207,104 @@ function initWebSocket() {
   } catch (_) {}
 }
 
+async function loadExplorerFeedbackState(sessionId, predictedLabel) {
+  const promptEl = document.getElementById("explorer-fb-prompt");
+  const pickerEl = document.getElementById("explorer-fb-picker");
+  const statusEl = document.getElementById("explorer-fb-status");
+  if (!promptEl || !pickerEl || !statusEl) return;
+
+  promptEl.classList.remove("hidden");
+  pickerEl.classList.add("hidden");
+  statusEl.classList.add("hidden");
+
+  try {
+    const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/feedback`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.verified && data.feedback) {
+        promptEl.classList.add("hidden");
+        pickerEl.classList.add("hidden");
+        statusEl.textContent = data.feedback.is_correct
+          ? `✓ Confirmed as ${data.feedback.analyst_label}`
+          : `✓ Corrected to ${data.feedback.analyst_label}`;
+        statusEl.className = data.feedback.is_correct
+          ? "text-[10px] font-bold text-emerald-700 px-2"
+          : "text-[10px] font-bold text-indigo-700 px-2";
+        statusEl.classList.remove("hidden");
+      }
+    }
+  } catch (_) {}
+}
+
+function openExplorerCorrectionPicker() {
+  const promptEl = document.getElementById("explorer-fb-prompt");
+  const pickerEl = document.getElementById("explorer-fb-picker");
+  const pred = selectedSession && selectedSession.session ? selectedSession.session.predicted_label : "";
+  if (promptEl) promptEl.classList.add("hidden");
+  if (pickerEl) {
+    pickerEl.classList.remove("hidden");
+    pickerEl.querySelectorAll("[data-fb-cls]").forEach((btn) => {
+      btn.style.display = btn.getAttribute("data-fb-cls") === pred ? "none" : "inline-block";
+    });
+  }
+}
+
+function confirmExplorerVerdict() {
+  if (!selectedSession || !selectedSession.session) return;
+  submitExplorerFeedback(selectedSession.session.predicted_label, true);
+}
+
+async function submitExplorerFeedback(analystLabel, isCorrect) {
+  const sidEl = document.getElementById("explorer-session-id");
+  const sessionId = (selectedSession && selectedSession.session && selectedSession.session.session_id) || (sidEl ? sidEl.textContent.trim() : "");
+  if (!sessionId || sessionId === "No session selected") return;
+  try {
+    const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ analyst_label: analystLabel, is_correct: isCorrect, notes: "Dashboard Session Explorer verification" }),
+    });
+    if (res.ok) {
+      await loadExplorerFeedbackState(sessionId, analystLabel);
+      fetchFeedbackStats();
+      fetchSessions();
+      fetchOverviewStats();
+    }
+  } catch (_) {}
+}
+
+async function triggerModelRetrain() {
+  const btn = document.getElementById("btn-retrain-model");
+  const statusEl = document.getElementById("retrain-status");
+  if (btn) btn.disabled = true;
+  if (statusEl) {
+    statusEl.textContent = "Retraining & validating against regression gate...";
+    statusEl.classList.remove("hidden");
+  }
+  try {
+    const res = await fetch("/api/v1/model/retrain", { method: "POST" });
+    const data = await res.json();
+    if (statusEl) {
+      const f1Info = typeof data.candidate_f1 === "number" ? ` (Candidate F1: ${data.candidate_f1.toFixed(4)})` : "";
+      statusEl.textContent = data.promoted
+        ? `✓ Model promoted & hot-reloaded${f1Info}`
+        : `⚠ Kept existing model — failed regression gate${f1Info}`;
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = `Retrain failed: ${err}`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 // Global Window Exports for Inline HTML Handlers
+window.submitVerification = submitVerification;
+window.openCorrectionPicker = openCorrectionPicker;
+window.confirmExplorerVerdict = confirmExplorerVerdict;
+window.openExplorerCorrectionPicker = openExplorerCorrectionPicker;
+window.submitExplorerFeedback = submitExplorerFeedback;
+window.triggerModelRetrain = triggerModelRetrain;
+window.submitLabelOverride = (lbl) => submitExplorerFeedback(lbl, false);
 window.runAdversarialSimulation = runAdversarialSimulation;
 window.inspectSession = inspectSession;
 window.handleSeedDemo = handleSeedDemo;

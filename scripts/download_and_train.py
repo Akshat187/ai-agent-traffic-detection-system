@@ -184,11 +184,17 @@ def download_huggingface_keystrokes() -> List[Dict[str, Any]]:
                         avg_latency = abs(float(parts[5])) * 25.0 + 120.0
                         key_events = []
                         curr_t = 200
-                        for k in range(8):
-                            key_events.append({"key": "KeyA", "t": curr_t, "type": "down"})
-                            curr_t += int(avg_hold + random.gauss(0, 10))
-                            key_events.append({"key": "KeyA", "t": curr_t, "type": "up"})
-                            curr_t += int(avg_latency + random.gauss(0, 35))
+                        for _ in range(10):
+                            hold_ms = max(22.0, round(avg_hold + random.gauss(0, 12), 1))
+                            interval_ms = max(40.0, round(avg_latency + random.gauss(0, 42), 1))
+                            curr_t += int(interval_ms)
+                            key_events.append({
+                                "t": curr_t,
+                                "interval": interval_ms,
+                                "hold": hold_ms,
+                                "is_paste": False,
+                                "is_trusted": True,
+                            })
 
                         human_keystroke_sessions.append({
                             "session_id": f"hf_keystroke_human_{idx:03d}",
@@ -406,7 +412,27 @@ def train_and_calibrate(X: List[List[float]], y: List[str]):
     checkpoint_file = BASE_DIR / "data" / "model_training_summary.json"
     with open(checkpoint_file, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)
-    print(f"\nTraining artifact saved to: {checkpoint_file}")
+    print(f"\nTraining summary saved to: {checkpoint_file}")
+
+    # Persist trained & calibrated classifier to models/behavioral_v1.2.joblib
+    import pickle
+    from packages.version import MODEL_VERSION
+    model_out = BASE_DIR / "models" / "behavioral_v1.2.joblib"
+    model_out.parent.mkdir(parents=True, exist_ok=True)
+    artifact = {
+        "classifier": clf,
+        "model_version": MODEL_VERSION,
+        "temperature": clf.temperature,
+        "metrics": metrics,
+        "calibration_metrics": clf.calibration_metrics,
+    }
+    try:
+        import joblib
+        joblib.dump(artifact, model_out)
+    except ImportError:
+        with open(model_out, "wb") as mf:
+            pickle.dump(artifact, mf)
+    print(f"Serialized classifier saved to: {model_out}")
     print("Multi-category model training complete!\n")
 
 

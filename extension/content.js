@@ -127,6 +127,8 @@
   let currentVisit = createExtensionVisit(initialPreviousVisitId);
   let latestVerdict = null;
   let sdkSessionId = null;
+  let sdkEvents = null;
+  let sdkActiveDurationMs = 0;
   let isYieldingToSdk = false;
 
   function isTabActive() {
@@ -144,8 +146,7 @@
   function checkSdkPresence() {
     return (
       document.documentElement.dataset.wsOwner === 'sdk' ||
-      window.__WEBSENSE_COLLECTOR_ACTIVE__ === true ||
-      !!document.querySelector('script[src*="sentinel.js"], script[src*="collector.js"]')
+      window.__WEBSENSE_COLLECTOR_ACTIVE__ === true
     );
   }
 
@@ -165,6 +166,12 @@
     if (event.data && event.data.type === 'WEBSENSE_VERDICT_UPDATE') {
       latestVerdict = event.data.verdict;
       sdkSessionId = event.data.sessionId;
+      if (event.data.events) {
+        sdkEvents = event.data.events;
+        if (typeof event.data.events.activeDurationMs === 'number') {
+          sdkActiveDurationMs = event.data.events.activeDurationMs;
+        }
+      }
 
       try {
         chrome.runtime.sendMessage({
@@ -237,8 +244,9 @@
   }
 
   function getActiveDurationMs(visit) {
-    if (!visit || visit.firstEventTime === null || visit.lastEventTime === null) return 0;
-    return Math.max(0, Math.round(visit.lastEventTime - visit.firstEventTime - visit.accumulatedIdleMs));
+    if (!visit || visit.firstEventTime === null) return 0;
+    const endT = visit.lastEventTime !== null ? visit.lastEventTime : (visit.frozenLastEventTime || visit.firstEventTime);
+    return Math.max(0, Math.round(endT - visit.firstEventTime - visit.accumulatedIdleMs));
   }
 
   function hasMinimumInteraction(visit) {
@@ -286,6 +294,26 @@
     lastPointerType = 'touch';
   }, { passive: true });
 
+  // Capture programmatic DOM fills (e.g. Playwright page.fill / agent input / execCommand) without recording characters
+  document.addEventListener('input', (e) => {
+    if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
+    const target = e.target;
+    if (target && target.type === 'password') return;
+    const now = performance.now();
+    recordActivity(currentVisit);
+    if (currentVisit.keyboardEvents.length < 200) {
+      currentVisit.totalKeys = (currentVisit.totalKeys || 0) + 1;
+      currentVisit.keyboardEvents.push({
+        t: Math.round(now - currentVisit.startTime),
+        interval: 0,
+        hold: 0,
+        is_paste: Boolean(e.inputType && e.inputType.includes('Paste')),
+        is_trusted: Boolean(e.isTrusted),
+        is_programmatic: true
+      });
+    }
+  }, { passive: true });
+
   window.addEventListener('mousemove', function (e) {
     if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
     const now = performance.now();
@@ -323,7 +351,8 @@
         x: Math.round(e.clientX),
         y: Math.round(e.clientY),
         t: Math.round(performance.now() - currentVisit.startTime),
-        target_category: category
+        target_category: category,
+        is_trusted: Boolean(e.isTrusted)
       });
     }
 
@@ -447,13 +476,14 @@
   function updateActiveState() {
     isCollecting = isTabActive();
     if (isCollecting) {
-      if (currentVisit && currentVisit.lastEventTime === null) {
-        currentVisit.lastEventTime = performance.now();
+      if (currentVisit && currentVisit.hiddenAt !== null && currentVisit.hiddenAt !== undefined) {
+        currentVisit.accumulatedIdleMs += performance.now() - currentVisit.hiddenAt;
+        currentVisit.hiddenAt = null;
       }
     } else {
-      if (currentVisit && currentVisit.lastEventTime !== null) {
-        currentVisit.accumulatedIdleMs += performance.now() - currentVisit.lastEventTime;
-        currentVisit.lastEventTime = null;
+      if (currentVisit) {
+        currentVisit.frozenLastEventTime = currentVisit.lastEventTime || performance.now();
+        currentVisit.hiddenAt = performance.now();
       }
       if (currentVisit && !isYieldingToSdk) {
         flushTelemetry(currentVisit, false);
@@ -474,7 +504,9 @@
       t: k.t,
       interval: k.interval,
       hold: k.hold,
-      is_paste: k.is_paste
+      is_paste: k.is_paste,
+      is_trusted: k.is_trusted !== undefined ? Boolean(k.is_trusted) : true,
+      is_programmatic: Boolean(k.is_programmatic)
     }));
 
     const durationMs = Math.round(performance.now() - visit.startTime);
@@ -582,6 +614,13 @@
 
     const inFlight = visit.inFlight;
     visit.isFlushing = true;
+    let lastError = null;
+    const flushWatchdog = setTimeout(() => {
+      if (visit.isFlushing) {
+        visit.isFlushing = false;
+        visit.lastError = 'Request timed out (10s)';
+      }
+    }, 10000);
 
     try {
       chrome.runtime.sendMessage(
@@ -591,11 +630,13 @@
           payload: inFlight.payload
         },
         (res) => {
+          clearTimeout(flushWatchdog);
           visit.isFlushing = false;
 
           // Check runtime.lastError to prevent "Unchecked runtime.lastError" in DevTools
           if (chrome.runtime.lastError) {
             const errMsg = chrome.runtime.lastError.message || '';
+            visit.lastError = errMsg || 'Extension connection reset (reload tab)';
             if (errMsg.includes('Extension context invalidated') || errMsg.includes('message port closed')) {
               console.warn('[WebSense Extension] Extension connection reset. Please reload this tab (F5) to re-attach.');
             } else {
@@ -606,6 +647,7 @@
           }
 
           if (res && res.success) {
+            visit.lastError = null;
             visit.totalEventsTransmitted += inFlight.eventCount;
             visit.transmissionSeq++;
             visit.inFlight = null;
@@ -615,18 +657,22 @@
             }
             if (onDone) onDone(latestVerdict);
           } else if (res && res.status >= 400 && res.status < 500 && res.status !== 429) {
+            visit.lastError = `Server rejected (${res.status})`;
             console.warn('[WebSense Extension] Chunk seq ' + inFlight.seq + ' rejected (' + res.status + '); dropping.');
             visit.transmissionSeq++;
             visit.inFlight = null;
             if (onDone) onDone(latestVerdict);
           } else {
+            visit.lastError = (res && res.error) ? `Backend unreachable: ${res.error}` : 'Backend unreachable';
             console.warn('[WebSense Extension] Telemetry send failed; will retry chunk seq ' + inFlight.seq, res ? res.error : '');
             if (onDone) onDone(latestVerdict);
           }
         }
       );
-    } catch (_) {
+    } catch (e) {
+      clearTimeout(flushWatchdog);
       visit.isFlushing = false;
+      visit.lastError = (e && e.message) || 'Extension send error';
       if (onDone) onDone(latestVerdict);
     }
   }
@@ -680,9 +726,29 @@
     }
   }, 5000);
 
-  // Unload flush
+  // Unload flush: prefer sendBeacon on same-scheme http pages so port teardown doesn't drop final chunk
   window.addEventListener('pagehide', () => {
-    if (currentVisit && !currentVisit.isFinalized) {
+    if (currentVisit && !currentVisit.isFinalized && !isYieldingToSdk) {
+      if (
+        location.protocol === 'http:' &&
+        navigator.sendBeacon &&
+        hasPendingEvents(currentVisit)
+      ) {
+        try {
+          const payload = assembleExtensionPayload(currentVisit, currentVisit.transmissionSeq, true, {
+            mouse: currentVisit.mouseEvents.splice(0, currentVisit.mouseEvents.length),
+            keyboard: currentVisit.keyboardEvents.splice(0, currentVisit.keyboardEvents.length),
+            scroll: currentVisit.scrollEvents.splice(0, currentVisit.scrollEvents.length),
+            clicks: currentVisit.clickEvents.splice(0, currentVisit.clickEvents.length),
+            actions: currentVisit.taskActions.splice(0, currentVisit.taskActions.length),
+          });
+          const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+          if (navigator.sendBeacon(DEFAULT_ENDPOINT, blob)) {
+            currentVisit.isFinalized = true;
+            return;
+          }
+        } catch (_) {}
+      }
       flushTelemetry(currentVisit, true);
     }
   });
@@ -697,7 +763,7 @@
         sessionId: isYieldingToSdk ? sdkSessionId : (visit ? visit.sessionId : null),
         siteId: isYieldingToSdk ? 'site_meridian_prod' : EXTENSION_SITE_ID,
         source: isYieldingToSdk ? 'sdk_passthrough' : 'chrome_extension',
-        events: {
+        events: isYieldingToSdk && sdkEvents ? sdkEvents : {
           mouse: visit ? visit.mouseEvents.length : 0,
           mouseTotal: visit ? (visit.totalMouse || 0) : 0,
           keys: visit ? visit.keyboardEvents.length : 0,
@@ -708,10 +774,16 @@
           clicksTotal: visit ? (visit.totalClicks || 0) : 0,
           totalTransmitted: visit ? visit.totalEventsTransmitted : 0
         },
-        activeDurationMs: visit ? getActiveDurationMs(visit) : 0,
+        activeDurationMs: isYieldingToSdk ? sdkActiveDurationMs : (visit ? getActiveDurationMs(visit) : 0),
         isCollecting: !isYieldingToSdk,
-        verdict: latestVerdict
+        verdict: latestVerdict,
+        lastError: visit ? (visit.lastError || null) : null
       });
+      return false;
+    }
+
+    if (msg.type === 'SPA_NAVIGATED') {
+      checkPathChange();
       return false;
     }
 

@@ -1,0 +1,251 @@
+{
+  "session_id": "bm_human_keyboard_focused_forum_156",
+  "visitor_id": "vis_human_156",
+  "task": "forum",
+  "start_time": 1724909360000,
+  "end_time": 1724909372387,
+  "duration_ms": 12387.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_keyboard_focused",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "mouse",
+    "screen_width": 1920,
+    "screen_height": 864,
+    "viewport_width": 1200,
+    "viewport_height": 720,
+    "device_pixel_ratio": 2.0,
+    "touch_support": false,
+    "hardware_concurrency": 8,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [
+    {
+      "t": 1963,
+      "interval": 105.7,
+      "hold": 72,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2225,
+      "interval": 262.4,
+      "hold": 103,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2476,
+      "interval": 251.0,
+      "hold": 55,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2679,
+      "interval": 203.5,
+      "hold": 48,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2853,
+      "interval": 174.3,
+      "hold": 75,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3103,
+      "interval": 250.4,
+      "hold": 90,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3402,
+      "interval": 299.5,
+      "hold": 41,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3537,
+      "interval": 135.5,
+      "hold": 63,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 1238,
+      "scroll_y": 38,
+      "delta_y": 38
+    },
+    {
+      "t": 1652,
+      "scroll_y": 176,
+      "delta_y": 138
+    },
+    {
+      "t": 2022,
+      "scroll_y": 263,
+      "delta_y": 87
+    },
+    {
+      "t": 2303,
+      "scroll_y": 339,
+      "delta_y": 76
+    },
+    {
+      "t": 2665,
+      "scroll_y": 371,
+      "delta_y": 32
+    },
+    {
+      "t": 3051,
+      "scroll_y": 492,
+      "delta_y": 121
+    },
+    {
+      "t": 3474,
+      "scroll_y": 538,
+      "delta_y": 46
+    },
+    {
+      "t": 3760,
+      "scroll_y": 640,
+      "delta_y": 102
+    },
+    {
+      "t": 4115,
+      "scroll_y": 791,
+      "delta_y": 151
+    },
+    {
+      "t": 4427,
+      "scroll_y": 870,
+      "delta_y": 79
+    },
+    {
+      "t": 4926,
+      "scroll_y": 906,
+      "delta_y": 36
+    },
+    {
+      "t": 5498,
+      "scroll_y": 1058,
+      "delta_y": 152
+    },
+    {
+      "t": 5962,
+      "scroll_y": 1161,
+      "delta_y": 103
+    },
+    {
+      "t": 6161,
+      "scroll_y": 1232,
+      "delta_y": 71
+    },
+    {
+      "t": 6660,
+      "scroll_y": 1307,
+      "delta_y": 75
+    },
+    {
+      "t": 7134,
+      "scroll_y": 1366,
+      "delta_y": 59
+    },
+    {
+      "t": 7290,
+      "scroll_y": 1490,
+      "delta_y": 124
+    },
+    {
+      "t": 7443,
+      "scroll_y": 1658,
+      "delta_y": 168
+    },
+    {
+      "t": 7759,
+      "scroll_y": 1780,
+      "delta_y": 122
+    },
+    {
+      "t": 7997,
+      "scroll_y": 1859,
+      "delta_y": 79
+    },
+    {
+      "t": 8222,
+      "scroll_y": 2030,
+      "delta_y": 171
+    },
+    {
+      "t": 8378,
+      "scroll_y": 2192,
+      "delta_y": 162
+    },
+    {
+      "t": 8972,
+      "scroll_y": 2245,
+      "delta_y": 53
+    },
+    {
+      "t": 9467,
+      "scroll_y": 2349,
+      "delta_y": 104
+    },
+    {
+      "t": 9621,
+      "scroll_y": 2497,
+      "delta_y": 148
+    },
+    {
+      "t": 10150,
+      "scroll_y": 2546,
+      "delta_y": 49
+    },
+    {
+      "t": 10650,
+      "scroll_y": 2698,
+      "delta_y": 152
+    },
+    {
+      "t": 11126,
+      "scroll_y": 2837,
+      "delta_y": 139
+    }
+  ],
+  "click_events": [
+    {
+      "x": 420,
+      "y": 380,
+      "t": 10528,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 2477,
+      "details": {
+        "trusted": true
+      }
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 10528,
+      "details": {
+        "trusted": true
+      }
+    }
+  ]
+}

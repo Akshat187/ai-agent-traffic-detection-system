@@ -30,15 +30,17 @@
   if (window.__WEBSENSE_COLLECTOR_ACTIVE__ || document.documentElement.dataset.wsOwner === 'sdk') {
     return;
   }
-  document.documentElement.dataset.wsOwner = 'sdk';
-  window.__WEBSENSE_COLLECTOR_ACTIVE__ = true;
 
-  // Notify extension or other observers that SDK owns collection
-  try {
-    window.dispatchEvent(new CustomEvent('ws:collector_activated', { detail: { owner: 'sdk', timestamp: Date.now() } }));
-    window.dispatchEvent(new CustomEvent('ws:claimed', { detail: { owner: 'sdk' } }));
-    window.postMessage({ type: 'WEBSENSE_SDK_ACTIVATED' }, '*');
-  } catch (_) {}
+  function claimSdkOwnership() {
+    if (window.__WEBSENSE_COLLECTOR_ACTIVE__) return;
+    document.documentElement.dataset.wsOwner = 'sdk';
+    window.__WEBSENSE_COLLECTOR_ACTIVE__ = true;
+    try {
+      window.dispatchEvent(new CustomEvent('ws:collector_activated', { detail: { owner: 'sdk', timestamp: Date.now() } }));
+      window.dispatchEvent(new CustomEvent('ws:claimed', { detail: { owner: 'sdk' } }));
+      window.postMessage({ type: 'WEBSENSE_SDK_ACTIVATED' }, '*');
+    } catch (_) {}
+  }
 
   // 1. Discover configuration from script tag
   const currentScript = document.currentScript || (function () {
@@ -155,6 +157,9 @@
   }
 
   let consentGranted = checkConsent();
+  if (consentGranted) {
+    claimSdkOwnership();
+  }
 
   // 5. Page Visit State Factory (Encapsulated State Object)
   function createPageVisit(prevVisitId, task) {
@@ -555,13 +560,19 @@
         visit.transmissionSeq++;
         visit.inFlight = null;
 
-        // Broadcast verdict to window observers (such as the Chrome Extension)
+        // Broadcast verdict and live event counts to window observers (such as the Chrome Extension)
         window.postMessage({
           type: 'WEBSENSE_VERDICT_UPDATE',
           verdict: data,
           sessionId: visit.sessionId,
           pageVisitId: visit.sessionId,
           seq: inFlight.seq,
+          events: {
+            mouseTotal: visit.totalEventsCount || 0,
+            keysTotal: 0,
+            clicksTotal: 0,
+            activeDurationMs: getActiveDurationMs(visit),
+          },
         }, '*');
 
         // Active Mitigation Policy enforcement hook (ALLOW | CHALLENGE | BLOCK)
@@ -701,6 +712,7 @@
 
     grantConsent: function () {
       consentGranted = true;
+      claimSdkOwnership();
       for (let i = 0; i < CONSENT_KEYS.length; i++) {
         try { localStorage.setItem(CONSENT_KEYS[i], 'granted'); } catch (_) {}
       }

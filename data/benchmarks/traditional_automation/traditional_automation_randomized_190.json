@@ -3,8 +3,8 @@
   "visitor_id": "vis_traditional_automation_190",
   "task": "shopping",
   "start_time": 1724911400000,
-  "end_time": 1724911401546,
-  "duration_ms": 1546.0,
+  "end_time": 1724911400861,
+  "duration_ms": 861.0,
   "ground_truth_label": "TRADITIONAL_AUTOMATION",
   "is_synthetic": false,
   "data_source": "benchmark_randomized",
@@ -23,412 +23,243 @@
   },
   "mouse_events": [
     {
-      "x": 197,
-      "y": 196,
+      "x": 192,
+      "y": 192,
       "t": 0,
       "type": "move"
     },
     {
-      "x": 206,
-      "y": 220,
-      "t": 30,
+      "x": 237,
+      "y": 216,
+      "t": 31,
       "type": "move"
     },
     {
-      "x": 241,
-      "y": 215,
-      "t": 60,
+      "x": 248,
+      "y": 250,
+      "t": 63,
       "type": "move"
     },
     {
-      "x": 245,
-      "y": 235,
-      "t": 90,
+      "x": 276,
+      "y": 261,
+      "t": 94,
       "type": "move"
     },
     {
-      "x": 264,
-      "y": 243,
-      "t": 121,
+      "x": 311,
+      "y": 281,
+      "t": 125,
       "type": "move"
     },
     {
-      "x": 270,
-      "y": 251,
-      "t": 151,
-      "type": "move"
-    },
-    {
-      "x": 282,
-      "y": 263,
-      "t": 181,
-      "type": "move"
-    },
-    {
-      "x": 307,
-      "y": 255,
-      "t": 211,
-      "type": "move"
-    },
-    {
-      "x": 314,
-      "y": 273,
-      "t": 241,
-      "type": "move"
-    },
-    {
-      "x": 333,
-      "y": 292,
-      "t": 271,
-      "type": "move"
-    },
-    {
-      "x": 351,
-      "y": 294,
-      "t": 301,
+      "x": 322,
+      "y": 289,
+      "t": 156,
       "type": "move"
     },
     {
       "x": 359,
-      "y": 310,
-      "t": 332,
+      "y": 321,
+      "t": 188,
       "type": "move"
     },
     {
-      "x": 368,
-      "y": 318,
-      "t": 362,
-      "type": "move"
-    },
-    {
-      "x": 389,
-      "y": 330,
-      "t": 392,
-      "type": "move"
-    },
-    {
-      "x": 409,
-      "y": 333,
-      "t": 422,
+      "x": 382,
+      "y": 327,
+      "t": 219,
       "type": "move"
     },
     {
       "x": 418,
-      "y": 335,
-      "t": 452,
-      "type": "move"
-    },
-    {
-      "x": 438,
       "y": 356,
-      "t": 482,
+      "t": 250,
       "type": "move"
     },
     {
-      "x": 448,
-      "y": 360,
-      "t": 512,
+      "x": 443,
+      "y": 351,
+      "t": 281,
       "type": "move"
     },
     {
-      "x": 471,
-      "y": 376,
-      "t": 543,
+      "x": 467,
+      "y": 372,
+      "t": 313,
       "type": "move"
     },
     {
-      "x": 483,
-      "y": 391,
-      "t": 573,
+      "x": 502,
+      "y": 399,
+      "t": 344,
       "type": "move"
     },
     {
-      "x": 493,
-      "y": 396,
-      "t": 603,
+      "x": 523,
+      "y": 416,
+      "t": 375,
       "type": "move"
     },
     {
-      "x": 505,
-      "y": 400,
-      "t": 633,
+      "x": 557,
+      "y": 445,
+      "t": 407,
       "type": "move"
     },
     {
-      "x": 514,
-      "y": 413,
-      "t": 663,
-      "type": "move"
-    },
-    {
-      "x": 533,
-      "y": 421,
-      "t": 693,
-      "type": "move"
-    },
-    {
-      "x": 552,
-      "y": 432,
-      "t": 724,
-      "type": "move"
-    },
-    {
-      "x": 573,
-      "y": 434,
-      "t": 754,
-      "type": "move"
-    },
-    {
-      "x": 573,
-      "y": 465,
-      "t": 784,
-      "type": "move"
-    },
-    {
-      "x": 596,
-      "y": 467,
-      "t": 814,
+      "x": 577,
+      "y": 452,
+      "t": 438,
       "type": "move"
     },
     {
       "x": 611,
-      "y": 476,
-      "t": 844,
+      "y": 463,
+      "t": 469,
       "type": "move"
     },
     {
-      "x": 618,
-      "y": 482,
-      "t": 874,
+      "x": 639,
+      "y": 486,
+      "t": 500,
       "type": "move"
     },
     {
-      "x": 636,
-      "y": 491,
-      "t": 904,
+      "x": 649,
+      "y": 505,
+      "t": 532,
       "type": "move"
     },
     {
-      "x": 648,
-      "y": 502,
-      "t": 935,
-      "type": "move"
-    },
-    {
-      "x": 665,
+      "x": 705,
       "y": 513,
-      "t": 965,
+      "t": 563,
       "type": "move"
     },
     {
-      "x": 685,
-      "y": 509,
-      "t": 995,
+      "x": 721,
+      "y": 542,
+      "t": 594,
       "type": "move"
     },
     {
-      "x": 698,
-      "y": 531,
-      "t": 1025,
+      "x": 756,
+      "y": 548,
+      "t": 625,
       "type": "move"
     },
     {
-      "x": 718,
-      "y": 536,
-      "t": 1055,
+      "x": 776,
+      "y": 567,
+      "t": 657,
       "type": "move"
     },
     {
-      "x": 720,
-      "y": 545,
-      "t": 1085,
-      "type": "move"
-    },
-    {
-      "x": 744,
-      "y": 565,
-      "t": 1115,
-      "type": "move"
-    },
-    {
-      "x": 749,
-      "y": 574,
-      "t": 1146,
-      "type": "move"
-    },
-    {
-      "x": 780,
-      "y": 575,
-      "t": 1176,
-      "type": "move"
-    },
-    {
-      "x": 790,
-      "y": 596,
-      "t": 1206,
-      "type": "move"
-    },
-    {
-      "x": 804,
-      "y": 588,
-      "t": 1236,
+      "x": 797,
+      "y": 599,
+      "t": 688,
       "type": "move"
     }
   ],
   "keyboard_events": [
     {
-      "t": 127,
-      "interval": 77,
-      "hold": 25,
+      "t": 144,
+      "interval": 94,
+      "hold": 29,
       "is_paste": false
     },
     {
-      "t": 215,
-      "interval": 88,
-      "hold": 19,
+      "t": 234,
+      "interval": 90,
+      "hold": 24,
       "is_paste": false
     },
     {
-      "t": 304,
-      "interval": 89,
-      "hold": 15,
+      "t": 340,
+      "interval": 106,
+      "hold": 18,
       "is_paste": false
     },
     {
-      "t": 377,
-      "interval": 73,
-      "hold": 27,
+      "t": 439,
+      "interval": 99,
+      "hold": 16,
       "is_paste": false
     },
     {
-      "t": 455,
-      "interval": 78,
-      "hold": 23,
+      "t": 538,
+      "interval": 99,
+      "hold": 20,
       "is_paste": false
     },
     {
-      "t": 533,
-      "interval": 78,
-      "hold": 17,
-      "is_paste": false
-    },
-    {
-      "t": 610,
-      "interval": 77,
-      "hold": 23,
-      "is_paste": false
-    },
-    {
-      "t": 680,
-      "interval": 70,
-      "hold": 17,
-      "is_paste": false
-    },
-    {
-      "t": 768,
-      "interval": 88,
-      "hold": 15,
-      "is_paste": false
-    },
-    {
-      "t": 856,
-      "interval": 88,
-      "hold": 15,
-      "is_paste": false
-    },
-    {
-      "t": 921,
-      "interval": 65,
-      "hold": 19,
-      "is_paste": false
-    },
-    {
-      "t": 1001,
+      "t": 618,
       "interval": 80,
-      "hold": 26,
+      "hold": 22,
       "is_paste": false
     },
     {
-      "t": 1094,
-      "interval": 93,
-      "hold": 22,
+      "t": 710,
+      "interval": 92,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 815,
+      "interval": 105,
+      "hold": 21,
       "is_paste": false
     }
   ],
   "scroll_events": [
     {
-      "t": 77,
-      "scroll_y": 372,
-      "delta_y": 372
+      "t": 43,
+      "scroll_y": 400,
+      "delta_y": 400
     },
     {
-      "t": 223,
-      "scroll_y": 744,
-      "delta_y": 372
+      "t": 202,
+      "scroll_y": 800,
+      "delta_y": 400
     },
     {
-      "t": 371,
-      "scroll_y": 1116,
-      "delta_y": 372
+      "t": 384,
+      "scroll_y": 1200,
+      "delta_y": 400
     },
     {
-      "t": 520,
-      "scroll_y": 1488,
-      "delta_y": 372
+      "t": 497,
+      "scroll_y": 1600,
+      "delta_y": 400
     },
     {
-      "t": 632,
-      "scroll_y": 1860,
-      "delta_y": 372
-    },
-    {
-      "t": 792,
-      "scroll_y": 2232,
-      "delta_y": 372
-    },
-    {
-      "t": 923,
-      "scroll_y": 2604,
-      "delta_y": 372
-    },
-    {
-      "t": 1024,
-      "scroll_y": 2976,
-      "delta_y": 372
-    },
-    {
-      "t": 1146,
-      "scroll_y": 3348,
-      "delta_y": 372
-    },
-    {
-      "t": 1275,
-      "scroll_y": 3720,
-      "delta_y": 372
+      "t": 633,
+      "scroll_y": 2000,
+      "delta_y": 400
     }
   ],
   "click_events": [
     {
       "x": 800,
       "y": 600,
-      "t": 1314,
+      "t": 731,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "filter_applied",
-      "t": 541,
+      "t": 301,
       "details": {}
     },
     {
       "action": "quantity_updated",
-      "t": 927,
+      "t": 516,
       "details": {}
     },
     {
       "action": "checkout_initiated",
-      "t": 1236,
+      "t": 688,
       "details": {}
     }
   ]

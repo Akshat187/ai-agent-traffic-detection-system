@@ -45,14 +45,16 @@ class SiteRecord(Base):
 
 class SessionFeedback(Base):
     """
-    Analyst label overrides for active learning and drift monitoring.
+    Analyst label overrides & verdict verifications for active learning and live accuracy.
     """
 
     __tablename__ = "session_feedback"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_id = Column(String(64), ForeignKey("sessions.session_id", ondelete="CASCADE"), index=True, nullable=False)
+    predicted_label = Column(String(32), nullable=True)
     analyst_label = Column(String(32), nullable=False)
+    is_correct = Column(Boolean, nullable=True)
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
@@ -149,6 +151,12 @@ class SessionRecord(Base):
     verdict_history = relationship(
         "VerdictHistory", back_populates="session", cascade="all, delete-orphan",
         order_by="VerdictHistory.seq", lazy="dynamic",
+    )
+    feedbacks = relationship(
+        "SessionFeedback",
+        backref="session",
+        cascade="all, delete-orphan",
+        order_by="SessionFeedback.created_at.desc()",
     )
 
 

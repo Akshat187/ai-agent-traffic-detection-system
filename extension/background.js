@@ -6,10 +6,46 @@
 
 const tabVerdicts = new Map();
 
+async function persistTabVerdict(tabId, verdict) {
+  if (!tabId || !verdict) return;
+  tabVerdicts.set(tabId, verdict);
+  try {
+    if (chrome.storage && chrome.storage.session) {
+      await chrome.storage.session.set({ [`verdict_${tabId}`]: verdict });
+    }
+  } catch (_) {}
+}
+
+async function getPersistedTabVerdict(tabId) {
+  if (!tabId) return null;
+  if (tabVerdicts.has(tabId)) return tabVerdicts.get(tabId);
+  try {
+    if (chrome.storage && chrome.storage.session) {
+      const key = `verdict_${tabId}`;
+      const res = await chrome.storage.session.get([key]);
+      if (res && res[key]) {
+        tabVerdicts.set(tabId, res[key]);
+        return res[key];
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function clearPersistedTabVerdict(tabId) {
+  if (!tabId) return;
+  tabVerdicts.delete(tabId);
+  try {
+    if (chrome.storage && chrome.storage.session) {
+      await chrome.storage.session.remove([`verdict_${tabId}`]);
+    }
+  } catch (_) {}
+}
+
 function updateBadge(tabId, verdict) {
   if (!tabId || !verdict || !verdict.predicted_label) return;
 
-  tabVerdicts.set(tabId, verdict);
+  persistTabVerdict(tabId, verdict);
 
   let badgeText = 'HUM';
   let badgeColor = '#10b981'; // green
@@ -43,7 +79,7 @@ function updateBadge(tabId, verdict) {
 // Reset badge on tab navigation
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === 'loading') {
-    tabVerdicts.delete(tabId);
+    clearPersistedTabVerdict(tabId);
     try {
       chrome.action.setBadgeText({ tabId, text: '' });
     } catch (_) {}
@@ -52,8 +88,21 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 
 // Clean up badge when tab is closed
 chrome.tabs.onRemoved.addListener((tabId) => {
-  tabVerdicts.delete(tabId);
+  clearPersistedTabVerdict(tabId);
 });
+
+// Reliable MV3 SPA route-change notification (isolated-world pushState patching cannot intercept host JS)
+if (chrome.webNavigation && chrome.webNavigation.onHistoryStateUpdated) {
+  chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
+    if (details.frameId === 0 && details.tabId) {
+      try {
+        chrome.tabs.sendMessage(details.tabId, { type: 'SPA_NAVIGATED', url: details.url }, () => {
+          void chrome.runtime.lastError;
+        });
+      } catch (_) {}
+    }
+  });
+}
 
 // Unified message router
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -61,9 +110,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'GET_CACHED_VERDICT') {
     const targetTabId = message.tabId || tabId;
-    const verdict = targetTabId ? tabVerdicts.get(targetTabId) : null;
-    sendResponse({ verdict: verdict || null });
-    return false;
+    getPersistedTabVerdict(targetTabId).then((verdict) => {
+      sendResponse({ verdict: verdict || null });
+    });
+    return true;
   }
 
   if (message.type === 'VERDICT_UPDATE') {
@@ -147,6 +197,53 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })();
 
     return true; // Keep message channel open for asynchronous reply
+  }
+
+  if (message.type === 'SUBMIT_FEEDBACK' || message.type === 'CHECK_FEEDBACK') {
+    (async () => {
+      try {
+        let configuredHost = null;
+        try {
+          const storage = await chrome.storage.local.get(['websenseHost']);
+          if (storage && storage.websenseHost) {
+            configuredHost = storage.websenseHost.replace(/\/+$/, '');
+          }
+        } catch (_) {}
+
+        const baseHost = configuredHost || 'http://127.0.0.1:8000';
+        const path = `/api/v1/sessions/${encodeURIComponent(message.sessionId)}/feedback`;
+        const primaryUrl = `${baseHost}${path}`;
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ws_live_chrome_ext_default_key',
+          'X-Sentinel-Site-ID': 'site_chrome_extension'
+        };
+        const isPost = message.type === 'SUBMIT_FEEDBACK';
+        const opts = isPost
+          ? { method: 'POST', headers, body: JSON.stringify(message.payload || {}) }
+          : { method: 'GET', headers };
+
+        let resp = null;
+        try {
+          resp = await fetch(primaryUrl, opts);
+        } catch (_) {
+          const fallbackUrl = primaryUrl.includes('127.0.0.1:8000')
+            ? primaryUrl.replace('127.0.0.1:8000', 'localhost:8000')
+            : primaryUrl.replace('localhost:8000', '127.0.0.1:8000');
+          resp = await fetch(fallbackUrl, opts);
+        }
+
+        if (resp && resp.ok) {
+          const data = await resp.json();
+          sendResponse({ success: true, data });
+        } else {
+          sendResponse({ success: false, status: resp ? resp.status : 0 });
+        }
+      } catch (err) {
+        sendResponse({ success: false, error: (err && err.message) || 'Feedback error' });
+      }
+    })();
+    return true;
   }
 
   return false;

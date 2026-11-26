@@ -3,20 +3,20 @@
   "visitor_id": "vis_agentic_ai_025",
   "task": "shopping",
   "start_time": 1724901500000,
-  "end_time": 1724901509786,
-  "duration_ms": 9786.0,
+  "end_time": 1724901510185,
+  "duration_ms": 10185.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_dom_agent",
   "browser_signals": {
-    "webdriver": true,
+    "webdriver": false,
     "screen_width": 1920,
     "screen_height": 1080,
     "viewport_width": 1280,
     "viewport_height": 800,
     "device_pixel_ratio": 1.0,
     "touch_support": false,
-    "hardware_concurrency": 8,
+    "hardware_concurrency": 4,
     "platform": "Win32",
     "language": "en-US",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
@@ -25,65 +25,70 @@
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 1957,
-      "scroll_y": 201,
-      "delta_y": 201
+      "t": 2037,
+      "scroll_y": 285,
+      "delta_y": 285
     },
     {
-      "t": 2989,
-      "scroll_y": 564,
-      "delta_y": 363
+      "t": 3087,
+      "scroll_y": 666,
+      "delta_y": 381
+    },
+    {
+      "t": 4503,
+      "scroll_y": 922,
+      "delta_y": 256
     }
   ],
   "click_events": [
     {
       "x": 300,
       "y": 250,
-      "t": 1023,
+      "t": 822,
       "target_category": "input"
     },
     {
       "x": 520,
       "y": 380,
-      "t": 3586,
+      "t": 3609,
       "target_category": "button"
     },
     {
       "x": 750,
       "y": 620,
-      "t": 5814,
+      "t": 6560,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 1023,
+      "t": 822,
       "details": {
         "target": "search_input"
       }
     },
     {
       "action": "item_selected",
-      "t": 3586,
+      "t": 3609,
       "details": {
         "target": "item_card"
       }
     },
     {
       "action": "quantity_updated",
-      "t": 5814,
+      "t": 6560,
       "details": {
         "target": "action_button"
       }
     },
     {
       "action": "checkout_initiated",
-      "t": 9161,
+      "t": 9487,
       "details": {
         "target": "confirm_button"
       }
     }
   ],
-  "active_duration_ms": 9786.0
+  "active_duration_ms": 10185.0
 }

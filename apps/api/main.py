@@ -19,7 +19,7 @@ import packages.database.db as db_module
 from packages.database.models import SessionRecord, SiteRecord
 from apps.api.config import settings
 from apps.api.observability import configure_structured_logging, metrics_registry
-from apps.api.routes import sessions, stats, experiments, adversarial, seed, sites, ws
+from apps.api.routes import sessions, stats, experiments, adversarial, seed, sites, ws, model
 
 configure_structured_logging()
 
@@ -174,6 +174,7 @@ app.include_router(adversarial.router)
 app.include_router(seed.router)
 app.include_router(sites.router)
 app.include_router(ws.router)
+app.include_router(model.router)
 
 
 # Direct SDK Script Endpoint

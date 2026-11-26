@@ -424,18 +424,32 @@ def submit_session_feedback(
     db: Session = Depends(get_db),
 ):
     """
-    Allows analysts on /dashboard to override a misclassified session's label
-    and record notes for active learning and drift monitoring.
+    Allows analysts/users on /dashboard or the Chrome extension to confirm or override
+    a session's predicted label, recording predicted_label & is_correct and syncing
+    SessionRecord.ground_truth_label.
     """
     session = db.query(SessionRecord).filter(SessionRecord.session_id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    predicted = session.predicted_label or "UNCERTAIN"
+    if payload.analyst_label:
+        analyst_label = payload.analyst_label
+    elif payload.is_correct is True:
+        analyst_label = predicted
+    else:
+        raise HTTPException(status_code=422, detail="analyst_label is required when is_correct is not True")
+
+    is_correct = payload.is_correct if payload.is_correct is not None else (analyst_label == predicted)
+
     feedback = SessionFeedback(
         session_id=session_id,
-        analyst_label=payload.analyst_label,
+        predicted_label=predicted,
+        analyst_label=analyst_label,
+        is_correct=is_correct,
         notes=payload.notes,
     )
+    session.ground_truth_label = analyst_label
     db.add(feedback)
     db.commit()
     db.refresh(feedback)
@@ -443,7 +457,39 @@ def submit_session_feedback(
     return SessionFeedbackResponse(
         id=feedback.id,
         session_id=feedback.session_id,
+        predicted_label=feedback.predicted_label,
         analyst_label=feedback.analyst_label,
+        is_correct=feedback.is_correct,
         notes=feedback.notes or "",
         created_at=feedback.created_at.isoformat() if feedback.created_at else "",
     )
+
+
+@router.get("/{session_id}/feedback")
+def get_session_feedback(session_id: str, db: Session = Depends(get_db)):
+    """Returns whether a session has been verified by an analyst/user and the latest feedback record."""
+    session = db.query(SessionRecord.session_id).filter(SessionRecord.session_id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    latest = (
+        db.query(SessionFeedback)
+        .filter(SessionFeedback.session_id == session_id)
+        .order_by(SessionFeedback.id.desc())
+        .first()
+    )
+    if not latest:
+        return {"verified": False, "feedback": None}
+
+    return {
+        "verified": True,
+        "feedback": SessionFeedbackResponse(
+            id=latest.id,
+            session_id=latest.session_id,
+            predicted_label=latest.predicted_label,
+            analyst_label=latest.analyst_label,
+            is_correct=latest.is_correct,
+            notes=latest.notes or "",
+            created_at=latest.created_at.isoformat() if latest.created_at else "",
+        ),
+    }

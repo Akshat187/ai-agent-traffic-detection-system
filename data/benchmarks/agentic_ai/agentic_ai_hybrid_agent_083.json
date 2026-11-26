@@ -3,8 +3,8 @@
   "visitor_id": "vis_agentic_ai_083",
   "task": "travel",
   "start_time": 1724904980000,
-  "end_time": 1724904989457,
-  "duration_ms": 9457.0,
+  "end_time": 1724904987907,
+  "duration_ms": 7907.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_hybrid_agent",
@@ -16,7 +16,7 @@
     "viewport_height": 800,
     "device_pixel_ratio": 1.0,
     "touch_support": false,
-    "hardware_concurrency": 8,
+    "hardware_concurrency": 4,
     "platform": "Win32",
     "language": "en-US",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
@@ -31,67 +31,67 @@
     {
       "x": 450,
       "y": 320,
-      "t": 783,
+      "t": 985,
       "type": "move"
     },
     {
       "x": 680,
       "y": 540,
-      "t": 4990,
+      "t": 4200,
       "type": "move"
     }
   ],
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 1891,
-      "scroll_y": 288,
-      "delta_y": 288
+      "t": 1581,
+      "scroll_y": 235,
+      "delta_y": 235
     },
     {
-      "t": 3691,
-      "scroll_y": 606,
-      "delta_y": 318
+      "t": 3530,
+      "scroll_y": 587,
+      "delta_y": 352
     },
     {
-      "t": 4951,
-      "scroll_y": 825,
+      "t": 5092,
+      "scroll_y": 921,
+      "delta_y": 334
+    },
+    {
+      "t": 6150,
+      "scroll_y": 1140,
       "delta_y": 219
-    },
-    {
-      "t": 6080,
-      "scroll_y": 1160,
-      "delta_y": 335
     }
   ],
   "click_events": [
     {
       "x": 450,
       "y": 320,
-      "t": 783,
+      "t": 985,
       "target_category": "button"
     },
     {
       "x": 680,
       "y": 540,
-      "t": 4990,
+      "t": 4200,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 783,
+      "t": 985,
       "details": {}
     },
     {
       "action": "item_selected",
-      "t": 4990,
+      "t": 4200,
       "details": {}
     },
     {
       "action": "checkout_initiated",
-      "t": 7976,
+      "t": 6786,
       "details": {}
     }
   ]

@@ -1,0 +1,239 @@
+{
+  "session_id": "bm_human_prompt_typing_shopping_136",
+  "visitor_id": "vis_human_136",
+  "task": "shopping",
+  "start_time": 1724908160000,
+  "end_time": 1724908173744,
+  "duration_ms": 13744.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_prompt_typing",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "mouse",
+    "screen_width": 1536,
+    "screen_height": 900,
+    "viewport_width": 1200,
+    "viewport_height": 680,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 4,
+    "platform": "MacIntel",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 166,
+      "y": 328,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 194,
+      "y": 340,
+      "t": 3,
+      "type": "move"
+    },
+    {
+      "x": 217,
+      "y": 352,
+      "t": 14,
+      "type": "move"
+    },
+    {
+      "x": 243,
+      "y": 367,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 271,
+      "y": 377,
+      "t": 53,
+      "type": "move"
+    },
+    {
+      "x": 301,
+      "y": 388,
+      "t": 80,
+      "type": "move"
+    },
+    {
+      "x": 326,
+      "y": 406,
+      "t": 112,
+      "type": "move"
+    },
+    {
+      "x": 355,
+      "y": 421,
+      "t": 148,
+      "type": "move"
+    },
+    {
+      "x": 382,
+      "y": 435,
+      "t": 186,
+      "type": "move"
+    },
+    {
+      "x": 410,
+      "y": 451,
+      "t": 225,
+      "type": "move"
+    },
+    {
+      "x": 439,
+      "y": 466,
+      "t": 264,
+      "type": "move"
+    },
+    {
+      "x": 464,
+      "y": 478,
+      "t": 302,
+      "type": "move"
+    },
+    {
+      "x": 492,
+      "y": 494,
+      "t": 337,
+      "type": "move"
+    },
+    {
+      "x": 516,
+      "y": 511,
+      "t": 370,
+      "type": "move"
+    },
+    {
+      "x": 538,
+      "y": 519,
+      "t": 397,
+      "type": "move"
+    },
+    {
+      "x": 556,
+      "y": 536,
+      "t": 420,
+      "type": "move"
+    },
+    {
+      "x": 579,
+      "y": 549,
+      "t": 436,
+      "type": "move"
+    },
+    {
+      "x": 598,
+      "y": 562,
+      "t": 447,
+      "type": "move"
+    },
+    {
+      "x": 615,
+      "y": 572,
+      "t": 450,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 807,
+      "interval": 207.5,
+      "hold": 68,
+      "is_paste": true,
+      "is_trusted": true
+    },
+    {
+      "t": 992,
+      "interval": 185.5,
+      "hold": 47,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1263,
+      "interval": 271.8,
+      "hold": 84,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1492,
+      "interval": 229.4,
+      "hold": 101,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1792,
+      "interval": 300.1,
+      "hold": 104,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1955,
+      "interval": 163.6,
+      "hold": 47,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2247,
+      "interval": 292.9,
+      "hold": 99,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2400,
+      "interval": 153.5,
+      "hold": 98,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2501,
+      "interval": 101.1,
+      "hold": 65,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [],
+  "click_events": [
+    {
+      "x": 616,
+      "y": 572,
+      "t": 460,
+      "target_category": "input",
+      "is_trusted": true
+    },
+    {
+      "x": 736,
+      "y": 582,
+      "t": 12369,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "input_focus",
+      "t": 460,
+      "details": {
+        "trusted": true
+      }
+    },
+    {
+      "action": "button_trigger",
+      "t": 12369,
+      "details": {
+        "trusted": true
+      }
+    }
+  ]
+}

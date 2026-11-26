@@ -299,22 +299,41 @@ def extract_agency_profile_features(
     )
 
     # -- Planning pause ratio & LLM inference gap ratio ---------------------------------
-    # Fraction of session time in pauses > 800 ms (and specifically 1.2s-6.5s for LLM window)
-    planning_pause_ms = 0.0
+    # Merge overlapping pause intervals (> 800 ms) from mouse and task_actions so pauses
+    # are never double-counted toward 1.0 when typing/reading between actions.
+    pause_intervals = []
     mouse_pause_end_times = []
     if len(mouse_events) >= 2:
         for i in range(1, len(mouse_events)):
-            dt = float(mouse_events[i].get("t", 0)) - float(mouse_events[i - 1].get("t", 0))
+            t_prev = float(mouse_events[i - 1].get("t", 0))
+            t_curr = float(mouse_events[i].get("t", 0))
+            dt = t_curr - t_prev
             if dt > PLANNING_PAUSE_THRESHOLD_MS:
-                planning_pause_ms += dt
-                mouse_pause_end_times.append(float(mouse_events[i].get("t", 0)))
+                pause_intervals.append((t_prev, t_curr))
+                mouse_pause_end_times.append(t_curr)
             # Only count mouse-level LLM gaps when corroborated by action bursts or cursor teleports
             if LLM_INFERENCE_MIN_MS <= dt <= LLM_INFERENCE_MAX_MS and (has_teleport_signature or burst_actions > 0):
                 llm_gaps_ms += dt
 
-    for dt in action_intervals:
-        if dt > PLANNING_PAUSE_THRESHOLD_MS:
-            planning_pause_ms += dt
+    if len(task_actions) >= 2:
+        for i in range(1, len(task_actions)):
+            t_prev = float(task_actions[i - 1].get("t", 0))
+            t_curr = float(task_actions[i].get("t", 0))
+            if (t_curr - t_prev) > PLANNING_PAUSE_THRESHOLD_MS:
+                pause_intervals.append((t_prev, t_curr))
+
+    # Merge overlapping intervals
+    planning_pause_ms = 0.0
+    if pause_intervals:
+        pause_intervals.sort(key=lambda iv: iv[0])
+        merged_start, merged_end = pause_intervals[0]
+        for s_iv, e_iv in pause_intervals[1:]:
+            if s_iv <= merged_end:
+                merged_end = max(merged_end, e_iv)
+            else:
+                planning_pause_ms += max(0.0, merged_end - merged_start)
+                merged_start, merged_end = s_iv, e_iv
+        planning_pause_ms += max(0.0, merged_end - merged_start)
 
     planning_pause_ratio = (
         (planning_pause_ms / duration_ms) if duration_ms > 0 else 0.0
@@ -448,11 +467,30 @@ def extract_all_features(session_data: Dict[str, Any]) -> Dict[str, Any]:
         # Older client: cap raw tab-lifetime duration at 10 min
         effective_duration_ms = max(100.0, min(duration_ms, MAX_EFFECTIVE_DURATION_MS))
 
+    effective_actions = task_acts
+    if len(effective_actions) < 2:
+        # On real external sites (task='general'), task_actions is empty.
+        # Derive discrete action timestamps from clicks, scroll bursts, and key bursts.
+        derived: List[Dict[str, Any]] = []
+        for c in click_evs:
+            derived.append({"action": "click", "t": float(c.get("t", 0))})
+        for sc in scroll_evs:
+            st = float(sc.get("t", 0))
+            if not derived or abs(st - derived[-1]["t"]) >= 300.0:
+                derived.append({"action": "scroll", "t": st})
+        for kb in kb_evs:
+            kt = float(kb.get("t", 0))
+            if not derived or abs(kt - derived[-1]["t"]) >= 350.0:
+                derived.append({"action": "key_burst", "t": kt})
+        derived.sort(key=lambda a: a["t"])
+        if len(derived) >= 2:
+            effective_actions = derived
+
     kinematics = calculate_kinematics(mouse_evs)
     keyboard = extract_keyboard_features(kb_evs)
     scroll = extract_scroll_features(scroll_evs)
-    interaction = extract_interaction_features(start_t, end_t, click_evs, task_acts, mouse_evs, kb_evs)
-    agency = extract_agency_profile_features(task_acts, mouse_evs, effective_duration_ms, click_evs)
+    interaction = extract_interaction_features(start_t, end_t, click_evs, effective_actions, mouse_evs, kb_evs)
+    agency = extract_agency_profile_features(effective_actions, mouse_evs, effective_duration_ms, click_evs)
 
     # Environment signals — lowest weight, supporting evidence only
     webdriver = bool(browser.get("webdriver", False))
@@ -462,17 +500,29 @@ def extract_all_features(session_data: Dict[str, Any]) -> Dict[str, Any]:
         touch = True
     hardware_threads = int(browser.get("hardware_concurrency", 4) or 4)
 
+    # Trust & programmatic input signals (detects synthetic DOM .click() / page.fill() / Input.insertText)
+    trust_checks = [c.get("is_trusted") for c in click_evs if "is_trusted" in c] + [
+        k.get("is_trusted") for k in kb_evs if "is_trusted" in k
+    ]
+    untrusted_count = sum(1 for t in trust_checks if t is False)
+    untrusted_event_ratio = round(untrusted_count / len(trust_checks), 4) if trust_checks else 0.0
+
+    prog_count = sum(1 for k in kb_evs if k.get("is_programmatic") is True)
+    programmatic_input_ratio = round(prog_count / len(kb_evs), 4) if kb_evs else 0.0
+
     features = {
         **kinematics,
         **keyboard,
         **scroll,
         **interaction,
         **agency,
-        # Environmental signals (supporting evidence — not primary classifiers)
+        # Environmental & trust signals
         "webdriver_flag": 1.0 if webdriver else 0.0,
         "touch_support": 1.0 if touch else 0.0,
         "pointer_type": pointer_type,
         "hardware_concurrency": float(hardware_threads),
+        "untrusted_event_ratio": untrusted_event_ratio,
+        "programmatic_input_ratio": programmatic_input_ratio,
         # Expose both durations for dashboard display and diagnostics
         "active_duration_ms": round(effective_duration_ms, 2),
         # Override duration_ms in features dict with effective value so rules.py

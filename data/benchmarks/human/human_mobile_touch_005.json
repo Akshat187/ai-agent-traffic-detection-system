@@ -1,0 +1,342 @@
+{
+  "session_id": "bm_human_mobile_touch_travel_005",
+  "visitor_id": "vis_human_005",
+  "task": "travel",
+  "start_time": 1724900300000,
+  "end_time": 1724900315445,
+  "duration_ms": 15445.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_mobile_touch",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "touch",
+    "screen_width": 390,
+    "screen_height": 844,
+    "viewport_width": 1200,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": true,
+    "hardware_concurrency": 12,
+    "platform": "MacIntel",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [
+    {
+      "t": 3252,
+      "interval": 115.8,
+      "hold": 86,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3463,
+      "interval": 211.3,
+      "hold": 88,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3574,
+      "interval": 111.8,
+      "hold": 84,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3799,
+      "interval": 225.3,
+      "hold": 51,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3929,
+      "interval": 130.8,
+      "hold": 62,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4079,
+      "interval": 151.0,
+      "hold": 44,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4216,
+      "interval": 137.4,
+      "hold": 108,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4343,
+      "interval": 127.5,
+      "hold": 35,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4492,
+      "interval": 149.2,
+      "hold": 67,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4631,
+      "interval": 139.9,
+      "hold": 105,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4851,
+      "interval": 220.8,
+      "hold": 73,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 5061,
+      "interval": 211.0,
+      "hold": 51,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 5267,
+      "interval": 207.0,
+      "hold": 70,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 5502,
+      "interval": 235.9,
+      "hold": 108,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 5645,
+      "interval": 143.6,
+      "hold": 73,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 5770,
+      "interval": 125.1,
+      "hold": 52,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 5879,
+      "interval": 109.9,
+      "hold": 69,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 5954,
+      "interval": 75.8,
+      "hold": 40,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 1544,
+      "scroll_y": 150,
+      "delta_y": 150
+    },
+    {
+      "t": 1767,
+      "scroll_y": 298,
+      "delta_y": 148
+    },
+    {
+      "t": 2191,
+      "scroll_y": 365,
+      "delta_y": 67
+    },
+    {
+      "t": 2789,
+      "scroll_y": 464,
+      "delta_y": 99
+    },
+    {
+      "t": 3153,
+      "scroll_y": 562,
+      "delta_y": 98
+    },
+    {
+      "t": 3719,
+      "scroll_y": 592,
+      "delta_y": 30
+    },
+    {
+      "t": 3930,
+      "scroll_y": 724,
+      "delta_y": 132
+    },
+    {
+      "t": 4220,
+      "scroll_y": 831,
+      "delta_y": 107
+    },
+    {
+      "t": 4792,
+      "scroll_y": 987,
+      "delta_y": 156
+    },
+    {
+      "t": 5278,
+      "scroll_y": 1043,
+      "delta_y": 56
+    },
+    {
+      "t": 5452,
+      "scroll_y": 1132,
+      "delta_y": 89
+    },
+    {
+      "t": 5823,
+      "scroll_y": 1226,
+      "delta_y": 94
+    },
+    {
+      "t": 6165,
+      "scroll_y": 1361,
+      "delta_y": 135
+    },
+    {
+      "t": 6396,
+      "scroll_y": 1410,
+      "delta_y": 49
+    },
+    {
+      "t": 6811,
+      "scroll_y": 1577,
+      "delta_y": 167
+    },
+    {
+      "t": 6993,
+      "scroll_y": 1696,
+      "delta_y": 119
+    },
+    {
+      "t": 7564,
+      "scroll_y": 1750,
+      "delta_y": 54
+    },
+    {
+      "t": 7859,
+      "scroll_y": 1859,
+      "delta_y": 109
+    },
+    {
+      "t": 8230,
+      "scroll_y": 1974,
+      "delta_y": 115
+    },
+    {
+      "t": 8762,
+      "scroll_y": 2009,
+      "delta_y": 35
+    },
+    {
+      "t": 9211,
+      "scroll_y": 2068,
+      "delta_y": 59
+    },
+    {
+      "t": 9570,
+      "scroll_y": 2100,
+      "delta_y": 32
+    },
+    {
+      "t": 10094,
+      "scroll_y": 2256,
+      "delta_y": 156
+    },
+    {
+      "t": 10292,
+      "scroll_y": 2428,
+      "delta_y": 172
+    },
+    {
+      "t": 10686,
+      "scroll_y": 2582,
+      "delta_y": 154
+    },
+    {
+      "t": 11020,
+      "scroll_y": 2731,
+      "delta_y": 149
+    },
+    {
+      "t": 11547,
+      "scroll_y": 2819,
+      "delta_y": 88
+    },
+    {
+      "t": 12102,
+      "scroll_y": 2954,
+      "delta_y": 135
+    },
+    {
+      "t": 12676,
+      "scroll_y": 3043,
+      "delta_y": 89
+    },
+    {
+      "t": 13061,
+      "scroll_y": 3143,
+      "delta_y": 100
+    },
+    {
+      "t": 13635,
+      "scroll_y": 3259,
+      "delta_y": 116
+    }
+  ],
+  "click_events": [
+    {
+      "x": 607,
+      "y": 726,
+      "t": 10811,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 2316,
+      "details": {}
+    },
+    {
+      "action": "filter_applied",
+      "t": 6178,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 10039,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 13591,
+      "details": {}
+    }
+  ]
+}

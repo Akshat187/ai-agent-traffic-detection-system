@@ -3,8 +3,8 @@
   "visitor_id": "vis_agentic_ai_061",
   "task": "shopping",
   "start_time": 1724903660000,
-  "end_time": 1724903669231,
-  "duration_ms": 9231.0,
+  "end_time": 1724903669952,
+  "duration_ms": 9952.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_dom_agent",
@@ -25,70 +25,65 @@
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 1846,
+      "t": 1990,
       "scroll_y": 317,
       "delta_y": 317
     },
     {
-      "t": 3091,
-      "scroll_y": 618,
-      "delta_y": 301
-    },
-    {
-      "t": 4585,
-      "scroll_y": 970,
-      "delta_y": 352
+      "t": 3380,
+      "scroll_y": 701,
+      "delta_y": 384
     }
   ],
   "click_events": [
     {
       "x": 300,
       "y": 250,
-      "t": 493,
+      "t": 700,
       "target_category": "input"
     },
     {
       "x": 520,
       "y": 380,
-      "t": 3297,
+      "t": 3934,
       "target_category": "button"
     },
     {
       "x": 750,
       "y": 620,
-      "t": 5704,
+      "t": 6045,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 493,
+      "t": 700,
       "details": {
         "target": "search_input"
       }
     },
     {
       "action": "item_selected",
-      "t": 3297,
+      "t": 3934,
       "details": {
         "target": "item_card"
       }
     },
     {
       "action": "quantity_updated",
-      "t": 5704,
+      "t": 6045,
       "details": {
         "target": "action_button"
       }
     },
     {
       "action": "checkout_initiated",
-      "t": 8627,
+      "t": 8957,
       "details": {
         "target": "confirm_button"
       }
     }
   ],
-  "active_duration_ms": 9231.0
+  "active_duration_ms": 9952.0
 }

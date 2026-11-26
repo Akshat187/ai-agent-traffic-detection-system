@@ -3,13 +3,13 @@
   "visitor_id": "vis_agentic_ai_004",
   "task": "shopping",
   "start_time": 1724900240000,
-  "end_time": 1724900249370,
-  "duration_ms": 9370.0,
+  "end_time": 1724900251299,
+  "duration_ms": 11299.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_dom_agent",
   "browser_signals": {
-    "webdriver": false,
+    "webdriver": true,
     "screen_width": 1920,
     "screen_height": 1080,
     "viewport_width": 1280,
@@ -25,70 +25,75 @@
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 1874,
-      "scroll_y": 270,
-      "delta_y": 270
+      "t": 2259,
+      "scroll_y": 279,
+      "delta_y": 279
     },
     {
-      "t": 3734,
-      "scroll_y": 543,
-      "delta_y": 273
+      "t": 3595,
+      "scroll_y": 517,
+      "delta_y": 238
     },
     {
-      "t": 5505,
-      "scroll_y": 919,
-      "delta_y": 376
+      "t": 5124,
+      "scroll_y": 770,
+      "delta_y": 253
+    },
+    {
+      "t": 6587,
+      "scroll_y": 1074,
+      "delta_y": 304
     }
   ],
   "click_events": [
     {
       "x": 300,
       "y": 250,
-      "t": 1116,
+      "t": 966,
       "target_category": "input"
     },
     {
       "x": 520,
       "y": 380,
-      "t": 3761,
+      "t": 4155,
       "target_category": "button"
     },
     {
       "x": 750,
       "y": 620,
-      "t": 5311,
+      "t": 7718,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 1116,
+      "t": 966,
       "details": {
         "target": "search_input"
       }
     },
     {
       "action": "item_selected",
-      "t": 3761,
+      "t": 4155,
       "details": {
         "target": "item_card"
       }
     },
     {
       "action": "quantity_updated",
-      "t": 5311,
+      "t": 7718,
       "details": {
         "target": "action_button"
       }
     },
     {
       "action": "checkout_initiated",
-      "t": 8560,
+      "t": 10412,
       "details": {
         "target": "confirm_button"
       }
     }
   ],
-  "active_duration_ms": 9370.0
+  "active_duration_ms": 11299.0
 }

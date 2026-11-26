@@ -3,8 +3,8 @@
   "visitor_id": "vis_agentic_ai_044",
   "task": "travel",
   "start_time": 1724902640000,
-  "end_time": 1724902647844,
-  "duration_ms": 7844.0,
+  "end_time": 1724902649958,
+  "duration_ms": 9958.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_hybrid_agent",
@@ -31,72 +31,62 @@
     {
       "x": 450,
       "y": 320,
-      "t": 1027,
+      "t": 1422,
       "type": "move"
     },
     {
       "x": 680,
       "y": 540,
-      "t": 3337,
+      "t": 5568,
       "type": "move"
     }
   ],
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 1568,
-      "scroll_y": 288,
-      "delta_y": 288
+      "t": 1991,
+      "scroll_y": 258,
+      "delta_y": 258
     },
     {
-      "t": 2546,
-      "scroll_y": 602,
-      "delta_y": 314
+      "t": 3685,
+      "scroll_y": 587,
+      "delta_y": 329
     },
     {
-      "t": 3650,
-      "scroll_y": 938,
-      "delta_y": 336
-    },
-    {
-      "t": 4883,
-      "scroll_y": 1255,
-      "delta_y": 317
-    },
-    {
-      "t": 5709,
-      "scroll_y": 1526,
-      "delta_y": 271
+      "t": 5548,
+      "scroll_y": 876,
+      "delta_y": 289
     }
   ],
   "click_events": [
     {
       "x": 450,
       "y": 320,
-      "t": 1027,
+      "t": 1422,
       "target_category": "button"
     },
     {
       "x": 680,
       "y": 540,
-      "t": 3337,
+      "t": 5568,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 1027,
+      "t": 1422,
       "details": {}
     },
     {
       "action": "item_selected",
-      "t": 3337,
+      "t": 5568,
       "details": {}
     },
     {
       "action": "checkout_initiated",
-      "t": 6622,
+      "t": 9012,
       "details": {}
     }
   ]

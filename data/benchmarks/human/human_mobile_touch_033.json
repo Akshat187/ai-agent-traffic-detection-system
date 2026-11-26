@@ -1,0 +1,288 @@
+{
+  "session_id": "bm_human_mobile_touch_forum_033",
+  "visitor_id": "vis_human_033",
+  "task": "forum",
+  "start_time": 1724901980000,
+  "end_time": 1724901991140,
+  "duration_ms": 11140.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_mobile_touch",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "touch",
+    "screen_width": 390,
+    "screen_height": 844,
+    "viewport_width": 1200,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": true,
+    "hardware_concurrency": 4,
+    "platform": "MacIntel",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [
+    {
+      "t": 2411,
+      "interval": 79.4,
+      "hold": 81,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2589,
+      "interval": 178.5,
+      "hold": 89,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2731,
+      "interval": 142.0,
+      "hold": 36,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3028,
+      "interval": 297.2,
+      "hold": 93,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3284,
+      "interval": 256.9,
+      "hold": 65,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3432,
+      "interval": 148.4,
+      "hold": 54,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3660,
+      "interval": 228.8,
+      "hold": 38,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3821,
+      "interval": 161.7,
+      "hold": 60,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4081,
+      "interval": 260.6,
+      "hold": 45,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4314,
+      "interval": 233.5,
+      "hold": 66,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4473,
+      "interval": 159.5,
+      "hold": 70,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4683,
+      "interval": 210.4,
+      "hold": 78,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4886,
+      "interval": 203.7,
+      "hold": 107,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4997,
+      "interval": 111.6,
+      "hold": 42,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 5086,
+      "interval": 90.0,
+      "hold": 78,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 5306,
+      "interval": 221.0,
+      "hold": 74,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 1114,
+      "scroll_y": 79,
+      "delta_y": 79
+    },
+    {
+      "t": 1278,
+      "scroll_y": 164,
+      "delta_y": 85
+    },
+    {
+      "t": 1453,
+      "scroll_y": 264,
+      "delta_y": 100
+    },
+    {
+      "t": 2035,
+      "scroll_y": 329,
+      "delta_y": 65
+    },
+    {
+      "t": 2471,
+      "scroll_y": 482,
+      "delta_y": 153
+    },
+    {
+      "t": 2919,
+      "scroll_y": 590,
+      "delta_y": 108
+    },
+    {
+      "t": 3395,
+      "scroll_y": 627,
+      "delta_y": 37
+    },
+    {
+      "t": 3953,
+      "scroll_y": 689,
+      "delta_y": 62
+    },
+    {
+      "t": 4242,
+      "scroll_y": 860,
+      "delta_y": 171
+    },
+    {
+      "t": 4722,
+      "scroll_y": 1022,
+      "delta_y": 162
+    },
+    {
+      "t": 5101,
+      "scroll_y": 1119,
+      "delta_y": 97
+    },
+    {
+      "t": 5430,
+      "scroll_y": 1204,
+      "delta_y": 85
+    },
+    {
+      "t": 5824,
+      "scroll_y": 1366,
+      "delta_y": 162
+    },
+    {
+      "t": 6164,
+      "scroll_y": 1533,
+      "delta_y": 167
+    },
+    {
+      "t": 6405,
+      "scroll_y": 1647,
+      "delta_y": 114
+    },
+    {
+      "t": 6953,
+      "scroll_y": 1713,
+      "delta_y": 66
+    },
+    {
+      "t": 7253,
+      "scroll_y": 1815,
+      "delta_y": 102
+    },
+    {
+      "t": 7670,
+      "scroll_y": 1913,
+      "delta_y": 98
+    },
+    {
+      "t": 8165,
+      "scroll_y": 2019,
+      "delta_y": 106
+    },
+    {
+      "t": 8478,
+      "scroll_y": 2096,
+      "delta_y": 77
+    },
+    {
+      "t": 9040,
+      "scroll_y": 2188,
+      "delta_y": 92
+    },
+    {
+      "t": 9565,
+      "scroll_y": 2320,
+      "delta_y": 132
+    },
+    {
+      "t": 9834,
+      "scroll_y": 2488,
+      "delta_y": 168
+    }
+  ],
+  "click_events": [
+    {
+      "x": 1099,
+      "y": 442,
+      "t": 7797,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 1671,
+      "details": {}
+    },
+    {
+      "action": "filter_applied",
+      "t": 4456,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 7241,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 9803,
+      "details": {}
+    }
+  ]
+}

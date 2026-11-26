@@ -69,6 +69,8 @@ class KeyboardEventSchema(BaseModel):
     interval: float = 0.0  # inter-key latency
     hold: float = 0.0      # key hold duration
     is_paste: bool = False
+    is_trusted: bool = True
+    is_programmatic: bool = False
 
 
 class ScrollEventSchema(BaseModel):
@@ -82,6 +84,7 @@ class ClickEventSchema(BaseModel):
     y: float
     t: float
     target_category: str = "general"
+    is_trusted: bool = True
 
 
 class BrowserSignalsSchema(BaseModel):
@@ -141,14 +144,17 @@ class SiteResponse(BaseModel):
 
 
 class SessionFeedbackRequest(BaseModel):
-    analyst_label: Literal["HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI", "UNCERTAIN"]
+    analyst_label: Optional[Literal["HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI", "UNCERTAIN"]] = None
+    is_correct: Optional[bool] = None
     notes: str = Field(default="", max_length=1000)
 
 
 class SessionFeedbackResponse(BaseModel):
     id: int
     session_id: str
+    predicted_label: Optional[str] = None
     analyst_label: str
+    is_correct: Optional[bool] = None
     notes: str
     created_at: str
 
@@ -289,6 +295,8 @@ class SessionSummary(BaseModel):
     last_seq: int = 0
     active_duration_ms: Optional[float] = None
     updated_at: Optional[str] = None
+    feedback_is_correct: Optional[bool] = None
+    feedback_label: Optional[str] = None
 
 
 class SessionDetailResponse(BaseModel):

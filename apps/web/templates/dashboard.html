@@ -190,6 +190,7 @@
           <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Mean Confidence</div>
           <div class="text-3xl font-extrabold text-indigo-600 mt-1 font-mono tracking-tight" id="stat-conf">--%</div>
           <div class="text-[11px] text-slate-500 mt-2 font-medium" id="stat-risk">Avg Risk: -- / 100</div>
+          <div class="text-[11px] text-emerald-700 mt-1 font-semibold font-mono" id="stat-live-accuracy">Verified Accuracy: -- (0)</div>
         </div>
 
       </div>
@@ -248,6 +249,7 @@
                 <th class="py-3 px-3.5">Ingested At</th>
                 <th class="py-3 px-3.5">Task</th>
                 <th class="py-3 px-3.5">Verdict</th>
+                <th class="py-3 px-3.5">Verify</th>
                 <th class="py-3 px-3.5">Confidence</th>
                 <th class="py-3 px-3.5">Risk Score</th>
                 <th class="py-3 px-3.5">WebDriver</th>
@@ -256,7 +258,7 @@
               </tr>
             </thead>
             <tbody id="overview-recent-tbody" class="divide-y divide-slate-100 font-normal text-slate-700">
-              <tr><td colspan="10" class="py-8 text-center text-slate-400">Loading incoming telemetry...</td></tr>
+              <tr><td colspan="11" class="py-8 text-center text-slate-400">Loading incoming telemetry...</td></tr>
             </tbody>
           </table>
         </div>
@@ -326,6 +328,7 @@
                 <th class="py-3 px-3.5">Duration</th>
                 <th class="py-3 px-3.5">Ground Truth</th>
                 <th class="py-3 px-3.5">Final Verdict</th>
+                <th class="py-3 px-3.5">Verify</th>
                 <th class="py-3 px-3.5">Confidence</th>
                 <th class="py-3 px-3.5">Risk</th>
                 <th class="py-3 px-3.5">Explainability Snippet</th>
@@ -362,7 +365,21 @@
             </span>
           </div>
         </div>
-        <div class="flex items-center gap-2 w-full lg:w-auto shrink-0">
+        <div class="flex items-center gap-2 w-full lg:w-auto shrink-0 flex-wrap">
+          <div id="explorer-feedback-bar" class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-[10px]">
+            <div id="explorer-fb-prompt" class="flex items-center gap-1">
+              <span class="text-slate-600 font-semibold px-1.5">Verify:</span>
+              <button type="button" onclick="confirmExplorerVerdict()" class="px-2 py-1 rounded-lg bg-white hover:bg-emerald-50 text-emerald-700 font-bold border border-slate-200">✓ Correct</button>
+              <button type="button" onclick="openExplorerCorrectionPicker()" class="px-2 py-1 rounded-lg bg-white hover:bg-rose-50 text-rose-700 font-bold border border-slate-200">✗ Wrong</button>
+            </div>
+            <div id="explorer-fb-picker" class="hidden flex items-center gap-1">
+              <span class="text-slate-600 font-semibold px-1">True class:</span>
+              <button type="button" data-fb-cls="HUMAN" onclick="submitExplorerFeedback('HUMAN', false)" class="px-2 py-1 rounded-lg bg-white hover:bg-emerald-50 text-emerald-700 font-bold border border-slate-200">Human</button>
+              <button type="button" data-fb-cls="TRADITIONAL_AUTOMATION" onclick="submitExplorerFeedback('TRADITIONAL_AUTOMATION', false)" class="px-2 py-1 rounded-lg bg-white hover:bg-rose-50 text-rose-700 font-bold border border-slate-200">Bot</button>
+              <button type="button" data-fb-cls="AGENTIC_AI" onclick="submitExplorerFeedback('AGENTIC_AI', false)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-amber-700 font-bold border border-slate-200">AI Agent</button>
+            </div>
+            <span id="explorer-fb-status" class="text-[10px] font-bold text-emerald-700 px-2 hidden"></span>
+          </div>
           <label for="explorer-session-select" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap hidden sm:block">Switch</label>
           <select id="explorer-session-select" class="bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-700 w-full lg:w-80 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm font-medium">
             <option value="">Choose session to explore...</option>
@@ -832,10 +849,11 @@
               <input type="range" min="0.02" max="0.15" step="0.01" value="0.05" class="w-full accent-indigo-600">
             </div>
 
-            <div class="pt-2">
-              <button class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition">
+            <div class="pt-2 space-y-2">
+              <button id="btn-retrain-model" type="button" onclick="triggerModelRetrain()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-sm">
                 Save &amp; Retrain Classifiers
               </button>
+              <div id="retrain-status" class="text-[11px] font-mono text-slate-600 hidden"></div>
             </div>
           </div>
         </div>

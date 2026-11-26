@@ -94,6 +94,7 @@ def apply_source_filter(query, source: Optional[str]):
 def build_session_summary(s: SessionRecord) -> SessionSummary:
     explanation = s.verdict.human_explanation if s.verdict else "Analysis pending"
     wf = s.features.webdriver_flag if s.features else False
+    latest_fb = s.feedbacks[0] if getattr(s, "feedbacks", None) else None
     return SessionSummary(
         session_id=s.session_id,
         site_id=s.site_id,
@@ -124,6 +125,8 @@ def build_session_summary(s: SessionRecord) -> SessionSummary:
         last_seq=s.last_seq or 0,
         active_duration_ms=s.active_ms,
         updated_at=_fmt_dt(s.updated_at),
+        feedback_is_correct=latest_fb.is_correct if latest_fb else None,
+        feedback_label=latest_fb.analyst_label if latest_fb else None,
     )
 
 

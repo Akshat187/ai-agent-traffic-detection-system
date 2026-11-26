@@ -34,46 +34,31 @@ def _save_artifact(artifact: Any, output_path: Path) -> None:
             pickle.dump(artifact, fp)
 
 
-def load_labeled_dataset(benchmark_dir: Path) -> List[Tuple[List[float], str, str]]:
-    """Returns list of (feature_vector, label, visitor_group) tuples."""
+def load_labeled_dataset(benchmark_dir: Path = None) -> List[Tuple[List[float], str, str]]:
+    """
+    Loads training samples from disjoint procedural seeds (NOT data/benchmarks/,
+    which is reserved as a strict zero-leakage holdout test set).
+    """
     clf = BehavioralClassifier()
     samples: List[Tuple[List[float], str, str]] = []
 
-    if benchmark_dir.exists():
-        for cls in ["HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI"]:
-            cls_dir = benchmark_dir / cls.lower()
-            if not cls_dir.exists():
-                continue
-            for json_file in sorted(cls_dir.glob("*.json")):
-                try:
-                    with open(json_file, "r", encoding="utf-8") as fp:
-                        s = json.load(fp)
+    rng = random.Random(202601)
+    subtypes = {
+        "HUMAN": ["organic_mouse", "keyboard_focused", "prompt_typing"],
+        "TRADITIONAL_AUTOMATION": ["deterministic", "randomized", "evasive", "headless_dom"],
+        "AGENTIC_AI": ["trajectory_agent", "dom_agent", "hybrid_agent"],
+    }
+    for cls, st_list in subtypes.items():
+        for task in ["shopping", "travel", "forum"]:
+            for st in st_list:
+                for i in range(12):
+                    s = generate_synthetic_session(
+                        cls, task, index=i, subtype=st, seed=rng.randint(1000000, 9999999)
+                    )
                     feats = extract_all_features(s)
                     vec = clf.extract_feature_vector(feats)
-                    visitor_group = str(s.get("visitor_id") or s.get("session_id") or json_file.stem)
+                    visitor_group = f"train_synth_{cls}_{st}_{i}"
                     samples.append((vec, cls, visitor_group))
-                except Exception:
-                    continue
-
-    # Supplement training set with procedural seeds if dataset is small (< 100 samples)
-    if len(samples) < 100:
-        rng = random.Random(42)
-        subtypes = {
-            "HUMAN": ["organic_mouse", "keyboard_focused"],
-            "TRADITIONAL_AUTOMATION": ["deterministic", "randomized", "evasive", "headless_dom"],
-            "AGENTIC_AI": ["trajectory_agent", "dom_agent", "hybrid_agent"],
-        }
-        for cls, st_list in subtypes.items():
-            for task in ["shopping", "travel", "forum"]:
-                for st in st_list:
-                    for i in range(5):
-                        s = generate_synthetic_session(
-                            cls, task, index=i, subtype=st, seed=rng.randint(0, 1000000)
-                        )
-                        feats = extract_all_features(s)
-                        vec = clf.extract_feature_vector(feats)
-                        visitor_group = f"synth_{cls}_{st}_{i}"
-                        samples.append((vec, cls, visitor_group))
 
     return samples
 
@@ -104,8 +89,43 @@ def visitor_grouped_split(
     return X_train, y_train, X_val, y_val
 
 
+def load_external_empirical_dataset(clf: BehavioralClassifier) -> List[Tuple[List[float], str, str]]:
+    """Loads real empirical datasets from data/external/ (Balabit, HF Keystrokes, HF Lumos)."""
+    ext_samples: List[Tuple[List[float], str, str]] = []
+    try:
+        from scripts.download_and_train import (
+            download_balabit_human_data,
+            download_huggingface_keystrokes,
+            download_huggingface_web_agent_traces,
+        )
+        for loader in (
+            download_balabit_human_data,
+            download_huggingface_keystrokes,
+            download_huggingface_web_agent_traces,
+        ):
+            for s in loader():
+                try:
+                    lbl = s.get("ground_truth_label")
+                    if lbl not in ("HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI"):
+                        continue
+                    feats = extract_all_features(s)
+                    vec = clf.extract_feature_vector(feats)
+                    group = str(s.get("visitor_id") or s.get("session_id"))
+                    ext_samples.append((vec, lbl, group))
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return ext_samples
+
+
 def train_and_persist(output_path: Path) -> Dict[str, Any]:
+    probe = BehavioralClassifier()
     samples = load_labeled_dataset(BASE_DIR / "data" / "benchmarks")
+    ext_samples = load_external_empirical_dataset(probe)
+    if ext_samples:
+        print(f"Merged {len(ext_samples)} real empirical samples from data/external/.")
+        samples.extend(ext_samples)
     X_train, y_train, X_val, y_val = visitor_grouped_split(samples)
 
     clf = BehavioralClassifier()

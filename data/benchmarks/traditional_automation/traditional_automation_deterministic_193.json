@@ -3,8 +3,8 @@
   "visitor_id": "vis_traditional_automation_193",
   "task": "shopping",
   "start_time": 1724911580000,
-  "end_time": 1724911580711,
-  "duration_ms": 711.0,
+  "end_time": 1724911580889,
+  "duration_ms": 889.0,
   "ground_truth_label": "TRADITIONAL_AUTOMATION",
   "is_synthetic": false,
   "data_source": "benchmark_deterministic",
@@ -29,214 +29,248 @@
       "type": "move"
     },
     {
-      "x": 233,
-      "y": 222,
-      "t": 32,
+      "x": 226,
+      "y": 217,
+      "t": 31,
       "type": "move"
     },
     {
-      "x": 267,
-      "y": 244,
-      "t": 63,
+      "x": 252,
+      "y": 235,
+      "t": 62,
       "type": "move"
     },
     {
-      "x": 300,
-      "y": 267,
-      "t": 95,
+      "x": 278,
+      "y": 252,
+      "t": 93,
       "type": "move"
     },
     {
-      "x": 333,
-      "y": 289,
-      "t": 126,
+      "x": 304,
+      "y": 270,
+      "t": 124,
       "type": "move"
     },
     {
-      "x": 367,
-      "y": 311,
-      "t": 158,
+      "x": 330,
+      "y": 287,
+      "t": 155,
       "type": "move"
     },
     {
-      "x": 400,
-      "y": 333,
-      "t": 189,
+      "x": 357,
+      "y": 304,
+      "t": 185,
       "type": "move"
     },
     {
-      "x": 433,
-      "y": 356,
-      "t": 221,
+      "x": 383,
+      "y": 322,
+      "t": 216,
       "type": "move"
     },
     {
-      "x": 467,
-      "y": 378,
-      "t": 252,
+      "x": 409,
+      "y": 339,
+      "t": 247,
       "type": "move"
     },
     {
-      "x": 500,
-      "y": 400,
-      "t": 284,
+      "x": 435,
+      "y": 357,
+      "t": 278,
       "type": "move"
     },
     {
-      "x": 533,
-      "y": 422,
-      "t": 316,
+      "x": 461,
+      "y": 374,
+      "t": 309,
       "type": "move"
     },
     {
-      "x": 567,
-      "y": 444,
-      "t": 347,
+      "x": 487,
+      "y": 391,
+      "t": 340,
       "type": "move"
     },
     {
-      "x": 600,
-      "y": 467,
-      "t": 379,
+      "x": 513,
+      "y": 409,
+      "t": 371,
       "type": "move"
     },
     {
-      "x": 633,
-      "y": 489,
-      "t": 410,
+      "x": 539,
+      "y": 426,
+      "t": 402,
       "type": "move"
     },
     {
-      "x": 667,
-      "y": 511,
-      "t": 442,
+      "x": 565,
+      "y": 443,
+      "t": 433,
       "type": "move"
     },
     {
-      "x": 700,
-      "y": 533,
-      "t": 473,
+      "x": 591,
+      "y": 461,
+      "t": 464,
       "type": "move"
     },
     {
-      "x": 733,
-      "y": 556,
-      "t": 505,
+      "x": 617,
+      "y": 478,
+      "t": 495,
       "type": "move"
     },
     {
-      "x": 767,
-      "y": 578,
-      "t": 536,
+      "x": 643,
+      "y": 496,
+      "t": 526,
+      "type": "move"
+    },
+    {
+      "x": 670,
+      "y": 513,
+      "t": 556,
+      "type": "move"
+    },
+    {
+      "x": 696,
+      "y": 530,
+      "t": 587,
+      "type": "move"
+    },
+    {
+      "x": 722,
+      "y": 548,
+      "t": 618,
+      "type": "move"
+    },
+    {
+      "x": 748,
+      "y": 565,
+      "t": 649,
+      "type": "move"
+    },
+    {
+      "x": 774,
+      "y": 583,
+      "t": 680,
       "type": "move"
     },
     {
       "x": 800,
       "y": 600,
-      "t": 568,
+      "t": 711,
       "type": "move"
     }
   ],
   "keyboard_events": [
     {
-      "t": 84,
-      "interval": 34,
-      "hold": 28,
+      "t": 87,
+      "interval": 37,
+      "hold": 29,
       "is_paste": false
     },
     {
-      "t": 120,
-      "interval": 36,
-      "hold": 21,
-      "is_paste": false
-    },
-    {
-      "t": 156,
-      "interval": 36,
-      "hold": 15,
-      "is_paste": false
-    },
-    {
-      "t": 189,
-      "interval": 33,
-      "hold": 26,
-      "is_paste": false
-    },
-    {
-      "t": 223,
-      "interval": 34,
-      "hold": 26,
-      "is_paste": false
-    },
-    {
-      "t": 259,
-      "interval": 36,
-      "hold": 27,
-      "is_paste": false
-    },
-    {
-      "t": 293,
-      "interval": 34,
-      "hold": 18,
-      "is_paste": false
-    },
-    {
-      "t": 327,
-      "interval": 34,
-      "hold": 21,
-      "is_paste": false
-    },
-    {
-      "t": 363,
-      "interval": 36,
+      "t": 128,
+      "interval": 41,
       "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 165,
+      "interval": 37,
+      "hold": 22,
+      "is_paste": false
+    },
+    {
+      "t": 205,
+      "interval": 40,
+      "hold": 17,
+      "is_paste": false
+    },
+    {
+      "t": 246,
+      "interval": 41,
+      "hold": 19,
+      "is_paste": false
+    },
+    {
+      "t": 284,
+      "interval": 38,
+      "hold": 24,
+      "is_paste": false
+    },
+    {
+      "t": 321,
+      "interval": 37,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 359,
+      "interval": 38,
+      "hold": 21,
       "is_paste": false
     }
   ],
   "scroll_events": [
     {
-      "t": 35,
-      "scroll_y": 330,
-      "delta_y": 330
+      "t": 44,
+      "scroll_y": 381,
+      "delta_y": 381
     },
     {
-      "t": 165,
-      "scroll_y": 660,
-      "delta_y": 330
+      "t": 176,
+      "scroll_y": 762,
+      "delta_y": 381
     },
     {
-      "t": 317,
-      "scroll_y": 990,
-      "delta_y": 330
+      "t": 310,
+      "scroll_y": 1143,
+      "delta_y": 381
     },
     {
-      "t": 479,
-      "scroll_y": 1320,
-      "delta_y": 330
+      "t": 501,
+      "scroll_y": 1524,
+      "delta_y": 381
+    },
+    {
+      "t": 625,
+      "scroll_y": 1905,
+      "delta_y": 381
+    },
+    {
+      "t": 742,
+      "scroll_y": 2286,
+      "delta_y": 381
     }
   ],
   "click_events": [
     {
       "x": 800,
       "y": 600,
-      "t": 604,
+      "t": 755,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "filter_applied",
-      "t": 248,
+      "t": 311,
       "details": {}
     },
     {
       "action": "quantity_updated",
-      "t": 426,
+      "t": 533,
       "details": {}
     },
     {
       "action": "checkout_initiated",
-      "t": 568,
+      "t": 711,
       "details": {}
     }
   ]

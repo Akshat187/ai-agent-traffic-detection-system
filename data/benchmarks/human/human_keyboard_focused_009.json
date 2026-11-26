@@ -1,0 +1,222 @@
+{
+  "session_id": "bm_human_keyboard_focused_forum_009",
+  "visitor_id": "vis_human_009",
+  "task": "forum",
+  "start_time": 1724900540000,
+  "end_time": 1724900550529,
+  "duration_ms": 10529.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_keyboard_focused",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "mouse",
+    "screen_width": 1440,
+    "screen_height": 900,
+    "viewport_width": 1200,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 12,
+    "platform": "MacIntel",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [
+    {
+      "t": 1713,
+      "interval": 134.3,
+      "hold": 94,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2078,
+      "interval": 365.2,
+      "hold": 43,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2229,
+      "interval": 151.2,
+      "hold": 95,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2452,
+      "interval": 223.3,
+      "hold": 60,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2685,
+      "interval": 233.3,
+      "hold": 75,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2928,
+      "interval": 243.6,
+      "hold": 47,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3081,
+      "interval": 153.2,
+      "hold": 68,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3240,
+      "interval": 159.1,
+      "hold": 67,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3315,
+      "interval": 75.8,
+      "hold": 69,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3430,
+      "interval": 115.7,
+      "hold": 63,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3515,
+      "interval": 85.5,
+      "hold": 87,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 1052,
+      "scroll_y": 171,
+      "delta_y": 171
+    },
+    {
+      "t": 1406,
+      "scroll_y": 318,
+      "delta_y": 147
+    },
+    {
+      "t": 1733,
+      "scroll_y": 457,
+      "delta_y": 139
+    },
+    {
+      "t": 2161,
+      "scroll_y": 538,
+      "delta_y": 81
+    },
+    {
+      "t": 2594,
+      "scroll_y": 624,
+      "delta_y": 86
+    },
+    {
+      "t": 3130,
+      "scroll_y": 685,
+      "delta_y": 61
+    },
+    {
+      "t": 3693,
+      "scroll_y": 826,
+      "delta_y": 141
+    },
+    {
+      "t": 4213,
+      "scroll_y": 979,
+      "delta_y": 153
+    },
+    {
+      "t": 4759,
+      "scroll_y": 1083,
+      "delta_y": 104
+    },
+    {
+      "t": 5331,
+      "scroll_y": 1158,
+      "delta_y": 75
+    },
+    {
+      "t": 5837,
+      "scroll_y": 1203,
+      "delta_y": 45
+    },
+    {
+      "t": 6396,
+      "scroll_y": 1326,
+      "delta_y": 123
+    },
+    {
+      "t": 6911,
+      "scroll_y": 1424,
+      "delta_y": 98
+    },
+    {
+      "t": 7450,
+      "scroll_y": 1561,
+      "delta_y": 137
+    },
+    {
+      "t": 8013,
+      "scroll_y": 1716,
+      "delta_y": 155
+    },
+    {
+      "t": 8443,
+      "scroll_y": 1869,
+      "delta_y": 153
+    },
+    {
+      "t": 8667,
+      "scroll_y": 1925,
+      "delta_y": 56
+    },
+    {
+      "t": 9187,
+      "scroll_y": 1955,
+      "delta_y": 30
+    }
+  ],
+  "click_events": [
+    {
+      "x": 420,
+      "y": 380,
+      "t": 8949,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 2105,
+      "details": {
+        "trusted": true
+      }
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 8949,
+      "details": {
+        "trusted": true
+      }
+    }
+  ]
+}

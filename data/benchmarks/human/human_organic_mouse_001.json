@@ -10,6 +10,7 @@
   "data_source": "benchmark_organic_mouse",
   "browser_signals": {
     "webdriver": false,
+    "pointer_type": "mouse",
     "screen_width": 1440,
     "screen_height": 900,
     "viewport_width": 1440,
@@ -2254,49 +2255,57 @@
       "t": 2286,
       "interval": 108.3,
       "hold": 104,
-      "is_paste": false
+      "is_paste": false,
+      "is_trusted": true
     },
     {
       "t": 2645,
       "interval": 359.3,
       "hold": 36,
-      "is_paste": false
+      "is_paste": false,
+      "is_trusted": true
     },
     {
       "t": 2801,
       "interval": 156.4,
       "hold": 98,
-      "is_paste": false
+      "is_paste": false,
+      "is_trusted": true
     },
     {
       "t": 3037,
       "interval": 236.6,
       "hold": 58,
-      "is_paste": false
+      "is_paste": false,
+      "is_trusted": true
     },
     {
       "t": 3237,
       "interval": 200.4,
       "hold": 71,
-      "is_paste": false
+      "is_paste": false,
+      "is_trusted": true
     },
     {
       "t": 3416,
       "interval": 179.7,
       "hold": 96,
-      "is_paste": false
+      "is_paste": false,
+      "is_trusted": true
     },
     {
       "t": 3619,
       "interval": 203.4,
       "hold": 46,
-      "is_paste": false
+      "is_paste": false,
+      "is_trusted": true
     },
     {
       "t": 3820,
       "interval": 201.6,
       "hold": 96,
-      "is_paste": false
+      "is_paste": false,
+      "is_trusted": true
     }
   ],
   "scroll_events": [
@@ -2491,7 +2500,8 @@
       "x": 609,
       "y": 540,
       "t": 9972,
-      "target_category": "button"
+      "target_category": "button",
+      "is_trusted": true
     }
   ],
   "task_actions": [

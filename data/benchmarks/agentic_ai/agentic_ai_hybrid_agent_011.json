@@ -3,20 +3,20 @@
   "visitor_id": "vis_agentic_ai_011",
   "task": "travel",
   "start_time": 1724900660000,
-  "end_time": 1724900667028,
-  "duration_ms": 7028.0,
+  "end_time": 1724900667490,
+  "duration_ms": 7490.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_hybrid_agent",
   "browser_signals": {
-    "webdriver": false,
+    "webdriver": true,
     "screen_width": 1920,
     "screen_height": 1080,
     "viewport_width": 1280,
     "viewport_height": 800,
     "device_pixel_ratio": 1.0,
     "touch_support": false,
-    "hardware_concurrency": 8,
+    "hardware_concurrency": 4,
     "platform": "Win32",
     "language": "en-US",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
@@ -31,72 +31,62 @@
     {
       "x": 450,
       "y": 320,
-      "t": 687,
+      "t": 790,
       "type": "move"
     },
     {
       "x": 680,
       "y": 540,
-      "t": 3615,
+      "t": 3571,
       "type": "move"
     }
   ],
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 1405,
-      "scroll_y": 297,
-      "delta_y": 297
+      "t": 1498,
+      "scroll_y": 377,
+      "delta_y": 377
     },
     {
-      "t": 3052,
-      "scroll_y": 545,
-      "delta_y": 248
+      "t": 3184,
+      "scroll_y": 582,
+      "delta_y": 205
     },
     {
-      "t": 4524,
-      "scroll_y": 839,
-      "delta_y": 294
-    },
-    {
-      "t": 6424,
-      "scroll_y": 1118,
-      "delta_y": 279
-    },
-    {
-      "t": 7428,
-      "scroll_y": 1427,
-      "delta_y": 309
+      "t": 4141,
+      "scroll_y": 911,
+      "delta_y": 329
     }
   ],
   "click_events": [
     {
       "x": 450,
       "y": 320,
-      "t": 687,
+      "t": 790,
       "target_category": "button"
     },
     {
       "x": 680,
       "y": 540,
-      "t": 3615,
+      "t": 3571,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 687,
+      "t": 790,
       "details": {}
     },
     {
       "action": "item_selected",
-      "t": 3615,
+      "t": 3571,
       "details": {}
     },
     {
       "action": "checkout_initiated",
-      "t": 5891,
+      "t": 6224,
       "details": {}
     }
   ]

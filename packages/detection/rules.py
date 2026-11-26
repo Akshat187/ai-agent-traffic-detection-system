@@ -73,10 +73,10 @@ class RuleEngine:
         key_count = features.get("key_event_count", 0)
         key_cv = features.get("key_latency_cv", 0.0)
         key_hold = features.get("key_mean_hold_time", 0.0)
-        has_robotic_hold = (0.0 < key_hold < 35.0)
+        # Fast human typists routinely average 25-34ms holds; require <18ms or (<25ms with robotic CV <0.10)
+        has_robotic_hold = (0.0 < key_hold < 18.0) or (0.0 < key_hold < 25.0 and key_cv < 0.10)
         is_touch_session = (
             features.get("pointer_type") == "touch"
-            or features.get("touch_support", 0.0) == 1.0
         ) and not features.get("webdriver_flag")
         is_a11y_keyboard = (
             mouse_count < 3
@@ -105,6 +105,16 @@ class RuleEngine:
         if key_count >= 4 and (key_cv < 0.18 or has_robotic_hold):
             risk += self.config["uniform_keystrokes_penalty"]
             flags.append("SYNTHETIC_UNIFORM_KEYSTROKE_CADENCE")
+
+        # 3b. Untrusted synthetic DOM events (isTrusted === false) or programmatic input injection
+        untrusted_ratio = features.get("untrusted_event_ratio", 0.0)
+        prog_input_ratio = features.get("programmatic_input_ratio", 0.0)
+        if untrusted_ratio > 0.30:
+            risk += 35.0
+            flags.append("UNTRUSTED_SYNTHETIC_EVENTS")
+        if prog_input_ratio > 0.50:
+            risk += 25.0
+            flags.append("PROGRAMMATIC_INPUT_INJECTION")
 
         # 4. Instantaneous task completion (<300ms with multiple events)
         duration_ms = features.get("duration_ms", 1000.0)

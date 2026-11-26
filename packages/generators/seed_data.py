@@ -240,59 +240,120 @@ def generate_synthetic_session(
 
     # ——— HUMAN ————————————————————————————————————————————————————————————————
     if target_label == "HUMAN":
-        # Wide duration range — humans vary enormously in pace.
-        # Short sessions (3.5–6s) can look more bot-like — intentional class boundary noise.
-        duration = rng.randint(3500, 18000)
+        human_subtype = subtype or "organic_mouse"
 
-        sx, sy = rng.randint(80, 350), rng.randint(80, 350)
-        ex, ey = rng.randint(550, 1100), rng.randint(350, 750)
-        mouse_events = generate_human_mouse_path(sx, sy, ex, ey, int(duration * 0.65), rng)
+        if human_subtype in ("keyboard_focused", "prompt_typing"):
+            # Keyboard-centric / prompt-typing human: minimal or zero mouse movement,
+            # organic typing + occasional paste, 2-6s reading/prompting pauses, trusted submit.
+            duration = rng.randint(4500, 16000)
+            if human_subtype == "prompt_typing":
+                # Short initial move to focus prompt input, then cursor stays parked while typing
+                sx, sy = rng.randint(150, 400), rng.randint(200, 500)
+                ex, ey = rng.randint(420, 680), rng.randint(480, 620)
+                mouse_events = generate_human_mouse_path(sx, sy, ex, ey, 450, rng)
+                click_events = [
+                    {"x": ex, "y": ey, "t": 460, "target_category": "input", "is_trusted": True},
+                    {"x": ex + 120, "y": ey + 10, "t": int(duration * 0.90), "target_category": "button", "is_trusted": True},
+                ]
+                task_actions = [
+                    {"action": "input_focus", "t": 460, "details": {"trusted": True}},
+                    {"action": "button_trigger", "t": int(duration * 0.90), "details": {"trusted": True}},
+                ]
+            else:
+                mouse_events = []
+                click_events = [
+                    {"x": 420, "y": 380, "t": int(duration * 0.85), "target_category": "button", "is_trusted": True},
+                ]
+                task_actions = [
+                    {"action": actions_vocab[0], "t": int(duration * 0.20), "details": {"trusted": True}},
+                    {"action": actions_vocab[4], "t": int(duration * 0.85), "details": {"trusted": True}},
+                ]
 
-        # Variable typing — CV typically 0.3–0.6 for humans.
-        # Some fast typists have lower CV that can overlap with bot range.
-        keyboard_events = []
-        cur_k_t = int(duration * rng.uniform(0.15, 0.25))
-        # Occasional fast typist: very short intervals (some humans type at 120+ WPM)
-        is_fast_typist = rng.random() < 0.15
-        for _ in range(rng.randint(8, 22)):
-            base_interval = rng.gauss(145 if is_fast_typist else 195, 55 if is_fast_typist else 68)
-            cur_k_t += max(35, int(base_interval))
-            keyboard_events.append({
-                "t":        cur_k_t,
-                "interval": max(35, round(base_interval, 1)),
-                "hold":     rng.randint(35, 110),  # occasional very quick holds
-                "is_paste": False,
-            })
+            keyboard_events = []
+            cur_k_t = 600 if human_subtype == "prompt_typing" else int(duration * 0.15)
+            is_fast_typist = rng.random() < 0.25
+            for k_idx in range(rng.randint(8, 24)):
+                base_interval = rng.gauss(135 if is_fast_typist else 190, 55 if is_fast_typist else 75)
+                inv = max(35, round(base_interval, 1))
+                cur_k_t += int(inv)
+                keyboard_events.append({
+                    "t":        cur_k_t,
+                    "interval": inv,
+                    "hold":     rng.randint(26 if is_fast_typist else 38, 105),
+                    "is_paste": (human_subtype == "prompt_typing" and k_idx == 0 and rng.random() < 0.30),
+                    "is_trusted": True,
+                })
 
-        scroll_events = generate_human_scroll(duration, rng)
+            scroll_events = generate_human_scroll(duration, rng) if human_subtype == "keyboard_focused" else []
+            browser_signals = {
+                "webdriver":           False,
+                "pointer_type":        "mouse",
+                "screen_width":        rng.choice([1920, 1440, 1536, 1280]),
+                "screen_height":       rng.choice([1080, 900, 864, 800]),
+                "viewport_width":      rng.choice([1280, 1440, 1200]),
+                "viewport_height":     rng.choice([720, 800, 680]),
+                "device_pixel_ratio":  rng.choice([1.0, 1.25, 1.5, 2.0]),
+                "touch_support":       False,
+                "hardware_concurrency": rng.choice([4, 8, 12, 16]),
+                "platform":            rng.choice(["Win32", "MacIntel", "Linux x86_64"]),
+                "language":            "en-US",
+                "user_agent":          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            }
+            data_source = f"synthetic_{human_subtype}"
+        else:
+            # Wide duration range — humans vary enormously in pace.
+            # Short sessions (3.5–6s) can look more bot-like — intentional class boundary noise.
+            duration = rng.randint(3500, 18000)
 
-        # Some humans click very close to target (smaller target radius)
-        click_events = [
-            {"x": rng.randint(ex - 25, ex + 25), "y": rng.randint(ey - 25, ey + 25),
-             "t": int(duration * 0.70), "target_category": "button"},
-        ]
+            sx, sy = rng.randint(80, 350), rng.randint(80, 350)
+            ex, ey = rng.randint(550, 1100), rng.randint(350, 750)
+            mouse_events = generate_human_mouse_path(sx, sy, ex, ey, int(duration * 0.65), rng)
 
-        browser_signals = {
-            "webdriver":           False,
-            "screen_width":        rng.choice([1920, 1440, 1536, 1280]),
-            "screen_height":       rng.choice([1080, 900, 864, 800]),
-            "viewport_width":      rng.choice([1280, 1440, 1200]),
-            "viewport_height":     rng.choice([720, 800, 680]),
-            "device_pixel_ratio":  rng.choice([1.0, 1.25, 1.5, 2.0]),
-            "touch_support":       False,
-            "hardware_concurrency": rng.choice([4, 8, 12, 16]),
-            "platform":            rng.choice(["Win32", "MacIntel", "Linux x86_64"]),
-            "language":            "en-US",
-            "user_agent":          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        }
+            # Variable typing — CV typically 0.3–0.6 for humans.
+            # Some fast typists have lower CV that can overlap with bot range.
+            keyboard_events = []
+            cur_k_t = int(duration * rng.uniform(0.15, 0.25))
+            is_fast_typist = rng.random() < 0.15
+            for _ in range(rng.randint(8, 22)):
+                base_interval = rng.gauss(145 if is_fast_typist else 195, 55 if is_fast_typist else 68)
+                cur_k_t += max(35, int(base_interval))
+                keyboard_events.append({
+                    "t":        cur_k_t,
+                    "interval": max(35, round(base_interval, 1)),
+                    "hold":     rng.randint(35, 110),
+                    "is_paste": False,
+                    "is_trusted": True,
+                })
 
-        task_actions = [
-            {"action": actions_vocab[0], "t": int(duration * 0.15), "details": {}},
-            {"action": actions_vocab[1], "t": int(duration * 0.40), "details": {}},
-            {"action": actions_vocab[2], "t": int(duration * 0.65), "details": {}},
-            {"action": actions_vocab[4], "t": int(duration * 0.88), "details": {}},
-        ]
-        data_source = "synthetic_human"
+            scroll_events = generate_human_scroll(duration, rng)
+
+            click_events = [
+                {"x": rng.randint(ex - 25, ex + 25), "y": rng.randint(ey - 25, ey + 25),
+                 "t": int(duration * 0.70), "target_category": "button", "is_trusted": True},
+            ]
+
+            browser_signals = {
+                "webdriver":           False,
+                "pointer_type":        "mouse",
+                "screen_width":        rng.choice([1920, 1440, 1536, 1280]),
+                "screen_height":       rng.choice([1080, 900, 864, 800]),
+                "viewport_width":      rng.choice([1280, 1440, 1200]),
+                "viewport_height":     rng.choice([720, 800, 680]),
+                "device_pixel_ratio":  rng.choice([1.0, 1.25, 1.5, 2.0]),
+                "touch_support":       False,
+                "hardware_concurrency": rng.choice([4, 8, 12, 16]),
+                "platform":            rng.choice(["Win32", "MacIntel", "Linux x86_64"]),
+                "language":            "en-US",
+                "user_agent":          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            }
+
+            task_actions = [
+                {"action": actions_vocab[0], "t": int(duration * 0.15), "details": {}},
+                {"action": actions_vocab[1], "t": int(duration * 0.40), "details": {}},
+                {"action": actions_vocab[2], "t": int(duration * 0.65), "details": {}},
+                {"action": actions_vocab[4], "t": int(duration * 0.88), "details": {}},
+            ]
+            data_source = "synthetic_human"
 
     # ——— BOT ——————————————————————————————————————————————————————————————————
     elif target_label == "TRADITIONAL_AUTOMATION":

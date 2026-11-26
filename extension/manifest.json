@@ -6,7 +6,8 @@
   "permissions": [
     "storage",
     "activeTab",
-    "tabs"
+    "tabs",
+    "webNavigation"
   ],
   "host_permissions": [
     "<all_urls>",
@@ -36,7 +37,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "run_at": "document_idle",
+      "run_at": "document_start",
       "all_frames": false
     }
   ]

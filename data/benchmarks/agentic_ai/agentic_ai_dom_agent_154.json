@@ -3,13 +3,13 @@
   "visitor_id": "vis_agentic_ai_154",
   "task": "shopping",
   "start_time": 1724909240000,
-  "end_time": 1724909249926,
-  "duration_ms": 9926.0,
+  "end_time": 1724909249463,
+  "duration_ms": 9463.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_dom_agent",
   "browser_signals": {
-    "webdriver": true,
+    "webdriver": false,
     "screen_width": 1920,
     "screen_height": 1080,
     "viewport_width": 1280,
@@ -25,65 +25,75 @@
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 1985,
-      "scroll_y": 353,
-      "delta_y": 353
+      "t": 1892,
+      "scroll_y": 322,
+      "delta_y": 322
     },
     {
-      "t": 3223,
-      "scroll_y": 643,
-      "delta_y": 290
+      "t": 3844,
+      "scroll_y": 532,
+      "delta_y": 210
+    },
+    {
+      "t": 5212,
+      "scroll_y": 898,
+      "delta_y": 366
+    },
+    {
+      "t": 6755,
+      "scroll_y": 1184,
+      "delta_y": 286
     }
   ],
   "click_events": [
     {
       "x": 300,
       "y": 250,
-      "t": 1042,
+      "t": 944,
       "target_category": "input"
     },
     {
       "x": 520,
       "y": 380,
-      "t": 3096,
+      "t": 4119,
       "target_category": "button"
     },
     {
       "x": 750,
       "y": 620,
-      "t": 6429,
+      "t": 6507,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 1042,
+      "t": 944,
       "details": {
         "target": "search_input"
       }
     },
     {
       "action": "item_selected",
-      "t": 3096,
+      "t": 4119,
       "details": {
         "target": "item_card"
       }
     },
     {
       "action": "quantity_updated",
-      "t": 6429,
+      "t": 6507,
       "details": {
         "target": "action_button"
       }
     },
     {
       "action": "checkout_initiated",
-      "t": 9264,
+      "t": 8504,
       "details": {
         "target": "confirm_button"
       }
     }
   ],
-  "active_duration_ms": 9926.0
+  "active_duration_ms": 9463.0
 }

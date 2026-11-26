@@ -3,8 +3,8 @@
   "visitor_id": "vis_agentic_ai_007",
   "task": "shopping",
   "start_time": 1724900420000,
-  "end_time": 1724900430185,
-  "duration_ms": 10185.0,
+  "end_time": 1724900431618,
+  "duration_ms": 11618.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_dom_agent",
@@ -25,70 +25,80 @@
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 2037,
-      "scroll_y": 285,
-      "delta_y": 285
+      "t": 2323,
+      "scroll_y": 383,
+      "delta_y": 383
     },
     {
-      "t": 3087,
-      "scroll_y": 666,
-      "delta_y": 381
+      "t": 3460,
+      "scroll_y": 613,
+      "delta_y": 230
     },
     {
-      "t": 4503,
-      "scroll_y": 922,
-      "delta_y": 256
+      "t": 5086,
+      "scroll_y": 993,
+      "delta_y": 380
+    },
+    {
+      "t": 6551,
+      "scroll_y": 1317,
+      "delta_y": 324
+    },
+    {
+      "t": 8432,
+      "scroll_y": 1637,
+      "delta_y": 320
     }
   ],
   "click_events": [
     {
       "x": 300,
       "y": 250,
-      "t": 822,
+      "t": 805,
       "target_category": "input"
     },
     {
       "x": 520,
       "y": 380,
-      "t": 3609,
+      "t": 4389,
       "target_category": "button"
     },
     {
       "x": 750,
       "y": 620,
-      "t": 6560,
+      "t": 8290,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 822,
+      "t": 805,
       "details": {
         "target": "search_input"
       }
     },
     {
       "action": "item_selected",
-      "t": 3609,
+      "t": 4389,
       "details": {
         "target": "item_card"
       }
     },
     {
       "action": "quantity_updated",
-      "t": 6560,
+      "t": 8290,
       "details": {
         "target": "action_button"
       }
     },
     {
       "action": "checkout_initiated",
-      "t": 9487,
+      "t": 11014,
       "details": {
         "target": "confirm_button"
       }
     }
   ],
-  "active_duration_ms": 10185.0
+  "active_duration_ms": 11618.0
 }

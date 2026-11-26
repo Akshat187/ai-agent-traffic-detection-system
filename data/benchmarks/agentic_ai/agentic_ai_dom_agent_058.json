@@ -3,13 +3,13 @@
   "visitor_id": "vis_agentic_ai_058",
   "task": "shopping",
   "start_time": 1724903480000,
-  "end_time": 1724903490183,
-  "duration_ms": 10183.0,
+  "end_time": 1724903490141,
+  "duration_ms": 10141.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_dom_agent",
   "browser_signals": {
-    "webdriver": true,
+    "webdriver": false,
     "screen_width": 1920,
     "screen_height": 1080,
     "viewport_width": 1280,
@@ -25,80 +25,65 @@
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 2036,
-      "scroll_y": 334,
-      "delta_y": 334
+      "t": 2028,
+      "scroll_y": 262,
+      "delta_y": 262
     },
     {
-      "t": 2989,
-      "scroll_y": 614,
-      "delta_y": 280
-    },
-    {
-      "t": 4054,
-      "scroll_y": 949,
-      "delta_y": 335
-    },
-    {
-      "t": 4950,
-      "scroll_y": 1287,
-      "delta_y": 338
-    },
-    {
-      "t": 6372,
-      "scroll_y": 1564,
-      "delta_y": 277
+      "t": 3202,
+      "scroll_y": 472,
+      "delta_y": 210
     }
   ],
   "click_events": [
     {
       "x": 300,
       "y": 250,
-      "t": 1003,
+      "t": 1095,
       "target_category": "input"
     },
     {
       "x": 520,
       "y": 380,
-      "t": 3654,
+      "t": 3795,
       "target_category": "button"
     },
     {
       "x": 750,
       "y": 620,
-      "t": 7800,
+      "t": 7191,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 1003,
+      "t": 1095,
       "details": {
         "target": "search_input"
       }
     },
     {
       "action": "item_selected",
-      "t": 3654,
+      "t": 3795,
       "details": {
         "target": "item_card"
       }
     },
     {
       "action": "quantity_updated",
-      "t": 7800,
+      "t": 7191,
       "details": {
         "target": "action_button"
       }
     },
     {
       "action": "checkout_initiated",
-      "t": 9600,
+      "t": 9706,
       "details": {
         "target": "confirm_button"
       }
     }
   ],
-  "active_duration_ms": 10183.0
+  "active_duration_ms": 10141.0
 }

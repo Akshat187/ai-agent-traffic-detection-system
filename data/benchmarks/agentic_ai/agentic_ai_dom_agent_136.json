@@ -3,8 +3,8 @@
   "visitor_id": "vis_agentic_ai_136",
   "task": "shopping",
   "start_time": 1724908160000,
-  "end_time": 1724908169463,
-  "duration_ms": 9463.0,
+  "end_time": 1724908170908,
+  "duration_ms": 10908.0,
   "ground_truth_label": "AGENTIC_AI",
   "is_synthetic": false,
   "data_source": "benchmark_dom_agent",
@@ -25,75 +25,80 @@
   "keyboard_events": [],
   "scroll_events": [
     {
-      "t": 1892,
-      "scroll_y": 322,
-      "delta_y": 322
+      "t": 2181,
+      "scroll_y": 390,
+      "delta_y": 390
     },
     {
-      "t": 3844,
-      "scroll_y": 532,
-      "delta_y": 210
+      "t": 3910,
+      "scroll_y": 683,
+      "delta_y": 293
     },
     {
-      "t": 5212,
-      "scroll_y": 898,
-      "delta_y": 366
+      "t": 4779,
+      "scroll_y": 904,
+      "delta_y": 221
     },
     {
-      "t": 6755,
-      "scroll_y": 1184,
-      "delta_y": 286
+      "t": 5997,
+      "scroll_y": 1253,
+      "delta_y": 349
+    },
+    {
+      "t": 7155,
+      "scroll_y": 1624,
+      "delta_y": 371
     }
   ],
   "click_events": [
     {
       "x": 300,
       "y": 250,
-      "t": 944,
+      "t": 1176,
       "target_category": "input"
     },
     {
       "x": 520,
       "y": 380,
-      "t": 4119,
+      "t": 4756,
       "target_category": "button"
     },
     {
       "x": 750,
       "y": 620,
-      "t": 6507,
+      "t": 7233,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "browsed_listing",
-      "t": 944,
+      "t": 1176,
       "details": {
         "target": "search_input"
       }
     },
     {
       "action": "item_selected",
-      "t": 4119,
+      "t": 4756,
       "details": {
         "target": "item_card"
       }
     },
     {
       "action": "quantity_updated",
-      "t": 6507,
+      "t": 7233,
       "details": {
         "target": "action_button"
       }
     },
     {
       "action": "checkout_initiated",
-      "t": 8504,
+      "t": 10505,
       "details": {
         "target": "confirm_button"
       }
     }
   ],
-  "active_duration_ms": 9463.0
+  "active_duration_ms": 10908.0
 }

@@ -3,8 +3,8 @@
   "visitor_id": "vis_traditional_automation_145",
   "task": "shopping",
   "start_time": 1724908700000,
-  "end_time": 1724908700559,
-  "duration_ms": 559.0,
+  "end_time": 1724908700356,
+  "duration_ms": 356.0,
   "ground_truth_label": "TRADITIONAL_AUTOMATION",
   "is_synthetic": false,
   "data_source": "benchmark_deterministic",
@@ -29,220 +29,167 @@
       "type": "move"
     },
     {
-      "x": 243,
-      "y": 229,
+      "x": 267,
+      "y": 244,
       "t": 32,
       "type": "move"
     },
     {
-      "x": 286,
-      "y": 257,
-      "t": 64,
+      "x": 333,
+      "y": 289,
+      "t": 63,
       "type": "move"
     },
     {
-      "x": 329,
-      "y": 286,
-      "t": 96,
+      "x": 400,
+      "y": 333,
+      "t": 95,
       "type": "move"
     },
     {
-      "x": 371,
-      "y": 314,
-      "t": 128,
+      "x": 467,
+      "y": 378,
+      "t": 126,
       "type": "move"
     },
     {
-      "x": 414,
-      "y": 343,
-      "t": 160,
+      "x": 533,
+      "y": 422,
+      "t": 158,
       "type": "move"
     },
     {
-      "x": 457,
-      "y": 371,
-      "t": 192,
+      "x": 600,
+      "y": 467,
+      "t": 189,
       "type": "move"
     },
     {
-      "x": 500,
-      "y": 400,
-      "t": 224,
+      "x": 667,
+      "y": 511,
+      "t": 221,
       "type": "move"
     },
     {
-      "x": 543,
-      "y": 429,
-      "t": 255,
-      "type": "move"
-    },
-    {
-      "x": 586,
-      "y": 457,
-      "t": 287,
-      "type": "move"
-    },
-    {
-      "x": 629,
-      "y": 486,
-      "t": 319,
-      "type": "move"
-    },
-    {
-      "x": 671,
-      "y": 514,
-      "t": 351,
-      "type": "move"
-    },
-    {
-      "x": 714,
-      "y": 543,
-      "t": 383,
-      "type": "move"
-    },
-    {
-      "x": 757,
-      "y": 571,
-      "t": 415,
+      "x": 733,
+      "y": 556,
+      "t": 252,
       "type": "move"
     },
     {
       "x": 800,
       "y": 600,
-      "t": 447,
+      "t": 284,
       "type": "move"
     }
   ],
   "keyboard_events": [
     {
-      "t": 89,
+      "t": 90,
+      "interval": 40,
+      "hold": 17,
+      "is_paste": false
+    },
+    {
+      "t": 132,
+      "interval": 42,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 172,
+      "interval": 40,
+      "hold": 18,
+      "is_paste": false
+    },
+    {
+      "t": 214,
+      "interval": 42,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 256,
+      "interval": 42,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 295,
       "interval": 39,
       "hold": 21,
       "is_paste": false
     },
     {
-      "t": 129,
-      "interval": 40,
-      "hold": 23,
-      "is_paste": false
-    },
-    {
-      "t": 170,
-      "interval": 41,
-      "hold": 18,
-      "is_paste": false
-    },
-    {
-      "t": 210,
-      "interval": 40,
-      "hold": 22,
-      "is_paste": false
-    },
-    {
-      "t": 250,
-      "interval": 40,
-      "hold": 20,
-      "is_paste": false
-    },
-    {
-      "t": 293,
-      "interval": 43,
-      "hold": 26,
-      "is_paste": false
-    },
-    {
       "t": 333,
-      "interval": 40,
+      "interval": 38,
+      "hold": 19,
+      "is_paste": false
+    },
+    {
+      "t": 371,
+      "interval": 38,
       "hold": 17,
       "is_paste": false
     },
     {
-      "t": 374,
-      "interval": 41,
-      "hold": 18,
-      "is_paste": false
-    },
-    {
-      "t": 414,
-      "interval": 40,
-      "hold": 15,
-      "is_paste": false
-    },
-    {
-      "t": 457,
-      "interval": 43,
-      "hold": 23,
-      "is_paste": false
-    },
-    {
-      "t": 496,
-      "interval": 39,
-      "hold": 17,
-      "is_paste": false
-    },
-    {
-      "t": 536,
-      "interval": 40,
-      "hold": 25,
-      "is_paste": false
-    },
-    {
-      "t": 579,
-      "interval": 43,
+      "t": 409,
+      "interval": 38,
       "hold": 26,
       "is_paste": false
     },
     {
-      "t": 619,
-      "interval": 40,
-      "hold": 27,
+      "t": 450,
+      "interval": 41,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 491,
+      "interval": 41,
+      "hold": 25,
       "is_paste": false
     }
   ],
   "scroll_events": [
     {
-      "t": 27,
-      "scroll_y": 494,
-      "delta_y": 494
+      "t": 17,
+      "scroll_y": 458,
+      "delta_y": 458
     },
     {
-      "t": 211,
-      "scroll_y": 988,
-      "delta_y": 494
+      "t": 119,
+      "scroll_y": 916,
+      "delta_y": 458
     },
     {
-      "t": 350,
-      "scroll_y": 1482,
-      "delta_y": 494
-    },
-    {
-      "t": 475,
-      "scroll_y": 1976,
-      "delta_y": 494
+      "t": 304,
+      "scroll_y": 1374,
+      "delta_y": 458
     }
   ],
   "click_events": [
     {
       "x": 800,
       "y": 600,
-      "t": 475,
+      "t": 302,
       "target_category": "button"
     }
   ],
   "task_actions": [
     {
       "action": "filter_applied",
-      "t": 195,
+      "t": 124,
       "details": {}
     },
     {
       "action": "quantity_updated",
-      "t": 335,
+      "t": 213,
       "details": {}
     },
     {
       "action": "checkout_initiated",
-      "t": 447,
+      "t": 284,
       "details": {}
     }
   ]
