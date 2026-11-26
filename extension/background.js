@@ -97,10 +97,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         let fetchErr = null;
 
         // Try primary endpoint
+        const reqHeaders = {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ws_live_chrome_ext_default_key',
+          'X-Sentinel-Site-ID': 'site_chrome_extension'
+        };
         try {
           resp = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: reqHeaders,
             body: payloadStr
           });
         } catch (e1) {
@@ -112,7 +117,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               : endpoint.replace('localhost:8000', '127.0.0.1:8000');
             resp = await fetch(fallbackUrl, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: reqHeaders,
               body: payloadStr
             });
             fetchErr = null;

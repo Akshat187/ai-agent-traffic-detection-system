@@ -243,11 +243,11 @@
 
   function hasMinimumInteraction(visit) {
     if (!visit) return false;
-    if (visit.clickEvents.length >= 1) return true;
-    if (visit.keyboardEvents.length >= 1) return true;
-    if (visit.scrollEvents.length >= 1) return true;
-    if (visit.mouseEvents.length >= 5) return true;
-    return (visit.mouseEvents.length + visit.keyboardEvents.length + visit.scrollEvents.length + visit.clickEvents.length) >= 4;
+    if (visit.clickEvents.length >= 2) return true;
+    if (visit.keyboardEvents.length >= 3) return true;
+    if (visit.scrollEvents.length >= 2) return true;
+    if (visit.mouseEvents.length >= 8) return true;
+    return (visit.mouseEvents.length + visit.keyboardEvents.length + visit.scrollEvents.length + visit.clickEvents.length) >= 8;
   }
 
   function hasPendingEvents(visit) {
@@ -278,6 +278,14 @@
   }
 
   // --- Event Listeners ---
+  let lastPointerType = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) ? 'touch' : 'mouse';
+  window.addEventListener('pointerdown', (e) => {
+    if (e && e.pointerType) lastPointerType = e.pointerType;
+  }, { passive: true });
+  window.addEventListener('touchstart', () => {
+    lastPointerType = 'touch';
+  }, { passive: true });
+
   window.addEventListener('mousemove', function (e) {
     if (isYieldingToSdk || !currentVisit || currentVisit.isFinalized) return;
     const now = performance.now();
@@ -285,7 +293,7 @@
     lastMouseMoveTime = now;
     recordActivity(currentVisit);
 
-    if (currentVisit.mouseEvents.length < 300) {
+    if (currentVisit.mouseEvents.length < 500) {
       currentVisit.totalMouse = (currentVisit.totalMouse || 0) + 1;
       currentVisit.mouseEvents.push({
         x: Math.round(e.clientX),
@@ -489,7 +497,8 @@
         referrer_path: referrerPath,
         visibility_state: document.visibilityState,
         transmission_seq: seq,
-        sdk_version: 'extension-2.1'
+        sdk_version: 'extension-2.1',
+        collector: 'ext'
       },
       start_time: visit.startUnixTime,
       end_time: Date.now(),
@@ -498,6 +507,10 @@
       data_source: 'chrome_extension',
       browser_signals: {
         webdriver: Boolean(navigator.webdriver),
+        pointer_type: lastPointerType,
+        touch_support: ('ontouchstart' in window) || (navigator.maxTouchPoints > 0),
+        device_pixel_ratio: window.devicePixelRatio || 1.0,
+        hardware_concurrency: navigator.hardwareConcurrency || 4,
         screen_width: window.screen ? window.screen.width : 1920,
         screen_height: window.screen ? window.screen.height : 1080,
         viewport_width: window.innerWidth || 1280,

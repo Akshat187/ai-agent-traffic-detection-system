@@ -421,22 +421,31 @@ class DecisionEngine:
                 (action_interval_var > 1200 and nav_segments >= 3 and straightness > 0.80) or  # Strong LLM inference-delay signature
                 (len(task_actions) >= 2 and action_interval_var > 800 and planning_pause_ratio > 0.20 and features.get("micro_corrections", 0) <= 2) or  # Workflow / computer-use agent
                 (path_len < 50 and len(task_actions) >= 2 and (planning_pause_ratio > 0.20 or llm_gap_ratio > 0.20)) or  # DOM-driven agent without cursor trajectory
-                (ml_pred == "AGENTIC_AI" and ml_conf >= 68.0 and rule_score < 60.0)  # Corroborated ML prediction
+                (ml_pred == "AGENTIC_AI" and ml_conf >= 68.0 and rule_score < 60.0) or  # Corroborated ML prediction
+                (ml_pred == "AGENTIC_AI" and ml_conf >= 90.0 and rule_score < 70.0)     # High-confidence ML agentic trajectory
             )
         )
 
         # Traditional automation profile: highly uniform, deterministic behavior.
-        # Blocked if genuine LLM deliberation is present (LLM agents wait multi-seconds for tokens).
+        # Blocked if genuine LLM deliberation or strong organic human kinematics are present.
+        strong_organic_human = (
+            features.get("micro_corrections", 0) >= 50
+            and target_decel < 0.35
+            and not is_artificial_jitter
+            and not features.get("webdriver_flag")
+            and ml_pred == "HUMAN"
+        )
+        effective_replay = is_replay and (not strong_organic_human or replay_sim >= 0.99)
         is_automation_profile = (
             (
-                is_replay or
+                effective_replay or
                 is_artificial_jitter or
                 rule_score >= 35.0 or
-                (key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0))) or
-                (straightness > 0.92 and key_count >= 4 and (key_cv < 0.20 or features.get("micro_corrections", 0) <= 1)) or
+                (key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0)) and not strong_organic_human) or
+                (path_len > 100 and straightness > 0.92 and key_count >= 4 and (key_cv < 0.20 or features.get("micro_corrections", 0) <= 1)) or
                 (features.get("duration_ms", 1000) < 500 and features.get("total_event_count", 0) >= 5) or
                 (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0 and not is_keyboard_human and not is_touch_human)
-            ) and not is_agentic_profile and not has_llm_deliberation  # Never override agentic LLM evidence
+            ) and not is_agentic_profile and not has_llm_deliberation and not (is_touch_human and rule_score < 50.0 and not is_artificial_jitter)
         )
 
         # Calibrated confidence computation:

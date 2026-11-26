@@ -138,7 +138,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (res.verdict) {
         renderVerdict(res.verdict);
       } else {
-        const totalEvts = (res.events ? (res.events.mouse || 0) + (res.events.clicks || 0) + (res.events.keys || 0) : 0);
+        const totalEvts = res.events
+          ? (res.events.mouseTotal ?? res.events.mouse ?? 0) +
+            (res.events.clicksTotal ?? res.events.clicks ?? 0) +
+            (res.events.keysTotal ?? res.events.keys ?? 0)
+          : 0;
         if (totalEvts >= 4) {
           verdictBadge.textContent = 'EVALUATING';
           verdictBadge.className = 'verdict-badge';

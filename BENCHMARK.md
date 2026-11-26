@@ -18,12 +18,12 @@ This benchmark validates the detection accuracy and calibration quality of **Sen
 
 | Metric | Measured Value | Standard Target | Status |
 | :--- | :---: | :---: | :---: |
-| **Overall Accuracy** | **95.00%** | $\ge 95.0\%$ | **PASS (Superior)** |
-| **Macro-Averaged F1** | **0.9499** | $\ge 0.9500$ | **FAIL** |
+| **Overall Accuracy** | **99.83%** | $\ge 95.0\%$ | **PASS (Superior)** |
+| **Macro-Averaged F1** | **0.9983** | $\ge 0.9500$ | **PASS (Superior)** |
 | **Expected Calibration Error (ECE)** | **0.0002** | $\le 0.1000$ | **PASS (Calibrated)** |
 | **Multi-class Brier Score** | **0.0000** | $\le 0.1500$ | **PASS (Optimal)** |
-| **Mean Inference Latency** | **8.52 ms** | $\le 50.0\text{ ms}$ | **PASS (Real-time)** |
-| **P95 Inference Latency** | **25.97 ms** | $\le 100.0\text{ ms}$ | **PASS (Real-time)** |
+| **Mean Inference Latency** | **14.98 ms** | $\le 50.0\text{ ms}$ | **PASS (Real-time)** |
+| **P95 Inference Latency** | **45.04 ms** | $\le 100.0\text{ ms}$ | **PASS (Real-time)** |
 
 ---
 
@@ -33,18 +33,18 @@ This benchmark validates the detection accuracy and calibration quality of **Sen
 
 | Target Classification | Precision | Recall | F1-Score | Support |
 | :--- | :---: | :---: | :---: | :---: |
-| **HUMAN** | 100.00% | 85.50% | 0.9218 | 200 |
-| **TRADITIONAL_AUTOMATION** | 86.96% | 100.00% | 0.9302 | 200 |
-| **AGENTIC_AI** | 100.00% | 99.50% | 0.9975 | 200 |
+| **HUMAN** | 100.00% | 99.50% | 0.9975 | 200 |
+| **TRADITIONAL_AUTOMATION** | 99.50% | 100.00% | 0.9975 | 200 |
+| **AGENTIC_AI** | 100.00% | 100.00% | 1.0000 | 200 |
 
 
 ### Confusion Matrix
 
 | True \ Pred | HUMAN | TRADITIONAL_AUTOMATION | AGENTIC_AI |
 | :--- | :---: | :---: | :---: |
-| **HUMAN** | 171 | 29 | 0 |
+| **HUMAN** | 199 | 1 | 0 |
 | **TRADITIONAL_AUTOMATION** | 0 | 200 | 0 |
-| **AGENTIC_AI** | 0 | 1 | 199 |
+| **AGENTIC_AI** | 0 | 0 | 200 |
 
 
 ---
@@ -53,19 +53,19 @@ This benchmark validates the detection accuracy and calibration quality of **Sen
 
 | Subtype | True Class | Accuracy | Top Contributing Signals |
 | :--- | :---: | :---: | :--- |
-| `copy_paste_filler` | HUMAN | 81.8% (27/33) | `Neutral reading dwell / organic kinematics` |
+| `copy_paste_filler` | HUMAN | 100.0% (33/33) | `Neutral reading dwell / organic kinematics` |
 | `deterministic` | TRADITIONAL_AUTOMATION | 100.0% (50/50) | `Abnormally linear mouse trajectory (straightness: 1.00) — consistent with scripted automation, Synthetic uniform typing cadence (CV: 0.032, hold: 24ms) — characteristic of automation` |
 | `dom_agent` | AGENTIC_AI | 100.0% (67/67) | `Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection, Goal-directed deliberation pauses (84% of session time, LLM gap ratio: 84%) — agentic planning signature` |
 | `evasive` | TRADITIONAL_AUTOMATION | 100.0% (50/50) | `Artificial coordinate jitter detected (target decel: 0.42, micro-corrections: 16) — evasive bot spoofing human tremor, Synthetic uniform typing cadence (CV: 0.287, hold: 27ms) — characteristic of automation` |
-| `fast_power_user` | HUMAN | 81.8% (27/33) | `Behavioral anomaly: Sub-50ms reaction time beyond human perceptual limits` |
+| `fast_power_user` | HUMAN | 100.0% (33/33) | `Behavioral anomaly: Sub-50ms reaction time beyond human perceptual limits` |
 | `headless_dom` | TRADITIONAL_AUTOMATION | 100.0% (50/50) | `Deterministic scripted behavior signature: uniform timing, predictable sequence` |
 | `hybrid_agent` | AGENTIC_AI | 100.0% (67/67) | `Abnormally linear mouse trajectory (straightness: 1.00) — consistent with scripted automation, Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection` |
-| `keyboard_focused` | HUMAN | 70.6% (24/34) | `High-confidence trajectory replay match (96.7% DTW similarity to session bm_human_fast_power_user_forum_147), Deterministic scripted behavior signature: uniform timing, predictable sequence` |
-| `mobile_touch` | HUMAN | 93.9% (31/33) | `Deterministic scripted behavior signature: uniform timing, predictable sequence, Goal-directed deliberation pauses (73% of session time, LLM gap ratio: 0%) — agentic planning signature` |
-| `organic_mouse` | HUMAN | 85.3% (29/34) | `Neutral reading dwell / organic kinematics` |
+| `keyboard_focused` | HUMAN | 100.0% (34/34) | `High-confidence trajectory replay match (96.7% DTW similarity to session bm_human_fast_power_user_forum_147)` |
+| `mobile_touch` | HUMAN | 100.0% (33/33) | `Goal-directed deliberation pauses (73% of session time, LLM gap ratio: 0%) — agentic planning signature, Action adaptation pattern detected (score: 0.75) — context-sensitive decision making` |
+| `organic_mouse` | HUMAN | 97.1% (33/34) | `Neutral reading dwell / organic kinematics` |
 | `randomized` | TRADITIONAL_AUTOMATION | 100.0% (50/50) | `Abnormally linear mouse trajectory (straightness: 0.99) — consistent with scripted automation, Synthetic uniform typing cadence (CV: 0.104, hold: 23ms) — characteristic of automation` |
 | `slow_network_lag` | HUMAN | 100.0% (33/33) | `Neutral reading dwell / organic kinematics` |
-| `trajectory_agent` | AGENTIC_AI | 98.5% (65/66) | `Abnormally linear mouse trajectory (straightness: 0.98) — consistent with scripted automation, Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection` |
+| `trajectory_agent` | AGENTIC_AI | 100.0% (66/66) | `Abnormally linear mouse trajectory (straightness: 0.98) — consistent with scripted automation, Agentic behavior profile: autonomous goal-directed navigation, planning pause cadence, and context-dependent action selection` |
 
 
 ---
