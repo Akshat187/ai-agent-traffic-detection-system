@@ -15,9 +15,18 @@ let animationFrameId = null;
 let selectedSite = "ALL";
 let selectedSource = "ALL";
 
+let _syncingHistory = false;
+let pendingExplorerSessionId = null;
+let explorerLoadToken = 0;
+
 document.addEventListener("DOMContentLoaded", function () {
   initTabs();
   initCharts();
+
+  const initialState = parseDashboardStateFromUrl();
+  syncDashboardHistory(initialState, { replace: true });
+  applyDashboardNavState(initialState, { refreshTabData: false });
+
   fetchSites();
   fetchOverviewStats();
   fetchSessions();
@@ -82,7 +91,21 @@ document.addEventListener("DOMContentLoaded", function () {
   if (refreshBtn) refreshBtn.addEventListener("click", () => { fetchSessions(); fetchOverviewStats(); });
 
   const explorerSelect = document.getElementById("explorer-session-select");
-  if (explorerSelect) explorerSelect.addEventListener("change", (e) => loadSessionDetails(e.target.value));
+  if (explorerSelect) {
+    explorerSelect.addEventListener("change", (e) => {
+      const sessionId = e.target.value;
+      if (!sessionId) {
+        resetExplorerView();
+        syncDashboardHistory({ tab: "tab-explorer", session: null });
+        return;
+      }
+      syncDashboardHistory({ tab: "tab-explorer", session: sessionId });
+      selectExplorerSession(sessionId);
+    });
+  }
+
+  const explorerBackBtn = document.getElementById("explorer-back-btn");
+  if (explorerBackBtn) explorerBackBtn.addEventListener("click", navigateExplorerBack);
 
   const playBtn = document.getElementById("trajectory-play-btn");
   if (playBtn) playBtn.addEventListener("click", playTrajectoryAnimation);
@@ -483,35 +506,275 @@ function applySessionFilters() {
   }).join("");
 }
 
-// Tab Navigation
+// Tab & Browser History Navigation
+const DEFAULT_TAB_ID = "tab-overview";
+const VALID_TAB_IDS = new Set([
+  "tab-overview",
+  "tab-sessions",
+  "tab-explorer",
+  "tab-experiments",
+  "tab-adversarial",
+  "tab-health",
+]);
+
+function normalizeTabId(rawTab) {
+  if (!rawTab) return DEFAULT_TAB_ID;
+  const trimmed = String(rawTab).trim();
+  const candidate = trimmed.startsWith("tab-") ? trimmed : `tab-${trimmed}`;
+  return VALID_TAB_IDS.has(candidate) ? candidate : DEFAULT_TAB_ID;
+}
+
+function tabIdToSlug(tabId) {
+  return normalizeTabId(tabId).replace(/^tab-/, "");
+}
+
+function normalizeNavState(state) {
+  const tab = normalizeTabId(state?.tab);
+  const session = tab === "tab-explorer" && state?.session ? String(state.session) : null;
+  return { tab, session };
+}
+
+function getDashboardNavState() {
+  const activeTab = document.querySelector(".nav-tab.active");
+  const tab = normalizeTabId(activeTab?.dataset?.target);
+  const select = document.getElementById("explorer-session-select");
+  const rawSession = select?.value || pendingExplorerSessionId || null;
+  return normalizeNavState({ tab, session: tab === "tab-explorer" ? rawSession : null });
+}
+
+function buildDashboardUrl(state) {
+  const nextState = normalizeNavState(state);
+  const params = new URLSearchParams();
+  if (nextState.tab !== DEFAULT_TAB_ID) {
+    params.set("tab", tabIdToSlug(nextState.tab));
+  }
+  if (nextState.tab === "tab-explorer" && nextState.session) {
+    params.set("session", nextState.session);
+  }
+  const qs = params.toString();
+  const basePath =
+    window.location.pathname && window.location.pathname !== "/"
+      ? window.location.pathname
+      : "/dashboard";
+  return qs ? `${basePath}?${qs}` : basePath;
+}
+
+function parseDashboardStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const tab = normalizeTabId(params.get("tab"));
+  const rawSession = params.get("session");
+  return normalizeNavState({
+    tab,
+    session: tab === "tab-explorer" && rawSession ? rawSession : null,
+  });
+}
+
+function syncDashboardHistory(state, { replace = false } = {}) {
+  if (_syncingHistory || !window.history) return;
+  const nextState = normalizeNavState(state);
+  const nextUrl = buildDashboardUrl(nextState);
+  const currentUrl = `${window.location.pathname}${window.location.search}`;
+  const currState = window.history.state;
+  const sameState =
+    currState &&
+    currState.tab === nextState.tab &&
+    (currState.session || null) === nextState.session;
+
+  if (!replace && currentUrl === nextUrl && sameState) {
+    return;
+  }
+
+  if (replace) {
+    window.history.replaceState(nextState, "", nextUrl);
+  } else {
+    window.history.pushState(nextState, "", nextUrl);
+  }
+}
+
+function resetExplorerView() {
+  explorerLoadToken += 1;
+  selectedSession = null;
+  pendingExplorerSessionId = null;
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+
+  const select = document.getElementById("explorer-session-select");
+  if (select) select.value = "";
+
+  const idEl = document.getElementById("explorer-session-id");
+  if (idEl) idEl.textContent = "No session selected";
+
+  const badge = document.getElementById("explorer-verdict-badge");
+  if (badge) {
+    badge.textContent = "—";
+    badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold badge-uncertain";
+  }
+
+  const timeWrap = document.getElementById("explorer-session-time");
+  const timeVal = document.getElementById("explorer-session-time-value");
+  if (timeWrap) timeWrap.classList.add("hidden");
+  if (timeVal) timeVal.textContent = "—";
+
+  const promptEl = document.getElementById("explorer-fb-prompt");
+  const pickerEl = document.getElementById("explorer-fb-picker");
+  const statusEl = document.getElementById("explorer-fb-status");
+  if (promptEl) promptEl.classList.remove("hidden");
+  if (pickerEl) pickerEl.classList.add("hidden");
+  if (statusEl) {
+    statusEl.textContent = "";
+    statusEl.classList.add("hidden");
+  }
+
+  const ctxBlock = document.getElementById("explorer-client-context");
+  if (ctxBlock) ctxBlock.classList.add("hidden");
+  [
+    "ctx-tab-id",
+    "ctx-page-title",
+    "ctx-page-path",
+    "ctx-transmission-seq",
+    "ctx-visibility",
+    "ctx-referrer",
+    "ctx-sdk-version",
+    "ctx-visitor-id",
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "—";
+  });
+  const visitorEl = document.getElementById("ctx-visitor-id");
+  if (visitorEl) visitorEl.onclick = null;
+
+  const pointCountEl = document.getElementById("canvas-point-count");
+  const pathLenEl = document.getElementById("canvas-path-len");
+  const straightEl = document.getElementById("canvas-straightness");
+  if (pointCountEl) pointCountEl.textContent = "0";
+  if (pathLenEl) pathLenEl.textContent = "0px";
+  if (straightEl) straightEl.textContent = "1.00";
+
+  const canvas = document.getElementById("trajectory-canvas");
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#090d16";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  if (keystrokeChart) {
+    keystrokeChart.data.labels = [];
+    keystrokeChart.data.datasets[0].data = [];
+    keystrokeChart.update();
+  }
+
+  ["l1-badge", "l2-badge", "l3-badge", "l4-badge", "l5-badge"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = "—";
+      el.className = "font-bold text-slate-500 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200";
+    }
+  });
+
+  const explEl = document.getElementById("explorer-explanation-text");
+  if (explEl) {
+    explEl.textContent = "Select a session to see detailed model rationale and kinematic indicators.";
+  }
+  const sigList = document.getElementById("explorer-signals-list");
+  if (sigList) sigList.innerHTML = "";
+
+  ["f-mean-vel", "f-straightness", "f-micro-corr", "f-key-cv"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "-";
+  });
+}
+
+function selectExplorerSession(sessionId) {
+  pendingExplorerSessionId = sessionId;
+  const select = document.getElementById("explorer-session-select");
+  if (select) {
+    ensureExplorerOption(select, sessionId);
+    select.value = sessionId;
+  }
+  return loadSessionDetails(sessionId);
+}
+
+function applyDashboardNavState(state, { refreshTabData = true } = {}) {
+  const nextState = normalizeNavState(state);
+  activateTab(nextState.tab, { refresh: refreshTabData });
+
+  if (nextState.tab === "tab-explorer") {
+    if (nextState.session) {
+      return selectExplorerSession(nextState.session);
+    }
+    resetExplorerView();
+  }
+  return Promise.resolve();
+}
+
+function navigateExplorerBack() {
+  if (window.history && window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+  activateTab("tab-sessions");
+  syncDashboardHistory({ tab: "tab-sessions", session: null });
+}
+
+function activateTab(tabId, { refresh = true } = {}) {
+  const resolvedId = normalizeTabId(tabId);
+  const tabs = document.querySelectorAll(".nav-tab");
+  tabs.forEach(t => {
+    t.classList.toggle("active", t.dataset.target === resolvedId);
+  });
+
+  document.querySelectorAll(".tab-content").forEach(content => {
+    if (content.id === resolvedId) {
+      content.classList.remove("hidden");
+      content.classList.add("animate-fade-in");
+      if (refresh) {
+        // Refresh data when entering a tab that depends on live API state
+        if (resolvedId === "tab-overview") {
+          fetchOverviewStats();
+          fetchSessions();
+        } else if (resolvedId === "tab-sessions") {
+          fetchSessions();
+          fetchOverviewStats();
+        } else if (resolvedId === "tab-experiments") {
+          loadLabData();
+        }
+      }
+    } else {
+      content.classList.add("hidden");
+    }
+  });
+
+  if (resolvedId === "tab-explorer" && selectedSession) {
+    requestAnimationFrame(() => drawStaticTrajectory());
+  }
+}
+
 function initTabs() {
   const tabs = document.querySelectorAll(".nav-tab");
   tabs.forEach(tab => {
     tab.addEventListener("click", function () {
-      tabs.forEach(t => t.classList.remove("active"));
-      this.classList.add("active");
-      const targetId = this.dataset.target;
-      document.querySelectorAll(".tab-content").forEach(content => {
-        if (content.id === targetId) {
-          content.classList.remove("hidden");
-          content.classList.add("animate-fade-in");
-          // Refresh data when entering a tab that depends on live API state
-          if (targetId === "tab-overview") {
-            fetchOverviewStats();
-            fetchSessions();
-          } else if (targetId === "tab-sessions") {
-            fetchSessions();
-            fetchOverviewStats();
-          } else if (targetId === "tab-experiments") {
-            loadLabData();
-          }
-        } else {
-          content.classList.add("hidden");
-        }
-      });
+      activateTab(this.dataset.target);
+      syncDashboardHistory(getDashboardNavState());
     });
   });
 }
+
+window.addEventListener("popstate", function (event) {
+  const state =
+    event.state && event.state.tab
+      ? normalizeNavState(event.state)
+      : parseDashboardStateFromUrl();
+  _syncingHistory = true;
+  try {
+    applyDashboardNavState(state);
+  } finally {
+    _syncingHistory = false;
+  }
+});
 
 // Chart Initializations
 function initCharts() {
@@ -629,12 +892,12 @@ function renderClientContext(session) {
 
 function filterByVisitor(visitorId) {
   const searchInput = document.getElementById("session-search-input");
-  const sessionsTab = document.querySelector("[data-target='tab-sessions']");
-  if (sessionsTab) sessionsTab.click();
+  activateTab("tab-sessions");
   if (searchInput) {
     searchInput.value = visitorId;
     applySessionFilters();
   }
+  syncDashboardHistory({ tab: "tab-sessions", session: null });
 }
 
 function assertVerdictConsistency(session) {
@@ -681,36 +944,61 @@ function formatActivityTimestamp(createdAt, { short = false } = {}) {
   return `${formatted} IST`;
 }
 
+function ensureExplorerOption(select, sessionId) {
+  if (!select || !sessionId) return;
+  const exists = Array.from(select.options).some(o => o.value === sessionId);
+  if (!exists) {
+    const opt = document.createElement("option");
+    opt.value = sessionId;
+    opt.textContent = sessionId;
+    select.appendChild(opt);
+  }
+}
+
 function updateExplorerDropdown(sessions) {
   const select = document.getElementById("explorer-session-select");
   if (!select) return;
-  const curr = select.value;
+  const curr = select.value || pendingExplorerSessionId || selectedSession?.session?.session_id || "";
   select.innerHTML = '<option value="">Choose session to explore...</option>' +
     sessions.map(s => {
       const shortId = s.session_id.length > 16 ? `${s.session_id.substring(0, 16)}…` : s.session_id;
       const when = s.created_at ? formatActivityTimestamp(s.created_at, { short: true }) : "";
       const meta = [s.predicted_label, s.task, when].filter(Boolean).join(" · ");
-      return `<option value="${s.session_id}">${shortId}${meta ? ` — ${meta}` : ""}</option>`;
+      return `<option value="${escapeHTML(s.session_id)}">${escapeHTML(shortId)}${meta ? ` — ${escapeHTML(meta)}` : ""}</option>`;
     }).join("");
-  if (curr) select.value = curr;
+  if (curr) {
+    ensureExplorerOption(select, curr);
+    select.value = curr;
+  }
 }
 
 // Session Explorer Logic
 async function inspectSession(sessionId) {
-  const explorerTab = document.querySelector("[data-target='tab-explorer']");
-  if (explorerTab) explorerTab.click();
-  const select = document.getElementById("explorer-session-select");
-  if (select) select.value = sessionId;
-  await loadSessionDetails(sessionId);
+  if (!sessionId) return;
+  activateTab("tab-explorer");
+  syncDashboardHistory({ tab: "tab-explorer", session: sessionId });
+  await selectExplorerSession(sessionId);
 }
 
 async function loadSessionDetails(sessionId) {
   if (!sessionId) return;
+  const requestToken = ++explorerLoadToken;
   try {
-    const res = await fetch(`/api/v1/sessions/${sessionId}`);
-    if (!res.ok) return;
+    const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}`);
+    if (!res.ok) {
+      if (requestToken === explorerLoadToken) pendingExplorerSessionId = null;
+      return;
+    }
     const detail = await res.json();
+    if (requestToken !== explorerLoadToken) return;
     selectedSession = detail;
+    pendingExplorerSessionId = null;
+
+    const select = document.getElementById("explorer-session-select");
+    if (select && detail.session?.session_id) {
+      ensureExplorerOption(select, detail.session.session_id);
+      select.value = detail.session.session_id;
+    }
 
     document.getElementById("explorer-session-id").textContent = detail.session.session_id;
     renderClientContext(detail.session);
@@ -778,6 +1066,7 @@ async function loadSessionDetails(sessionId) {
 
     drawStaticTrajectory();
   } catch (err) {
+    if (requestToken === explorerLoadToken) pendingExplorerSessionId = null;
     console.warn("Failed to load details:", err);
   }
 }
@@ -1239,6 +1528,7 @@ async function loadExplorerFeedbackState(sessionId, predictedLabel) {
     const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/feedback`);
     if (res.ok) {
       const data = await res.json();
+      if (selectedSession?.session?.session_id !== sessionId) return;
       if (data.verified && data.feedback) {
         promptEl.classList.add("hidden");
         pickerEl.classList.add("hidden");
@@ -1325,6 +1615,8 @@ window.triggerModelRetrain = triggerModelRetrain;
 window.submitLabelOverride = (lbl) => submitExplorerFeedback(lbl, false);
 window.runAdversarialSimulation = runAdversarialSimulation;
 window.inspectSession = inspectSession;
+window.activateTab = activateTab;
+window.navigateExplorerBack = navigateExplorerBack;
 window.handleSeedDemo = handleSeedDemo;
 window.runBenchmark = runBenchmark;
 
