@@ -14,6 +14,9 @@ let animationFrameId = null;
 
 let selectedSite = "ALL";
 let selectedSource = "ALL";
+let registeredSites = [];
+let selectedInstallSite = null;
+let apiKeyRevealed = false;
 
 let _syncingHistory = false;
 let pendingExplorerSessionId = null;
@@ -116,6 +119,41 @@ document.addEventListener("DOMContentLoaded", function () {
   const benchmarkBtn = document.getElementById("run-benchmark-btn");
   if (benchmarkBtn) benchmarkBtn.addEventListener("click", runBenchmark);
 
+  const registerSiteForm = document.getElementById("register-site-form");
+  if (registerSiteForm) registerSiteForm.addEventListener("submit", handleRegisterSite);
+
+  const installTaskSelect = document.getElementById("install-snippet-task");
+  if (installTaskSelect) {
+    installTaskSelect.addEventListener("change", () => {
+      if (selectedInstallSite) showSiteInstallSnippet(selectedInstallSite, installTaskSelect.value);
+    });
+  }
+
+  const copySnippetBtn = document.getElementById("copy-snippet-btn");
+  if (copySnippetBtn) {
+    copySnippetBtn.addEventListener("click", () => {
+      const code = document.getElementById("install-snippet-code")?.textContent || "";
+      copyTextToClipboard(code, copySnippetBtn, "Copy Tag");
+    });
+  }
+
+  const toggleKeyBtn = document.getElementById("toggle-api-key-btn");
+  if (toggleKeyBtn) {
+    toggleKeyBtn.addEventListener("click", () => {
+      apiKeyRevealed = !apiKeyRevealed;
+      updateInstallApiKeyDisplay();
+    });
+  }
+
+  const copyKeyBtn = document.getElementById("copy-api-key-btn");
+  if (copyKeyBtn) {
+    copyKeyBtn.addEventListener("click", () => {
+      if (selectedInstallSite?.api_key) {
+        copyTextToClipboard(selectedInstallSite.api_key, copyKeyBtn, "Copy");
+      }
+    });
+  }
+
   // Preload latest experiment lab benchmarks
   loadLabData();
 });
@@ -159,6 +197,7 @@ async function fetchSites() {
     const res = await fetch("/api/v1/sites");
     if (!res.ok) return;
     const data = await res.json();
+    registeredSites = data.sites || [];
     const selects = [
       document.getElementById("global-site-select"),
       document.getElementById("session-filter-site"),
@@ -168,7 +207,7 @@ async function fetchSites() {
       const currentVal = select.value || selectedSite || "ALL";
       select.innerHTML = '<option value="ALL">All Sites</option>';
 
-      (data.sites || []).forEach(site => {
+      registeredSites.forEach(site => {
         const opt = document.createElement("option");
         opt.value = site.site_id;
         opt.textContent = `${site.name} (${site.site_id.substring(0, 10)})`;
@@ -181,9 +220,259 @@ async function fetchSites() {
     });
 
     selectedSite = document.getElementById("global-site-select")?.value || "ALL";
+    renderSitesTable(registeredSites);
+
+    if (selectedInstallSite) {
+      const refreshed = registeredSites.find(s => s.site_id === selectedInstallSite.site_id);
+      if (refreshed) {
+        showSiteInstallSnippet(refreshed, document.getElementById("install-snippet-task")?.value);
+      }
+    } else if (registeredSites.length > 0) {
+      showSiteInstallSnippet(registeredSites[0], "general");
+    }
   } catch (err) {
     console.warn("Failed to fetch sites:", err);
   }
+}
+
+function buildSiteSnippet(site, taskOverride) {
+  const task = (taskOverride || "general").trim() || "general";
+  if (site && site.embed_snippet) {
+    if (/data-task="[^"]*"/.test(site.embed_snippet)) {
+      return site.embed_snippet.replace(/data-task="[^"]*"/, `data-task="${task}"`);
+    }
+    return site.embed_snippet.replace(/async><\/script>$/, `data-task="${task}" async></script>`);
+  }
+  const origin = window.location.origin.replace(/\/$/, "");
+  return `<script src="${origin}/sentinel.js" data-site-id="${site.site_id}" data-task="${task}" async></script>`;
+}
+
+function updateInstallApiKeyDisplay() {
+  const keyValEl = document.getElementById("install-api-key-value");
+  const toggleBtn = document.getElementById("toggle-api-key-btn");
+  const wrapEl = document.getElementById("install-api-key-wrap");
+  if (!keyValEl || !wrapEl) return;
+
+  const key = selectedInstallSite?.api_key || "";
+  if (!key) {
+    wrapEl.classList.add("hidden");
+    return;
+  }
+  wrapEl.classList.remove("hidden");
+  keyValEl.textContent = apiKeyRevealed ? key : `${key.slice(0, 8)}••••••••••••`;
+  if (toggleBtn) toggleBtn.textContent = apiKeyRevealed ? "Hide" : "Reveal";
+}
+
+function showSiteInstallSnippet(site, taskOverride) {
+  if (!site) return;
+  selectedInstallSite = site;
+
+  const emptyEl = document.getElementById("install-snippet-empty");
+  const activeEl = document.getElementById("install-snippet-active");
+  const badgeEl = document.getElementById("install-site-badge");
+  const idEl = document.getElementById("install-site-id");
+  const originsEl = document.getElementById("install-site-origins");
+  const taskSelect = document.getElementById("install-snippet-task");
+  const codeEl = document.getElementById("install-snippet-code");
+  const localWarnEl = document.getElementById("install-localhost-warning");
+  const originPreviewEl = document.getElementById("install-origin-preview");
+
+  if (emptyEl) emptyEl.classList.add("hidden");
+  if (activeEl) activeEl.classList.remove("hidden");
+  if (badgeEl) {
+    badgeEl.textContent = site.name || site.site_id;
+    badgeEl.classList.remove("hidden");
+  }
+  if (idEl) idEl.textContent = site.site_id;
+  if (originsEl) {
+    originsEl.textContent = site.allowed_origins || "*";
+    originsEl.title = site.allowed_origins || "*";
+  }
+
+  const chosenTask = taskOverride || taskSelect?.value || "general";
+  if (taskSelect && taskSelect.value !== chosenTask) {
+    taskSelect.value = chosenTask;
+  }
+
+  const snippet = buildSiteSnippet(site, chosenTask);
+  if (codeEl) codeEl.textContent = snippet;
+
+  const srcMatch = snippet.match(/src="([^"]+)\/sentinel\.js"/);
+  const resolvedOrigin = srcMatch ? srcMatch[1] : window.location.origin;
+  const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(resolvedOrigin);
+  if (localWarnEl) localWarnEl.classList.toggle("hidden", !isLocalOrigin);
+  if (originPreviewEl) originPreviewEl.textContent = resolvedOrigin;
+
+  updateInstallApiKeyDisplay();
+}
+
+function selectSiteForInstall(siteId) {
+  const site = registeredSites.find(s => s.site_id === siteId);
+  if (!site) return;
+  apiKeyRevealed = false;
+  showSiteInstallSnippet(site, document.getElementById("install-snippet-task")?.value || "general");
+  document.getElementById("install-snippet-active")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function filterDashboardBySite(siteId) {
+  setSiteFilter(siteId);
+  activateTab("tab-overview");
+  syncDashboardHistory({ tab: "tab-overview", session: null });
+}
+
+function renderSitesTable(sites) {
+  const tbody = document.getElementById("sites-table-tbody");
+  if (!tbody) return;
+  if (!sites || sites.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400">No sites registered yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sites.map(site => {
+    const mode = String(site.enforcement_mode || "monitor");
+    const threshold = site.risk_threshold ?? 80;
+    const modeBadgeClass =
+      mode === "block" ? "bg-rose-50 text-rose-700 border-rose-200" :
+      mode === "challenge" ? "bg-amber-50 text-amber-700 border-amber-200" :
+      "bg-slate-100 text-slate-700 border-slate-200";
+
+    return `
+      <tr>
+        <td class="py-3 px-3.5 font-semibold text-slate-900">${escapeHTML(String(site.name || site.site_id))}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-indigo-700">${escapeHTML(String(site.site_id))}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 max-w-[220px] truncate" title="${escapeHTML(String(site.allowed_origins || "*"))}">${escapeHTML(String(site.allowed_origins || "*"))}</td>
+        <td class="py-3 px-3.5">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${modeBadgeClass}">${escapeHTML(mode.toUpperCase())}</span>
+          <span class="text-[11px] font-mono text-slate-500 ml-1">&ge;${escapeHTML(String(threshold))}</span>
+        </td>
+        <td class="py-3 px-3.5 font-mono font-semibold text-slate-800">${escapeHTML(String(site.total_sessions ?? 0))}</td>
+        <td class="py-3 px-3.5 text-right whitespace-nowrap space-x-1.5">
+          <button type="button" onclick="selectSiteForInstall('${escapeHTML(String(site.site_id))}')"
+                  class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-semibold transition">
+            Install Snippet
+          </button>
+          <button type="button" onclick="filterDashboardBySite('${escapeHTML(String(site.site_id))}')"
+                  class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition">
+            Filter
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+async function handleRegisterSite(event) {
+  event.preventDefault();
+  const nameInput = document.getElementById("reg-site-name");
+  const originsInput = document.getElementById("reg-site-origins");
+  const taskSelect = document.getElementById("reg-site-task");
+  const modeSelect = document.getElementById("reg-site-mode");
+  const thresholdInput = document.getElementById("reg-site-threshold");
+  const webhookInput = document.getElementById("reg-site-webhook");
+  const errEl = document.getElementById("reg-site-error");
+  const submitBtn = document.getElementById("register-site-submit-btn");
+
+  if (errEl) {
+    errEl.textContent = "";
+    errEl.classList.add("hidden");
+  }
+
+  const name = (nameInput?.value || "").trim();
+  const allowedOrigins = (originsInput?.value || "").trim() || "*";
+  const defaultTask = taskSelect?.value || "general";
+  const enforcementMode = modeSelect?.value || "monitor";
+  const riskThreshold = parseInt(thresholdInput?.value || "80", 10);
+  const webhookUrl = (webhookInput?.value || "").trim() || null;
+
+  if (name.length < 2) {
+    if (errEl) {
+      errEl.textContent = "Site Name must be at least 2 characters.";
+      errEl.classList.remove("hidden");
+    }
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Registering...";
+  }
+
+  try {
+    const res = await fetch("/api/v1/sites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        allowed_origins: allowedOrigins,
+        enforcement_mode: enforcementMode,
+        risk_threshold: Number.isNaN(riskThreshold) ? 80 : riskThreshold,
+        webhook_url: webhookUrl,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail || "Registration failed");
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.classList.remove("hidden");
+      }
+      return;
+    }
+
+    apiKeyRevealed = false;
+    await fetchSites();
+    showSiteInstallSnippet(data, defaultTask);
+    if (nameInput) nameInput.value = "";
+    if (originsInput) originsInput.value = "";
+    if (webhookInput) webhookInput.value = "";
+  } catch (err) {
+    if (errEl) {
+      errEl.textContent = `Failed to register site: ${err}`;
+      errEl.classList.remove("hidden");
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Register Site & Generate Snippet";
+    }
+  }
+}
+
+async function copyTextToClipboard(text, btn, defaultLabel) {
+  if (!text) return;
+  let copied = false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    } catch (_) {}
+  }
+  if (!copied) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      copied = document.execCommand("copy");
+    } catch (_) {}
+    document.body.removeChild(ta);
+  }
+  if (btn && copied) {
+    btn.textContent = "✓ Copied!";
+    setTimeout(() => {
+      btn.textContent = defaultLabel;
+    }, 2000);
+  }
+}
+
+function openSitesTab() {
+  activateTab("tab-sites");
+  syncDashboardHistory({ tab: "tab-sites", session: null });
+  document.getElementById("reg-site-name")?.focus();
 }
 
 // Fetch Overview Stats
@@ -515,6 +804,7 @@ const VALID_TAB_IDS = new Set([
   "tab-experiments",
   "tab-adversarial",
   "tab-health",
+  "tab-sites",
 ]);
 
 function normalizeTabId(rawTab) {
@@ -741,6 +1031,8 @@ function activateTab(tabId, { refresh = true } = {}) {
           fetchOverviewStats();
         } else if (resolvedId === "tab-experiments") {
           loadLabData();
+        } else if (resolvedId === "tab-sites") {
+          fetchSites();
         }
       }
     } else {
@@ -1619,6 +1911,10 @@ window.activateTab = activateTab;
 window.navigateExplorerBack = navigateExplorerBack;
 window.handleSeedDemo = handleSeedDemo;
 window.runBenchmark = runBenchmark;
+window.openSitesTab = openSitesTab;
+window.selectSiteForInstall = selectSiteForInstall;
+window.filterDashboardBySite = filterDashboardBySite;
+window.fetchSites = fetchSites;
 
 
 

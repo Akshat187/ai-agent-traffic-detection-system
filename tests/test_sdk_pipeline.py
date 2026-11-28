@@ -18,15 +18,34 @@ def client():
 
 
 def test_sentinel_script_endpoint(client):
-    """Verifies that /sentinel.js and /static/sentinel.js are served cleanly."""
+    """Verifies that /sentinel.js is served cross-origin with explicit cache headers."""
     resp = client.get("/sentinel.js")
     assert resp.status_code == 200
     assert "application/javascript" in resp.headers["content-type"]
     assert "Sentinel Behavioral Intelligence SDK" in resp.text
+    assert resp.headers.get("access-control-allow-origin") == "*"
+    assert resp.headers.get("cross-origin-resource-policy") == "cross-origin"
+    assert resp.headers.get("x-content-type-options") == "nosniff"
+    cache_ctrl = resp.headers.get("cache-control", "")
+    assert "public" in cache_ctrl
+    assert "max-age=3600" in cache_ctrl
+
+    # Cross-origin fetch and HEAD/OPTIONS preflight support
+    cors_get = client.get("/sentinel.js", headers={"Origin": "https://customer-store.example"})
+    assert cors_get.status_code == 200
+    assert cors_get.headers.get("access-control-allow-origin") in ("*", "https://customer-store.example")
+
+    head_resp = client.head("/sentinel.js")
+    assert head_resp.status_code == 200
+    assert "max-age=3600" in head_resp.headers.get("cache-control", "")
+
+    opt_resp = client.options("/sentinel.js")
+    assert opt_resp.status_code in (200, 204)
+    assert opt_resp.headers.get("access-control-allow-origin") == "*"
 
 
-def test_site_registration_lifecycle(client):
-    """Tests registering a new site, listing sites, and retrieving site details."""
+def test_site_registration_lifecycle(client, monkeypatch):
+    """Tests registering a new site, embed_snippet output, listing, and detail lookup."""
     payload = {
         "name": "E-Commerce External Partner",
         "allowed_origins": "https://partner-shop.com,https://staging.partner-shop.com"
@@ -38,6 +57,9 @@ def test_site_registration_lifecycle(client):
     assert data["name"] == payload["name"]
     assert "https://partner-shop.com" in data["allowed_origins"]
     assert data["api_key"].startswith("ws_live_")
+    assert "/sentinel.js" in data["embed_snippet"]
+    assert f'data-site-id="{data["site_id"]}"' in data["embed_snippet"]
+    assert "<script " in data["embed_snippet"] and "</script>" in data["embed_snippet"]
 
     site_id = data["site_id"]
 
@@ -45,12 +67,28 @@ def test_site_registration_lifecycle(client):
     list_resp = client.get("/api/v1/sites")
     assert list_resp.status_code == 200
     sites = list_resp.json()["sites"]
-    assert any(s["site_id"] == site_id for s in sites)
+    matched = [s for s in sites if s["site_id"] == site_id]
+    assert len(matched) == 1
+    assert f'data-site-id="{site_id}"' in matched[0]["embed_snippet"]
 
-    # Verify get by ID
+    # Verify get by ID and PUBLIC_BASE_URL override
+    from apps.api.config import settings
+    monkeypatch.setattr(settings, "PUBLIC_BASE_URL", "https://detect.example.com")
     get_resp = client.get(f"/api/v1/sites/{site_id}")
     assert get_resp.status_code == 200
-    assert get_resp.json()["site_id"] == site_id
+    get_data = get_resp.json()
+    assert get_data["site_id"] == site_id
+    assert 'src="https://detect.example.com/sentinel.js"' in get_data["embed_snippet"]
+
+
+def test_dashboard_includes_site_registration_and_snippet_panel(client):
+    """Verifies /dashboard exposes the Sites & Embed tab and copy-paste snippet controls."""
+    resp = client.get("/dashboard")
+    assert resp.status_code == 200
+    assert "tab-sites" in resp.text
+    assert "register-site-form" in resp.text
+    assert "install-snippet-code" in resp.text
+    assert "copy-snippet-btn" in resp.text
 
 
 def test_telemetry_ingestion_with_valid_site_origin(client):

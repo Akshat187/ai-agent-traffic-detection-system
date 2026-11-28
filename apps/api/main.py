@@ -178,18 +178,46 @@ app.include_router(model.router)
 
 
 # Direct SDK Script Endpoint
-@app.get("/sentinel.js", tags=["SDK"])
+_SDK_SCRIPT_HEADERS = {
+    "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+    "Access-Control-Allow-Headers": "*",
+    "Cross-Origin-Resource-Policy": "cross-origin",
+    "X-Content-Type-Options": "nosniff",
+}
+
+
+@app.api_route("/sentinel.js", methods=["GET", "HEAD"], tags=["SDK"])
 def get_sentinel_script():
     """Serves the standalone embeddable Sentinel SDK directly from root."""
     js_path = STATIC_DIR / "sentinel.js"
-    return FileResponse(js_path, media_type="application/javascript")
+    return FileResponse(
+        js_path,
+        media_type="application/javascript; charset=utf-8",
+        headers=_SDK_SCRIPT_HEADERS,
+    )
+
+
+@app.options("/sentinel.js", tags=["SDK"], include_in_schema=False)
+def options_sentinel_script():
+    """Handles CORS preflight requests for the hosted /sentinel.js SDK."""
+    return PlainTextResponse("", status_code=204, headers=_SDK_SCRIPT_HEADERS)
 
 
 @app.get("/collector.js", tags=["SDK"], include_in_schema=False)
 @app.get("/static/collector.js", tags=["SDK"], include_in_schema=False)
 def get_collector_legacy():
     """Legacy alias redirecting to /sentinel.js."""
-    return RedirectResponse(url="/sentinel.js", status_code=301)
+    return RedirectResponse(
+        url="/sentinel.js",
+        status_code=301,
+        headers={
+            "Cache-Control": "public, max-age=3600",
+            "Access-Control-Allow-Origin": "*",
+            "Cross-Origin-Resource-Policy": "cross-origin",
+        },
+    )
 
 
 # Health Check Endpoints

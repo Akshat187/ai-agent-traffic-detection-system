@@ -1,4 +1,8 @@
-# WebSense Sentinel — Chrome Extension (Manifest V3)
+# WebSense Sentinel — Chrome Extension (Analyst & Demo Tool Only)
+
+> **Note for Site Owners / Customers:** Production websites do **not** install this Chrome extension. To monitor visitors on your own site, register your domain in `/dashboard` (**Sites & Embed**) and paste the single hosted `<script src=".../sentinel.js" data-site-id="...">` tag described in [EMBED.md](../EMBED.md).
+>
+> Use this extension only as an **analyst, research, or live-demo tool** when you want to observe SentinelTrace behavioral telemetry on arbitrary third-party websites without editing their HTML.
 
 This extension injects the Sentinel behavioral telemetry collector onto **any website you visit**, evaluates interactions against the WebSense 5-layer detection engine in real time, and shows the live actor classification (`HUMAN`, `AGENTIC_AI`, `TRADITIONAL_AUTOMATION`) and risk score.
 

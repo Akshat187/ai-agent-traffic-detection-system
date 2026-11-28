@@ -68,6 +68,16 @@
           </label>
         </div>
 
+        <!-- Register Site / Install Snippet Shortcut -->
+        <button id="header-register-site-btn"
+                type="button"
+                onclick="openSitesTab()"
+                title="Register a website and copy its hosted sentinel.js embed snippet"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0">
+          <span aria-hidden="true">+</span>
+          <span>Register Site</span>
+        </button>
+
         <!-- Offline Demo Seeding Button -->
         <button id="seed-demo-btn" 
                 title="Seeds synthetic training sessions for offline evaluation (marked DEMO)"
@@ -126,6 +136,9 @@
       </button>
       <button class="nav-tab-pill nav-tab" data-target="tab-health">
         <span>⚙️</span><span>System Health</span>
+      </button>
+      <button class="nav-tab-pill nav-tab" data-target="tab-sites">
+        <span>🌐</span><span>Sites &amp; Embed</span>
       </button>
     </div>
   </header>
@@ -864,6 +877,192 @@
         </div>
 
       </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- TAB 7: SITES & HOSTED EMBED SNIPPET -->
+    <!-- ================================================================= -->
+    <section id="tab-sites" class="tab-content space-y-6 hidden">
+
+      <!-- Positioning Banner -->
+      <div class="saas-card p-5 bg-gradient-to-r from-indigo-50/80 via-white to-slate-50 border-indigo-200/80">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <div class="text-xs font-bold text-indigo-900 flex items-center gap-2 flex-wrap">
+              <span>Hosted SDK Distribution</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold">NO CUSTOMER EXTENSION</span>
+            </div>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              Site owners embed one hosted <code class="font-mono text-indigo-700">&lt;script&gt;</code> tag in their HTML <code class="font-mono">&lt;head&gt;</code>—visitors install nothing, and you never copy SDK source code. The Chrome extension is strictly an internal analyst/demo tool for inspecting third-party sites.
+            </p>
+          </div>
+          <a href="/standalone_demo" target="_blank" class="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 text-xs font-semibold shadow-sm whitespace-nowrap self-start md:self-center">
+            External Embed Demo ↗
+          </a>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Register Site Form -->
+        <div class="lg:col-span-5 saas-card p-6 space-y-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Register a Customer Site</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Generates an isolated <code class="font-mono">site_id</code> and copy-paste install tag.</p>
+          </div>
+
+          <form id="register-site-form" class="space-y-3.5">
+            <div>
+              <label for="reg-site-name" class="block text-xs font-semibold text-slate-700 mb-1">Site Name</label>
+              <input id="reg-site-name" type="text" required minlength="2" maxlength="128" placeholder="Acme Global Store"
+                     class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label for="reg-site-origins" class="block text-xs font-semibold text-slate-700 mb-1">Allowed Origins (comma-separated)</label>
+              <input id="reg-site-origins" type="text" placeholder="https://acmestore.com, https://staging.acmestore.com"
+                     class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <p class="text-[11px] text-slate-400 mt-1">Leave blank or use <code class="font-mono">*</code> for local/demo testing.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="reg-site-task" class="block text-xs font-semibold text-slate-700 mb-1">Default Snippet Task</label>
+                <select id="reg-site-task" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                  <option value="general">general</option>
+                  <option value="shopping">shopping</option>
+                  <option value="travel">travel</option>
+                  <option value="forum">forum</option>
+                  <option value="custom">custom</option>
+                </select>
+              </div>
+              <div>
+                <label for="reg-site-mode" class="block text-xs font-semibold text-slate-700 mb-1">Enforcement Mode</label>
+                <select id="reg-site-mode" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                  <option value="monitor">monitor (log only)</option>
+                  <option value="challenge">challenge</option>
+                  <option value="block">block</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="reg-site-threshold" class="block text-xs font-semibold text-slate-700 mb-1">Risk Threshold (0–100)</label>
+                <input id="reg-site-threshold" type="number" min="0" max="100" value="80"
+                       class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div>
+                <label for="reg-site-webhook" class="block text-xs font-semibold text-slate-700 mb-1">Webhook URL (optional)</label>
+                <input id="reg-site-webhook" type="url" maxlength="512" placeholder="https://api.example.com/hook"
+                       class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div id="reg-site-error" class="hidden p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium"></div>
+
+            <button id="register-site-submit-btn" type="submit"
+                    class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-sm">
+              Register Site &amp; Generate Snippet
+            </button>
+          </form>
+        </div>
+
+        <!-- Copy-Paste Install Snippet Panel -->
+        <div class="lg:col-span-7 saas-card p-6 space-y-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Install Snippet</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Paste into your website&apos;s <code class="font-mono">&lt;head&gt;</code> tag—just like an analytics snippet.</p>
+            </div>
+            <span id="install-site-badge" class="hidden px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200"></span>
+          </div>
+
+          <div id="install-snippet-empty" class="p-6 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center text-xs text-slate-500">
+            Register a site on the left or click <strong>Install Snippet</strong> on any site below to view its <code class="font-mono">&lt;script&gt;</code> tag.
+          </div>
+
+          <div id="install-snippet-active" class="hidden space-y-4">
+            <div id="install-localhost-warning" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed">
+              <strong>Localhost preview:</strong> This snippet currently points to <code class="font-mono" id="install-origin-preview">http://localhost:8000</code>. Deploy SentinelTrace to a public HTTPS origin (or set <code class="font-mono">PUBLIC_BASE_URL</code>) before pasting it into production customer websites.
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-slate-500 font-medium">Site ID:</span>
+                <code id="install-site-id" class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-800 font-mono font-semibold"></code>
+                <span class="text-slate-500 font-medium ml-1">Origins:</span>
+                <code id="install-site-origins" class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-mono truncate max-w-[220px]"></code>
+              </div>
+              <label class="flex items-center gap-1.5">
+                <span class="text-slate-500 font-medium">Task:</span>
+                <select id="install-snippet-task" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono text-slate-800 focus:ring-1 focus:ring-indigo-500">
+                  <option value="general">general</option>
+                  <option value="shopping">shopping</option>
+                  <option value="travel">travel</option>
+                  <option value="forum">forum</option>
+                  <option value="custom">custom</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="relative rounded-xl bg-slate-900 border border-slate-800 p-4">
+              <pre id="install-snippet-code" class="text-xs font-mono text-sky-300 whitespace-pre-wrap break-all pr-24 select-all"></pre>
+              <button id="copy-snippet-btn" type="button"
+                      class="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition shadow-sm">
+                Copy Tag
+              </button>
+            </div>
+
+            <div id="install-api-key-wrap" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <span class="text-[11px] font-bold text-slate-700">Server-to-Server API Key</span>
+                <div class="flex items-center gap-2">
+                  <code id="install-api-key-value" class="text-[11px] font-mono text-slate-700">ws_live_••••••••••••</code>
+                  <button id="toggle-api-key-btn" type="button" class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">Reveal</button>
+                  <button id="copy-api-key-btn" type="button" class="text-[11px] font-semibold text-slate-600 hover:text-slate-900">Copy</button>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-500">
+                Use <code class="font-mono">Authorization: Bearer &lt;api_key&gt;</code> only from backend services. Browser pages authenticate via <code class="font-mono">data-site-id</code> and <code class="font-mono">Origin</code>—never put <code class="font-mono">api_key</code> in HTML.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Registered Sites Table -->
+      <div class="saas-card p-6 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Registered Sites</h3>
+            <p class="text-xs text-slate-500">Multi-tenant sites isolated by <code class="font-mono">site_id</code> and <code class="font-mono">allowed_origins</code>.</p>
+          </div>
+          <button type="button" onclick="fetchSites()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition">
+            ↻ Refresh
+          </button>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left text-xs saas-table">
+            <thead class="bg-slate-50 text-slate-600 font-mono uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-3.5">Site Name</th>
+                <th class="py-3 px-3.5">Site ID</th>
+                <th class="py-3 px-3.5">Allowed Origins</th>
+                <th class="py-3 px-3.5">Policy</th>
+                <th class="py-3 px-3.5">Sessions</th>
+                <th class="py-3 px-3.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="sites-table-tbody" class="divide-y divide-slate-100 text-slate-700">
+              <tr><td colspan="6" class="py-8 text-center text-slate-400">Loading registered sites...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </section>
 
   </main>

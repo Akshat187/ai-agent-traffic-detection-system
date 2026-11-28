@@ -89,25 +89,30 @@ Returns complete session summary, full extracted feature vector, 5-layer verdict
 ### Register a Site
 `POST /api/v1/sites`
 
-Registers a new site for the SentinelTrace embeddable SDK (`sentinel.js`), returning a `site_id` and `api_key` (`ws_live_...`).
+Registers a new site for the SentinelTrace hosted SDK (`sentinel.js`), returning a `site_id`, server-to-server `api_key` (`ws_live_...`), and copy-pasteable `embed_snippet`.
 
 **Request Body:**
 ```json
 {
   "name": "Acme Global Store",
-  "allowed_origins": "https://acmestore.com,https://staging.acmestore.com"
+  "allowed_origins": "https://acmestore.com,https://staging.acmestore.com",
+  "risk_threshold": 80,
+  "enforcement_mode": "monitor"
 }
 ```
+
+**Response (`201 Created`):**
+Includes `site_id`, `api_key`, policy settings, and `embed_snippet` (`<script src=".../sentinel.js" data-site-id="..." data-task="general" async></script>`).
 
 ### List Registered Sites
 `GET /api/v1/sites`
 
-Returns all registered sites and their session counts.
+Returns all registered sites, their session counts, and `embed_snippet`.
 
 ### Get Site Details
 `GET /api/v1/sites/{site_id}`
 
-Returns metadata and configuration for a specific registered site.
+Returns metadata, configuration, and `embed_snippet` for a specific registered site.
 
 ---
 

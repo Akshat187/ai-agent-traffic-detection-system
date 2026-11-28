@@ -26,10 +26,11 @@ Inspired by contemporary research (*FP-Agent: Fingerprinting AI Browsing Agents,
    - **Policy Engine & Signed Webhooks** — Per-site `risk_threshold` and `enforcement_mode` (`monitor | challenge | block`) returning `ALLOW | CHALLENGE | BLOCK` in `POST /api/v1/sessions` and dispatching **HMAC-SHA256** signed webhook alerts via `BackgroundTasks`.
    - **Multi-Site Auth & Tenant-Isolated Rate Limiting** — Enforces `site_id` + `Origin` (browser SDK) or `Authorization: Bearer ws_live_...` (server-to-server) with per-`(site_id, client_ip)` sliding-window rate limits.
 
-3. **Hardened SDK, Honey Sites & Air-Gapped Dashboard**:
-   - **`sentinel.js` SDK** — Tracks `pointerType` (`mouse | touch | pen`), caps buffered mouse deltas at 500 points per flush, and uses `navigator.sendBeacon()` (with `fetch(..., { keepalive: true })` fallback) for reliable unload delivery.
-   - **Instrumented Honey Websites** (`/visitor/shop`, `/visitor/travel`, `/visitor/forum`) + **Chrome Extension (Manifest V3)**.
-   - **Offline-Ready Dashboard (`/dashboard`)** — Static CSS design system (zero Tailwind CDN dependency), 2D Canvas mouse trajectory replay, 6-experiment ablation lab, and interactive adversarial simulator.
+3. **Hosted SDK, Honey Sites & Analyst Tools**:
+   - **`sentinel.js` Hosted SDK (Customer Production)** — Site owners never install a Chrome extension and never copy SDK source code. They register their site via `/dashboard` (**Sites & Embed**) or `POST /api/v1/sites` and paste one hosted `<script>` tag pointing at your deployed SentinelTrace origin. Tracks `pointerType` (`mouse | touch | pen`), caps buffered mouse deltas at 500 points per flush, and uses `navigator.sendBeacon()` (with `fetch(..., { keepalive: true })` fallback) for reliable unload delivery.
+   - **Chrome Extension (Manifest V3 — Analyst / Demo Only)** — Internal analyst and demo tool for inspecting third-party sites without modifying their HTML.
+   - **Instrumented Honey Websites** (`/visitor/shop`, `/visitor/travel`, `/visitor/forum`) + **External Embed Demo** (`/standalone_demo`).
+   - **Dashboard (`/dashboard`)** — Self-hosted site registration & snippet generator, 2D Canvas mouse trajectory replay, 6-experiment ablation lab, and interactive adversarial simulator.
 
 4. **Continuous ML & Production Operations**:
    - **Active Learning Loop** — Analyst label overrides via `POST /api/v1/sessions/{session_id}/feedback` (`session_feedback` table) and regression-gated retraining via `make retrain` (`scripts/retrain_model.py`).
@@ -80,10 +81,13 @@ make dev       # Starts FastAPI on http://localhost:8000
 ```
 
 Open in your browser:
-- **Security Dashboard**: [http://localhost:8000/dashboard](http://localhost:8000/dashboard)
+- **Security Dashboard**: [http://localhost:8000/dashboard](http://localhost:8000/dashboard) (use **Sites & Embed** to register a customer site and copy its hosted `<script>` snippet; set `PUBLIC_BASE_URL` in `.env` for production origins)
 - **Honey Sites**: `/visitor/shop`, `/visitor/travel`, `/visitor/forum`
+- **External Embed Demo**: [http://localhost:8000/standalone_demo](http://localhost:8000/standalone_demo)
 - **OpenAPI Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **Prometheus Metrics**: [http://localhost:8000/metrics](http://localhost:8000/metrics)
+
+> **Customer vs. Analyst Distribution:** Production site owners only embed the hosted `<script src="https://<your-deployed-sentineltrace-origin>/sentinel.js" data-site-id="...">` tag (see [EMBED.md](EMBED.md)). The [Chrome extension](extension/README.md) is strictly for internal analysts and demos on third-party websites.
 
 ---
 

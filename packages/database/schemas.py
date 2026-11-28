@@ -141,6 +141,7 @@ class SiteResponse(BaseModel):
     is_active: bool = True
     created_at: str
     total_sessions: int = 0
+    embed_snippet: str = ""
 
 
 class SessionFeedbackRequest(BaseModel):

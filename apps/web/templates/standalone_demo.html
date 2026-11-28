@@ -158,8 +158,8 @@
     <h1>External Website Integration</h1>
     <p class="subtitle">This external page instruments user kinematics via a single drop-in script tag.</p>
 
-    <div class="code-box">
-      &lt;script src="https://traffic-engine.internal/sentinel.js" data-site-id="site_meridian_prod" data-task="lead_form" async&gt;&lt;/script&gt;
+    <div class="code-box" id="demo-embed-code">
+      &lt;script src="https://your-sentineltrace-origin/sentinel.js" data-site-id="site_meridian_prod" data-task="lead_form" async&gt;&lt;/script&gt;
     </div>
 
     <form id="lead-form">
@@ -202,6 +202,11 @@
   </div>
 
   <script>
+    const demoEmbedCode = document.getElementById('demo-embed-code');
+    if (demoEmbedCode && window.location && window.location.origin) {
+      demoEmbedCode.textContent = '<script src="' + window.location.origin + '/sentinel.js" data-site-id="site_meridian_prod" data-task="lead_form" async><\/script>';
+    }
+
     // Rating buttons
     document.querySelectorAll('.rating-btn').forEach(btn => {
       btn.addEventListener('click', function() {
