@@ -346,7 +346,7 @@ function renderRecentOverviewTable(sessions) {
       <tr class="hover:bg-slate-50 transition border-b border-slate-100">
         <td class="py-3 px-3.5 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" onclick="inspectSession('${s.session_id}')">${s.session_id.substring(0, 16)}... ${srcTag}</td>
         <td class="py-3 px-3.5">${formatTabPageCell(s)}</td>
-        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? `${s.created_at} UTC` : '—'}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? formatActivityTimestamp(s.created_at) : '—'}</td>
         <td class="py-3 px-3.5 capitalize font-medium text-slate-800">${s.task}</td>
         <td class="py-3 px-3.5"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeClass}">${s.predicted_label}</span></td>
         <td class="py-3 px-3.5">${renderVerifyCell(s)}</td>
@@ -465,7 +465,7 @@ function applySessionFilters() {
       <tr class="hover:bg-slate-50 transition border-b border-slate-100">
         <td class="py-3 px-3.5 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" onclick="inspectSession('${s.session_id}')">${s.session_id}</td>
         <td class="py-3 px-3.5">${formatTabPageCell(s)}</td>
-        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? `${s.created_at} UTC` : '—'}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? formatActivityTimestamp(s.created_at) : '—'}</td>
         <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600"><span class="font-semibold text-slate-800" title="${escapeHTML(s.site_id || '')}">${escapeHTML(siteDisplay)}</span><br>${srcTag}<br><span class="text-[10px] text-slate-400">${escapeHTML(sourceLabel)}</span></td>
         <td class="py-3 px-3.5 capitalize font-medium text-slate-800">${s.task}</td>
         <td class="py-3 px-3.5">${durationCell}</td>
@@ -657,10 +657,28 @@ function assertVerdictConsistency(session) {
   return true;
 }
 
-function formatActivityTimestamp(createdAt) {
+function formatActivityTimestamp(createdAt, { short = false } = {}) {
   if (!createdAt) return "";
-  // Server already formats as "YYYY-MM-DD HH:MM:SS" UTC; keep display stable.
-  return `${createdAt} UTC`;
+  // Server formats as "YYYY-MM-DD HH:MM:SS" UTC (naive). Convert to IST (Asia/Kolkata).
+  const raw = String(createdAt).trim();
+  const iso = raw.includes("T") ? raw : raw.replace(" ", "T");
+  const date = new Date(/(?:Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : `${iso}Z`);
+  if (Number.isNaN(date.getTime())) return `${raw} UTC`;
+
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type) => parts.find((p) => p.type === type)?.value || "";
+  const formatted = `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
+  if (short) return formatted.replace(/^\d{4}-/, ""); // MM-DD HH:MM:SS
+  return `${formatted} IST`;
 }
 
 function updateExplorerDropdown(sessions) {
@@ -670,7 +688,7 @@ function updateExplorerDropdown(sessions) {
   select.innerHTML = '<option value="">Choose session to explore...</option>' +
     sessions.map(s => {
       const shortId = s.session_id.length > 16 ? `${s.session_id.substring(0, 16)}…` : s.session_id;
-      const when = s.created_at ? s.created_at.replace(/^\d{4}-/, "") : ""; // MM-DD HH:MM:SS
+      const when = s.created_at ? formatActivityTimestamp(s.created_at, { short: true }) : "";
       const meta = [s.predicted_label, s.task, when].filter(Boolean).join(" · ");
       return `<option value="${s.session_id}">${shortId}${meta ? ` — ${meta}` : ""}</option>`;
     }).join("");
