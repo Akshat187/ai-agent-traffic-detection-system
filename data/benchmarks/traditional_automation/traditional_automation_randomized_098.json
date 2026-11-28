@@ -1,0 +1,249 @@
+{
+  "session_id": "bm_traditional_automation_randomized_travel_098",
+  "visitor_id": "vis_traditional_automation_098",
+  "task": "travel",
+  "start_time": 1724905880000,
+  "end_time": 1724905880620,
+  "duration_ms": 620.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_randomized",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 208,
+      "y": 199,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 243,
+      "y": 229,
+      "t": 31,
+      "type": "move"
+    },
+    {
+      "x": 289,
+      "y": 254,
+      "t": 62,
+      "type": "move"
+    },
+    {
+      "x": 314,
+      "y": 270,
+      "t": 93,
+      "type": "move"
+    },
+    {
+      "x": 358,
+      "y": 302,
+      "t": 124,
+      "type": "move"
+    },
+    {
+      "x": 391,
+      "y": 335,
+      "t": 155,
+      "type": "move"
+    },
+    {
+      "x": 430,
+      "y": 359,
+      "t": 186,
+      "type": "move"
+    },
+    {
+      "x": 467,
+      "y": 384,
+      "t": 217,
+      "type": "move"
+    },
+    {
+      "x": 485,
+      "y": 404,
+      "t": 248,
+      "type": "move"
+    },
+    {
+      "x": 537,
+      "y": 418,
+      "t": 279,
+      "type": "move"
+    },
+    {
+      "x": 588,
+      "y": 443,
+      "t": 310,
+      "type": "move"
+    },
+    {
+      "x": 616,
+      "y": 475,
+      "t": 341,
+      "type": "move"
+    },
+    {
+      "x": 636,
+      "y": 492,
+      "t": 372,
+      "type": "move"
+    },
+    {
+      "x": 697,
+      "y": 525,
+      "t": 403,
+      "type": "move"
+    },
+    {
+      "x": 727,
+      "y": 562,
+      "t": 434,
+      "type": "move"
+    },
+    {
+      "x": 782,
+      "y": 578,
+      "t": 465,
+      "type": "move"
+    },
+    {
+      "x": 800,
+      "y": 611,
+      "t": 496,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 89,
+      "interval": 39,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 142,
+      "interval": 53,
+      "hold": 24,
+      "is_paste": false
+    },
+    {
+      "t": 178,
+      "interval": 36,
+      "hold": 28,
+      "is_paste": false
+    },
+    {
+      "t": 215,
+      "interval": 37,
+      "hold": 24,
+      "is_paste": false
+    },
+    {
+      "t": 280,
+      "interval": 65,
+      "hold": 22,
+      "is_paste": false
+    },
+    {
+      "t": 326,
+      "interval": 46,
+      "hold": 28,
+      "is_paste": false
+    },
+    {
+      "t": 362,
+      "interval": 36,
+      "hold": 18,
+      "is_paste": false
+    },
+    {
+      "t": 419,
+      "interval": 57,
+      "hold": 28,
+      "is_paste": false
+    },
+    {
+      "t": 469,
+      "interval": 50,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 516,
+      "interval": 47,
+      "hold": 23,
+      "is_paste": false
+    },
+    {
+      "t": 555,
+      "interval": 39,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 601,
+      "interval": 46,
+      "hold": 22,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 31,
+      "scroll_y": 386,
+      "delta_y": 386
+    },
+    {
+      "t": 194,
+      "scroll_y": 772,
+      "delta_y": 386
+    },
+    {
+      "t": 325,
+      "scroll_y": 1158,
+      "delta_y": 386
+    },
+    {
+      "t": 428,
+      "scroll_y": 1544,
+      "delta_y": 386
+    }
+  ],
+  "click_events": [
+    {
+      "x": 800,
+      "y": 600,
+      "t": 527,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "filter_applied",
+      "t": 217,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 372,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 496,
+      "details": {}
+    }
+  ]
+}

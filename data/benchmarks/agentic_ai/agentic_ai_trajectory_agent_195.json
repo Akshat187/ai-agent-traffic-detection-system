@@ -1,0 +1,259 @@
+{
+  "session_id": "bm_agentic_ai_trajectory_agent_forum_195",
+  "visitor_id": "vis_agentic_ai_195",
+  "task": "forum",
+  "start_time": 1724911700000,
+  "end_time": 1724911710335,
+  "duration_ms": 10335.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_trajectory_agent",
+  "browser_signals": {
+    "webdriver": false,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 8,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 150,
+      "y": 200,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 188,
+      "y": 201,
+      "t": 249,
+      "type": "move"
+    },
+    {
+      "x": 225,
+      "y": 201,
+      "t": 498,
+      "type": "move"
+    },
+    {
+      "x": 263,
+      "y": 202,
+      "t": 747,
+      "type": "move"
+    },
+    {
+      "x": 301,
+      "y": 203,
+      "t": 996,
+      "type": "move"
+    },
+    {
+      "x": 338,
+      "y": 203,
+      "t": 1245,
+      "type": "move"
+    },
+    {
+      "x": 376,
+      "y": 204,
+      "t": 1494,
+      "type": "move"
+    },
+    {
+      "x": 376,
+      "y": 204,
+      "t": 2411,
+      "type": "move"
+    },
+    {
+      "x": 436,
+      "y": 254,
+      "t": 2667,
+      "type": "move"
+    },
+    {
+      "x": 496,
+      "y": 303,
+      "t": 2923,
+      "type": "move"
+    },
+    {
+      "x": 556,
+      "y": 352,
+      "t": 3179,
+      "type": "move"
+    },
+    {
+      "x": 615,
+      "y": 402,
+      "t": 3435,
+      "type": "move"
+    },
+    {
+      "x": 675,
+      "y": 452,
+      "t": 3691,
+      "type": "move"
+    },
+    {
+      "x": 735,
+      "y": 501,
+      "t": 3947,
+      "type": "move"
+    },
+    {
+      "x": 735,
+      "y": 501,
+      "t": 4822,
+      "type": "move"
+    },
+    {
+      "x": 779,
+      "y": 528,
+      "t": 5132,
+      "type": "move"
+    },
+    {
+      "x": 823,
+      "y": 555,
+      "t": 5442,
+      "type": "move"
+    },
+    {
+      "x": 866,
+      "y": 582,
+      "t": 5751,
+      "type": "move"
+    },
+    {
+      "x": 910,
+      "y": 609,
+      "t": 6061,
+      "type": "move"
+    },
+    {
+      "x": 954,
+      "y": 636,
+      "t": 6371,
+      "type": "move"
+    },
+    {
+      "x": 998,
+      "y": 663,
+      "t": 6681,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 4376,
+      "interval": 112,
+      "hold": 34,
+      "is_paste": false
+    },
+    {
+      "t": 4486,
+      "interval": 110,
+      "hold": 43,
+      "is_paste": false
+    },
+    {
+      "t": 4610,
+      "interval": 124,
+      "hold": 36,
+      "is_paste": false
+    },
+    {
+      "t": 4669,
+      "interval": 59,
+      "hold": 32,
+      "is_paste": false
+    },
+    {
+      "t": 5110,
+      "interval": 441,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 5206,
+      "interval": 96,
+      "hold": 33,
+      "is_paste": false
+    },
+    {
+      "t": 6080,
+      "interval": 874,
+      "hold": 51,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 2067,
+      "scroll_y": 334,
+      "delta_y": 334
+    },
+    {
+      "t": 3262,
+      "scroll_y": 643,
+      "delta_y": 309
+    },
+    {
+      "t": 5202,
+      "scroll_y": 1034,
+      "delta_y": 391
+    },
+    {
+      "t": 6715,
+      "scroll_y": 1341,
+      "delta_y": 307
+    },
+    {
+      "t": 7872,
+      "scroll_y": 1635,
+      "delta_y": 294
+    }
+  ],
+  "click_events": [
+    {
+      "x": 376,
+      "y": 204,
+      "t": 3617,
+      "target_category": "input"
+    },
+    {
+      "x": 998,
+      "y": 663,
+      "t": 8268,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 2067,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 5167,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 7751,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 9301,
+      "details": {}
+    }
+  ]
+}

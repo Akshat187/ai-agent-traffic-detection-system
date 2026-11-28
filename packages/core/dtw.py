@@ -80,32 +80,54 @@ def fast_dtw_distance(
         return 999.0
 
     w = max(window_size, abs(n - m))
-    
-    # Initialize DP matrix with infinity
-    dtw_matrix = {}
-    for i in range(-1, n):
-        for j in range(-1, m):
-            dtw_matrix[(i, j)] = float("inf")
-    dtw_matrix[(-1, -1)] = 0.0
+    inf = float("inf")
 
-    for i in range(n):
-        j_start = max(0, i - w)
-        j_end = min(m, i + w + 1)
+    # Use flat 2D list instead of tuple-keyed dict for low-latency DTW
+    dtw_matrix = [[inf] * (m + 1) for _ in range(n + 1)]
+    dtw_matrix[0][0] = 0.0
+
+    for i in range(1, n + 1):
+        j_start = max(1, i - w)
+        j_end = min(m + 1, i + w + 1)
+        x1, y1 = seq1[i - 1]
+        row_curr = dtw_matrix[i]
+        row_prev = dtw_matrix[i - 1]
         for j in range(j_start, j_end):
-            dx = seq1[i][0] - seq2[j][0]
-            dy = seq1[i][1] - seq2[j][1]
+            dx = x1 - seq2[j - 1][0]
+            dy = y1 - seq2[j - 1][1]
             cost = math.sqrt(dx * dx + dy * dy)
-            
-            dtw_matrix[(i, j)] = cost + min(
-                dtw_matrix[(i - 1, j)],      # insertion
-                dtw_matrix[(i, j - 1)],      # deletion
-                dtw_matrix[(i - 1, j - 1)]   # match
+            row_curr[j] = cost + min(
+                row_prev[j],      # insertion
+                row_curr[j - 1],  # deletion
+                row_prev[j - 1],  # match
             )
 
-    raw_dist = dtw_matrix.get((n - 1, m - 1), float("inf"))
-    # Normalize by path length
+    raw_dist = dtw_matrix[n][m]
     normalized_dist = raw_dist / float(n + m)
     return normalized_dist
+
+
+def compute_bounding_box_aspect(events: List[Dict[str, Any]]) -> float:
+    """Computes bounding-box aspect ratio (width / height) for fast replay pre-filtering."""
+    if not events or len(events) < 2:
+        return 1.0
+    xs = [float(e["x"]) for e in events]
+    ys = [float(e["y"]) for e in events]
+    range_x = max(1.0, max(xs) - min(xs))
+    range_y = max(1.0, max(ys) - min(ys))
+    return range_x / range_y
+
+
+def compute_resampled_similarity(
+    seq1: List[Tuple[float, float]],
+    seq2: List[Tuple[float, float]],
+) -> float:
+    """Computes similarity [0.0, 1.0] between two pre-normalized/resampled trajectories."""
+    if not seq1 or not seq2:
+        return 0.0
+    dist = fast_dtw_distance(seq1, seq2, window_size=8)
+    similarity = math.exp(-3.5 * dist)
+    return round(min(1.0, max(0.0, similarity)), 4)
 
 
 def compute_trajectory_similarity(

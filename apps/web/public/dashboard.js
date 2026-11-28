@@ -14,21 +14,34 @@ let animationFrameId = null;
 
 let selectedSite = "ALL";
 let selectedSource = "ALL";
+let registeredSites = [];
+let selectedInstallSite = null;
+let apiKeyRevealed = false;
+
+let _syncingHistory = false;
+let pendingExplorerSessionId = null;
+let explorerLoadToken = 0;
 
 document.addEventListener("DOMContentLoaded", function () {
   initTabs();
   initCharts();
+
+  const initialState = parseDashboardStateFromUrl();
+  syncDashboardHistory(initialState, { replace: true });
+  applyDashboardNavState(initialState, { refreshTabData: false });
+
   fetchSites();
   fetchOverviewStats();
   fetchSessions();
+  initWebSocket();
 
-  // Poll for updates every 4 seconds — active tab only
+  // Fallback poll every 15 seconds (WebSocket pushes live updates instantaneously)
   setInterval(() => {
     if (document.visibilityState === "visible") {
       fetchOverviewStats();
       fetchSessions();
     }
-  }, 4000);
+  }, 15000);
 
   // When the user switches back to this tab, refresh immediately
   // so data isn't stale from while the tab was hidden
@@ -81,7 +94,21 @@ document.addEventListener("DOMContentLoaded", function () {
   if (refreshBtn) refreshBtn.addEventListener("click", () => { fetchSessions(); fetchOverviewStats(); });
 
   const explorerSelect = document.getElementById("explorer-session-select");
-  if (explorerSelect) explorerSelect.addEventListener("change", (e) => loadSessionDetails(e.target.value));
+  if (explorerSelect) {
+    explorerSelect.addEventListener("change", (e) => {
+      const sessionId = e.target.value;
+      if (!sessionId) {
+        resetExplorerView();
+        syncDashboardHistory({ tab: "tab-explorer", session: null });
+        return;
+      }
+      syncDashboardHistory({ tab: "tab-explorer", session: sessionId });
+      selectExplorerSession(sessionId);
+    });
+  }
+
+  const explorerBackBtn = document.getElementById("explorer-back-btn");
+  if (explorerBackBtn) explorerBackBtn.addEventListener("click", navigateExplorerBack);
 
   const playBtn = document.getElementById("trajectory-play-btn");
   if (playBtn) playBtn.addEventListener("click", playTrajectoryAnimation);
@@ -91,6 +118,41 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const benchmarkBtn = document.getElementById("run-benchmark-btn");
   if (benchmarkBtn) benchmarkBtn.addEventListener("click", runBenchmark);
+
+  const registerSiteForm = document.getElementById("register-site-form");
+  if (registerSiteForm) registerSiteForm.addEventListener("submit", handleRegisterSite);
+
+  const installTaskSelect = document.getElementById("install-snippet-task");
+  if (installTaskSelect) {
+    installTaskSelect.addEventListener("change", () => {
+      if (selectedInstallSite) showSiteInstallSnippet(selectedInstallSite, installTaskSelect.value);
+    });
+  }
+
+  const copySnippetBtn = document.getElementById("copy-snippet-btn");
+  if (copySnippetBtn) {
+    copySnippetBtn.addEventListener("click", () => {
+      const code = document.getElementById("install-snippet-code")?.textContent || "";
+      copyTextToClipboard(code, copySnippetBtn, "Copy Tag");
+    });
+  }
+
+  const toggleKeyBtn = document.getElementById("toggle-api-key-btn");
+  if (toggleKeyBtn) {
+    toggleKeyBtn.addEventListener("click", () => {
+      apiKeyRevealed = !apiKeyRevealed;
+      updateInstallApiKeyDisplay();
+    });
+  }
+
+  const copyKeyBtn = document.getElementById("copy-api-key-btn");
+  if (copyKeyBtn) {
+    copyKeyBtn.addEventListener("click", () => {
+      if (selectedInstallSite?.api_key) {
+        copyTextToClipboard(selectedInstallSite.api_key, copyKeyBtn, "Copy");
+      }
+    });
+  }
 
   // Preload latest experiment lab benchmarks
   loadLabData();
@@ -135,6 +197,7 @@ async function fetchSites() {
     const res = await fetch("/api/v1/sites");
     if (!res.ok) return;
     const data = await res.json();
+    registeredSites = data.sites || [];
     const selects = [
       document.getElementById("global-site-select"),
       document.getElementById("session-filter-site"),
@@ -144,7 +207,7 @@ async function fetchSites() {
       const currentVal = select.value || selectedSite || "ALL";
       select.innerHTML = '<option value="ALL">All Sites</option>';
 
-      (data.sites || []).forEach(site => {
+      registeredSites.forEach(site => {
         const opt = document.createElement("option");
         opt.value = site.site_id;
         opt.textContent = `${site.name} (${site.site_id.substring(0, 10)})`;
@@ -157,9 +220,259 @@ async function fetchSites() {
     });
 
     selectedSite = document.getElementById("global-site-select")?.value || "ALL";
+    renderSitesTable(registeredSites);
+
+    if (selectedInstallSite) {
+      const refreshed = registeredSites.find(s => s.site_id === selectedInstallSite.site_id);
+      if (refreshed) {
+        showSiteInstallSnippet(refreshed, document.getElementById("install-snippet-task")?.value);
+      }
+    } else if (registeredSites.length > 0) {
+      showSiteInstallSnippet(registeredSites[0], "general");
+    }
   } catch (err) {
     console.warn("Failed to fetch sites:", err);
   }
+}
+
+function buildSiteSnippet(site, taskOverride) {
+  const task = (taskOverride || "general").trim() || "general";
+  if (site && site.embed_snippet) {
+    if (/data-task="[^"]*"/.test(site.embed_snippet)) {
+      return site.embed_snippet.replace(/data-task="[^"]*"/, `data-task="${task}"`);
+    }
+    return site.embed_snippet.replace(/async><\/script>$/, `data-task="${task}" async></script>`);
+  }
+  const origin = window.location.origin.replace(/\/$/, "");
+  return `<script src="${origin}/sentinel.js" data-site-id="${site.site_id}" data-task="${task}" async></script>`;
+}
+
+function updateInstallApiKeyDisplay() {
+  const keyValEl = document.getElementById("install-api-key-value");
+  const toggleBtn = document.getElementById("toggle-api-key-btn");
+  const wrapEl = document.getElementById("install-api-key-wrap");
+  if (!keyValEl || !wrapEl) return;
+
+  const key = selectedInstallSite?.api_key || "";
+  if (!key) {
+    wrapEl.classList.add("hidden");
+    return;
+  }
+  wrapEl.classList.remove("hidden");
+  keyValEl.textContent = apiKeyRevealed ? key : `${key.slice(0, 8)}••••••••••••`;
+  if (toggleBtn) toggleBtn.textContent = apiKeyRevealed ? "Hide" : "Reveal";
+}
+
+function showSiteInstallSnippet(site, taskOverride) {
+  if (!site) return;
+  selectedInstallSite = site;
+
+  const emptyEl = document.getElementById("install-snippet-empty");
+  const activeEl = document.getElementById("install-snippet-active");
+  const badgeEl = document.getElementById("install-site-badge");
+  const idEl = document.getElementById("install-site-id");
+  const originsEl = document.getElementById("install-site-origins");
+  const taskSelect = document.getElementById("install-snippet-task");
+  const codeEl = document.getElementById("install-snippet-code");
+  const localWarnEl = document.getElementById("install-localhost-warning");
+  const originPreviewEl = document.getElementById("install-origin-preview");
+
+  if (emptyEl) emptyEl.classList.add("hidden");
+  if (activeEl) activeEl.classList.remove("hidden");
+  if (badgeEl) {
+    badgeEl.textContent = site.name || site.site_id;
+    badgeEl.classList.remove("hidden");
+  }
+  if (idEl) idEl.textContent = site.site_id;
+  if (originsEl) {
+    originsEl.textContent = site.allowed_origins || "*";
+    originsEl.title = site.allowed_origins || "*";
+  }
+
+  const chosenTask = taskOverride || taskSelect?.value || "general";
+  if (taskSelect && taskSelect.value !== chosenTask) {
+    taskSelect.value = chosenTask;
+  }
+
+  const snippet = buildSiteSnippet(site, chosenTask);
+  if (codeEl) codeEl.textContent = snippet;
+
+  const srcMatch = snippet.match(/src="([^"]+)\/sentinel\.js"/);
+  const resolvedOrigin = srcMatch ? srcMatch[1] : window.location.origin;
+  const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(resolvedOrigin);
+  if (localWarnEl) localWarnEl.classList.toggle("hidden", !isLocalOrigin);
+  if (originPreviewEl) originPreviewEl.textContent = resolvedOrigin;
+
+  updateInstallApiKeyDisplay();
+}
+
+function selectSiteForInstall(siteId) {
+  const site = registeredSites.find(s => s.site_id === siteId);
+  if (!site) return;
+  apiKeyRevealed = false;
+  showSiteInstallSnippet(site, document.getElementById("install-snippet-task")?.value || "general");
+  document.getElementById("install-snippet-active")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function filterDashboardBySite(siteId) {
+  setSiteFilter(siteId);
+  activateTab("tab-overview");
+  syncDashboardHistory({ tab: "tab-overview", session: null });
+}
+
+function renderSitesTable(sites) {
+  const tbody = document.getElementById("sites-table-tbody");
+  if (!tbody) return;
+  if (!sites || sites.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400">No sites registered yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sites.map(site => {
+    const mode = String(site.enforcement_mode || "monitor");
+    const threshold = site.risk_threshold ?? 80;
+    const modeBadgeClass =
+      mode === "block" ? "bg-rose-50 text-rose-700 border-rose-200" :
+      mode === "challenge" ? "bg-amber-50 text-amber-700 border-amber-200" :
+      "bg-slate-100 text-slate-700 border-slate-200";
+
+    return `
+      <tr>
+        <td class="py-3 px-3.5 font-semibold text-slate-900">${escapeHTML(String(site.name || site.site_id))}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-indigo-700">${escapeHTML(String(site.site_id))}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 max-w-[220px] truncate" title="${escapeHTML(String(site.allowed_origins || "*"))}">${escapeHTML(String(site.allowed_origins || "*"))}</td>
+        <td class="py-3 px-3.5">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${modeBadgeClass}">${escapeHTML(mode.toUpperCase())}</span>
+          <span class="text-[11px] font-mono text-slate-500 ml-1">&ge;${escapeHTML(String(threshold))}</span>
+        </td>
+        <td class="py-3 px-3.5 font-mono font-semibold text-slate-800">${escapeHTML(String(site.total_sessions ?? 0))}</td>
+        <td class="py-3 px-3.5 text-right whitespace-nowrap space-x-1.5">
+          <button type="button" onclick="selectSiteForInstall('${escapeHTML(String(site.site_id))}')"
+                  class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-semibold transition">
+            Install Snippet
+          </button>
+          <button type="button" onclick="filterDashboardBySite('${escapeHTML(String(site.site_id))}')"
+                  class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition">
+            Filter
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+async function handleRegisterSite(event) {
+  event.preventDefault();
+  const nameInput = document.getElementById("reg-site-name");
+  const originsInput = document.getElementById("reg-site-origins");
+  const taskSelect = document.getElementById("reg-site-task");
+  const modeSelect = document.getElementById("reg-site-mode");
+  const thresholdInput = document.getElementById("reg-site-threshold");
+  const webhookInput = document.getElementById("reg-site-webhook");
+  const errEl = document.getElementById("reg-site-error");
+  const submitBtn = document.getElementById("register-site-submit-btn");
+
+  if (errEl) {
+    errEl.textContent = "";
+    errEl.classList.add("hidden");
+  }
+
+  const name = (nameInput?.value || "").trim();
+  const allowedOrigins = (originsInput?.value || "").trim() || "*";
+  const defaultTask = taskSelect?.value || "general";
+  const enforcementMode = modeSelect?.value || "monitor";
+  const riskThreshold = parseInt(thresholdInput?.value || "80", 10);
+  const webhookUrl = (webhookInput?.value || "").trim() || null;
+
+  if (name.length < 2) {
+    if (errEl) {
+      errEl.textContent = "Site Name must be at least 2 characters.";
+      errEl.classList.remove("hidden");
+    }
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Registering...";
+  }
+
+  try {
+    const res = await fetch("/api/v1/sites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        allowed_origins: allowedOrigins,
+        enforcement_mode: enforcementMode,
+        risk_threshold: Number.isNaN(riskThreshold) ? 80 : riskThreshold,
+        webhook_url: webhookUrl,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail || "Registration failed");
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.classList.remove("hidden");
+      }
+      return;
+    }
+
+    apiKeyRevealed = false;
+    await fetchSites();
+    showSiteInstallSnippet(data, defaultTask);
+    if (nameInput) nameInput.value = "";
+    if (originsInput) originsInput.value = "";
+    if (webhookInput) webhookInput.value = "";
+  } catch (err) {
+    if (errEl) {
+      errEl.textContent = `Failed to register site: ${err}`;
+      errEl.classList.remove("hidden");
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Register Site & Generate Snippet";
+    }
+  }
+}
+
+async function copyTextToClipboard(text, btn, defaultLabel) {
+  if (!text) return;
+  let copied = false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    } catch (_) {}
+  }
+  if (!copied) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      copied = document.execCommand("copy");
+    } catch (_) {}
+    document.body.removeChild(ta);
+  }
+  if (btn && copied) {
+    btn.textContent = "✓ Copied!";
+    setTimeout(() => {
+      btn.textContent = defaultLabel;
+    }, 2000);
+  }
+}
+
+function openSitesTab() {
+  activateTab("tab-sites");
+  syncDashboardHistory({ tab: "tab-sites", session: null });
+  document.getElementById("reg-site-name")?.focus();
 }
 
 // Fetch Overview Stats
@@ -201,9 +514,23 @@ async function fetchOverviewStats() {
     }
 
     renderRecentOverviewTable(data.recent_activity || []);
+    fetchFeedbackStats();
   } catch (err) {
     console.warn("Failed to fetch stats:", err);
   }
+}
+
+async function fetchFeedbackStats() {
+  try {
+    const res = await fetch("/api/v1/stats/feedback");
+    if (!res.ok) return;
+    const fb = await res.json();
+    const el = document.getElementById("stat-live-accuracy");
+    if (el) {
+      const acc = fb.accuracy_pct !== null && fb.accuracy_pct !== undefined ? `${fb.accuracy_pct.toFixed(1)}%` : "--";
+      el.textContent = `Verified Accuracy: ${acc} (${fb.correct_count}/${fb.total_verified})`;
+    }
+  } catch (_) {}
 }
 
 function formatTabPageCell(s) {
@@ -220,12 +547,102 @@ function formatTabPageCell(s) {
   `;
 }
 
+function shortActorLabel(label) {
+  if (label === "HUMAN") return "Human";
+  if (label === "TRADITIONAL_AUTOMATION") return "Bot";
+  if (label === "AGENTIC_AI") return "AI Agent";
+  return "Uncertain";
+}
+
+function renderVerifyCell(s) {
+  const sid = escapeHTML(s.session_id);
+  const pred = escapeHTML(s.predicted_label || "UNCERTAIN");
+
+  if (s.feedback_is_correct === true) {
+    return `
+      <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Correct</span>
+        <button onclick="openCorrectionPicker(this, '${sid}', '${pred}', true)" class="text-[10px] text-slate-400 hover:text-indigo-600 underline">Edit</button>
+      </div>
+    `;
+  }
+
+  if (s.feedback_is_correct === false && s.feedback_label) {
+    return `
+      <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">✗ Actually: ${shortActorLabel(s.feedback_label)}</span>
+        <button onclick="openCorrectionPicker(this, '${sid}', '${pred}', true)" class="text-[10px] text-slate-400 hover:text-indigo-600 underline">Edit</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="inline-flex items-center gap-1 whitespace-nowrap">
+      <button onclick="submitVerification('${sid}', '${pred}', true)"
+              title="Mark prediction as correct"
+              class="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-bold transition">
+        ✓
+      </button>
+      <button onclick="openCorrectionPicker(this, '${sid}', '${pred}', false)"
+              title="Mark prediction as wrong and pick correct class"
+              class="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold transition">
+        ✗
+      </button>
+    </div>
+  `;
+}
+
+function openCorrectionPicker(btn, sessionId, predictedLabel, includeAll) {
+  const cell = btn.closest("td");
+  if (!cell) return;
+
+  const options = [
+    { value: "HUMAN", label: "Human", cls: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
+    { value: "TRADITIONAL_AUTOMATION", label: "Bot", cls: "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200" },
+    { value: "AGENTIC_AI", label: "AI Agent", cls: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200" },
+  ].filter(o => includeAll || o.value !== predictedLabel);
+
+  cell.innerHTML = `
+    <div class="flex flex-wrap items-center gap-1">
+      ${options.map(o => `
+        <button onclick="submitVerification('${sessionId}', '${o.value}', ${o.value === predictedLabel})"
+                class="px-2 py-0.5 rounded-md border text-[10px] font-bold transition ${o.cls}">
+          ${o.label}
+        </button>
+      `).join("")}
+      <button onclick="fetchOverviewStats(); fetchSessions();"
+              class="px-1.5 py-0.5 text-[10px] text-slate-400 hover:text-slate-700">✕</button>
+    </div>
+  `;
+}
+
+async function submitVerification(sessionId, trueLabel, isCorrect) {
+  try {
+    const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        analyst_label: trueLabel,
+        is_correct: isCorrect,
+        notes: isCorrect ? "Confirmed via dashboard" : "Corrected via dashboard",
+      }),
+    });
+    if (!res.ok) {
+      console.error("Feedback failed:", await res.text());
+      return;
+    }
+    await Promise.all([fetchOverviewStats(), fetchSessions()]);
+  } catch (err) {
+    console.error("Failed to submit verification:", err);
+  }
+}
+
 function renderRecentOverviewTable(sessions) {
   const tbody = document.getElementById("overview-recent-tbody");
   if (!tbody) return;
 
   if (sessions.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-400">No sessions recorded yet for this site. Interact with the Honey Sites or embedded pages!</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-400">No sessions recorded yet for this site. Interact with the Honey Sites or embedded pages!</td></tr>`;
     return;
   }
 
@@ -241,9 +658,10 @@ function renderRecentOverviewTable(sessions) {
       <tr class="hover:bg-slate-50 transition border-b border-slate-100">
         <td class="py-3 px-3.5 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" onclick="inspectSession('${s.session_id}')">${s.session_id.substring(0, 16)}... ${srcTag}</td>
         <td class="py-3 px-3.5">${formatTabPageCell(s)}</td>
-        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? `${s.created_at} UTC` : '—'}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? formatActivityTimestamp(s.created_at) : '—'}</td>
         <td class="py-3 px-3.5 capitalize font-medium text-slate-800">${s.task}</td>
         <td class="py-3 px-3.5"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeClass}">${s.predicted_label}</span></td>
+        <td class="py-3 px-3.5">${renderVerifyCell(s)}</td>
         <td class="py-3 px-3.5 font-mono text-slate-700">${s.confidence.toFixed(1)}%</td>
         <td class="py-3 px-3.5 font-mono ${riskColor}">${s.risk_score.toFixed(0)}/100</td>
         <td class="py-3 px-3.5 font-mono text-xs">${s.webdriver_flag ? '<span class="text-rose-600 font-bold">TRUE</span>' : '<span class="text-slate-400">false</span>'}</td>
@@ -325,7 +743,7 @@ function applySessionFilters() {
   if (!tbody) return;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-slate-400">No matching sessions found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-slate-400">No matching sessions found.</td></tr>`;
     return;
   }
 
@@ -359,12 +777,13 @@ function applySessionFilters() {
       <tr class="hover:bg-slate-50 transition border-b border-slate-100">
         <td class="py-3 px-3.5 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" onclick="inspectSession('${s.session_id}')">${s.session_id}</td>
         <td class="py-3 px-3.5">${formatTabPageCell(s)}</td>
-        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? `${s.created_at} UTC` : '—'}</td>
+        <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600 whitespace-nowrap">${s.created_at ? formatActivityTimestamp(s.created_at) : '—'}</td>
         <td class="py-3 px-3.5 font-mono text-[11px] text-slate-600"><span class="font-semibold text-slate-800" title="${escapeHTML(s.site_id || '')}">${escapeHTML(siteDisplay)}</span><br>${srcTag}<br><span class="text-[10px] text-slate-400">${escapeHTML(sourceLabel)}</span></td>
         <td class="py-3 px-3.5 capitalize font-medium text-slate-800">${s.task}</td>
         <td class="py-3 px-3.5">${durationCell}</td>
         <td class="py-3 px-3.5">${gtBadge}</td>
         <td class="py-3 px-3.5"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeClass}">${s.predicted_label}</span></td>
+        <td class="py-3 px-3.5">${renderVerifyCell(s)}</td>
         <td class="py-3 px-3.5 font-mono text-slate-700">${s.confidence.toFixed(1)}%</td>
         <td class="py-3 px-3.5 font-mono ${riskColor}">${s.risk_score.toFixed(0)}/100</td>
         <td class="py-3 px-3.5 text-slate-600 truncate max-w-xs">${escapeHTML(s.explanation_snippet || '')}</td>
@@ -376,35 +795,278 @@ function applySessionFilters() {
   }).join("");
 }
 
-// Tab Navigation
+// Tab & Browser History Navigation
+const DEFAULT_TAB_ID = "tab-overview";
+const VALID_TAB_IDS = new Set([
+  "tab-overview",
+  "tab-sessions",
+  "tab-explorer",
+  "tab-experiments",
+  "tab-adversarial",
+  "tab-health",
+  "tab-sites",
+]);
+
+function normalizeTabId(rawTab) {
+  if (!rawTab) return DEFAULT_TAB_ID;
+  const trimmed = String(rawTab).trim();
+  const candidate = trimmed.startsWith("tab-") ? trimmed : `tab-${trimmed}`;
+  return VALID_TAB_IDS.has(candidate) ? candidate : DEFAULT_TAB_ID;
+}
+
+function tabIdToSlug(tabId) {
+  return normalizeTabId(tabId).replace(/^tab-/, "");
+}
+
+function normalizeNavState(state) {
+  const tab = normalizeTabId(state?.tab);
+  const session = tab === "tab-explorer" && state?.session ? String(state.session) : null;
+  return { tab, session };
+}
+
+function getDashboardNavState() {
+  const activeTab = document.querySelector(".nav-tab.active");
+  const tab = normalizeTabId(activeTab?.dataset?.target);
+  const select = document.getElementById("explorer-session-select");
+  const rawSession = select?.value || pendingExplorerSessionId || null;
+  return normalizeNavState({ tab, session: tab === "tab-explorer" ? rawSession : null });
+}
+
+function buildDashboardUrl(state) {
+  const nextState = normalizeNavState(state);
+  const params = new URLSearchParams();
+  if (nextState.tab !== DEFAULT_TAB_ID) {
+    params.set("tab", tabIdToSlug(nextState.tab));
+  }
+  if (nextState.tab === "tab-explorer" && nextState.session) {
+    params.set("session", nextState.session);
+  }
+  const qs = params.toString();
+  const basePath =
+    window.location.pathname && window.location.pathname !== "/"
+      ? window.location.pathname
+      : "/dashboard";
+  return qs ? `${basePath}?${qs}` : basePath;
+}
+
+function parseDashboardStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const tab = normalizeTabId(params.get("tab"));
+  const rawSession = params.get("session");
+  return normalizeNavState({
+    tab,
+    session: tab === "tab-explorer" && rawSession ? rawSession : null,
+  });
+}
+
+function syncDashboardHistory(state, { replace = false } = {}) {
+  if (_syncingHistory || !window.history) return;
+  const nextState = normalizeNavState(state);
+  const nextUrl = buildDashboardUrl(nextState);
+  const currentUrl = `${window.location.pathname}${window.location.search}`;
+  const currState = window.history.state;
+  const sameState =
+    currState &&
+    currState.tab === nextState.tab &&
+    (currState.session || null) === nextState.session;
+
+  if (!replace && currentUrl === nextUrl && sameState) {
+    return;
+  }
+
+  if (replace) {
+    window.history.replaceState(nextState, "", nextUrl);
+  } else {
+    window.history.pushState(nextState, "", nextUrl);
+  }
+}
+
+function resetExplorerView() {
+  explorerLoadToken += 1;
+  selectedSession = null;
+  pendingExplorerSessionId = null;
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+
+  const select = document.getElementById("explorer-session-select");
+  if (select) select.value = "";
+
+  const idEl = document.getElementById("explorer-session-id");
+  if (idEl) idEl.textContent = "No session selected";
+
+  const badge = document.getElementById("explorer-verdict-badge");
+  if (badge) {
+    badge.textContent = "—";
+    badge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold badge-uncertain";
+  }
+
+  const timeWrap = document.getElementById("explorer-session-time");
+  const timeVal = document.getElementById("explorer-session-time-value");
+  if (timeWrap) timeWrap.classList.add("hidden");
+  if (timeVal) timeVal.textContent = "—";
+
+  const promptEl = document.getElementById("explorer-fb-prompt");
+  const pickerEl = document.getElementById("explorer-fb-picker");
+  const statusEl = document.getElementById("explorer-fb-status");
+  if (promptEl) promptEl.classList.remove("hidden");
+  if (pickerEl) pickerEl.classList.add("hidden");
+  if (statusEl) {
+    statusEl.textContent = "";
+    statusEl.classList.add("hidden");
+  }
+
+  const ctxBlock = document.getElementById("explorer-client-context");
+  if (ctxBlock) ctxBlock.classList.add("hidden");
+  [
+    "ctx-tab-id",
+    "ctx-page-title",
+    "ctx-page-path",
+    "ctx-transmission-seq",
+    "ctx-visibility",
+    "ctx-referrer",
+    "ctx-sdk-version",
+    "ctx-visitor-id",
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "—";
+  });
+  const visitorEl = document.getElementById("ctx-visitor-id");
+  if (visitorEl) visitorEl.onclick = null;
+
+  const pointCountEl = document.getElementById("canvas-point-count");
+  const pathLenEl = document.getElementById("canvas-path-len");
+  const straightEl = document.getElementById("canvas-straightness");
+  if (pointCountEl) pointCountEl.textContent = "0";
+  if (pathLenEl) pathLenEl.textContent = "0px";
+  if (straightEl) straightEl.textContent = "1.00";
+
+  const canvas = document.getElementById("trajectory-canvas");
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#090d16";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  if (keystrokeChart) {
+    keystrokeChart.data.labels = [];
+    keystrokeChart.data.datasets[0].data = [];
+    keystrokeChart.update();
+  }
+
+  ["l1-badge", "l2-badge", "l3-badge", "l4-badge", "l5-badge"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = "—";
+      el.className = "font-bold text-slate-500 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200";
+    }
+  });
+
+  const explEl = document.getElementById("explorer-explanation-text");
+  if (explEl) {
+    explEl.textContent = "Select a session to see detailed model rationale and kinematic indicators.";
+  }
+  const sigList = document.getElementById("explorer-signals-list");
+  if (sigList) sigList.innerHTML = "";
+
+  ["f-mean-vel", "f-straightness", "f-micro-corr", "f-key-cv"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "-";
+  });
+}
+
+function selectExplorerSession(sessionId) {
+  pendingExplorerSessionId = sessionId;
+  const select = document.getElementById("explorer-session-select");
+  if (select) {
+    ensureExplorerOption(select, sessionId);
+    select.value = sessionId;
+  }
+  return loadSessionDetails(sessionId);
+}
+
+function applyDashboardNavState(state, { refreshTabData = true } = {}) {
+  const nextState = normalizeNavState(state);
+  activateTab(nextState.tab, { refresh: refreshTabData });
+
+  if (nextState.tab === "tab-explorer") {
+    if (nextState.session) {
+      return selectExplorerSession(nextState.session);
+    }
+    resetExplorerView();
+  }
+  return Promise.resolve();
+}
+
+function navigateExplorerBack() {
+  if (window.history && window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+  activateTab("tab-sessions");
+  syncDashboardHistory({ tab: "tab-sessions", session: null });
+}
+
+function activateTab(tabId, { refresh = true } = {}) {
+  const resolvedId = normalizeTabId(tabId);
+  const tabs = document.querySelectorAll(".nav-tab");
+  tabs.forEach(t => {
+    t.classList.toggle("active", t.dataset.target === resolvedId);
+  });
+
+  document.querySelectorAll(".tab-content").forEach(content => {
+    if (content.id === resolvedId) {
+      content.classList.remove("hidden");
+      content.classList.add("animate-fade-in");
+      if (refresh) {
+        // Refresh data when entering a tab that depends on live API state
+        if (resolvedId === "tab-overview") {
+          fetchOverviewStats();
+          fetchSessions();
+        } else if (resolvedId === "tab-sessions") {
+          fetchSessions();
+          fetchOverviewStats();
+        } else if (resolvedId === "tab-experiments") {
+          loadLabData();
+        } else if (resolvedId === "tab-sites") {
+          fetchSites();
+        }
+      }
+    } else {
+      content.classList.add("hidden");
+    }
+  });
+
+  if (resolvedId === "tab-explorer" && selectedSession) {
+    requestAnimationFrame(() => drawStaticTrajectory());
+  }
+}
+
 function initTabs() {
   const tabs = document.querySelectorAll(".nav-tab");
   tabs.forEach(tab => {
     tab.addEventListener("click", function () {
-      tabs.forEach(t => t.classList.remove("active"));
-      this.classList.add("active");
-      const targetId = this.dataset.target;
-      document.querySelectorAll(".tab-content").forEach(content => {
-        if (content.id === targetId) {
-          content.classList.remove("hidden");
-          content.classList.add("animate-fade-in");
-          // Refresh data when entering a tab that depends on live API state
-          if (targetId === "tab-overview") {
-            fetchOverviewStats();
-            fetchSessions();
-          } else if (targetId === "tab-sessions") {
-            fetchSessions();
-            fetchOverviewStats();
-          } else if (targetId === "tab-experiments") {
-            loadLabData();
-          }
-        } else {
-          content.classList.add("hidden");
-        }
-      });
+      activateTab(this.dataset.target);
+      syncDashboardHistory(getDashboardNavState());
     });
   });
 }
+
+window.addEventListener("popstate", function (event) {
+  const state =
+    event.state && event.state.tab
+      ? normalizeNavState(event.state)
+      : parseDashboardStateFromUrl();
+  _syncingHistory = true;
+  try {
+    applyDashboardNavState(state);
+  } finally {
+    _syncingHistory = false;
+  }
+});
 
 // Chart Initializations
 function initCharts() {
@@ -522,12 +1184,12 @@ function renderClientContext(session) {
 
 function filterByVisitor(visitorId) {
   const searchInput = document.getElementById("session-search-input");
-  const sessionsTab = document.querySelector("[data-target='tab-sessions']");
-  if (sessionsTab) sessionsTab.click();
+  activateTab("tab-sessions");
   if (searchInput) {
     searchInput.value = visitorId;
     applySessionFilters();
   }
+  syncDashboardHistory({ tab: "tab-sessions", session: null });
 }
 
 function assertVerdictConsistency(session) {
@@ -550,42 +1212,85 @@ function assertVerdictConsistency(session) {
   return true;
 }
 
-function formatActivityTimestamp(createdAt) {
+function formatActivityTimestamp(createdAt, { short = false } = {}) {
   if (!createdAt) return "";
-  // Server already formats as "YYYY-MM-DD HH:MM:SS" UTC; keep display stable.
-  return `${createdAt} UTC`;
+  // Server formats as "YYYY-MM-DD HH:MM:SS" UTC (naive). Convert to IST (Asia/Kolkata).
+  const raw = String(createdAt).trim();
+  const iso = raw.includes("T") ? raw : raw.replace(" ", "T");
+  const date = new Date(/(?:Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : `${iso}Z`);
+  if (Number.isNaN(date.getTime())) return `${raw} UTC`;
+
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type) => parts.find((p) => p.type === type)?.value || "";
+  const formatted = `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
+  if (short) return formatted.replace(/^\d{4}-/, ""); // MM-DD HH:MM:SS
+  return `${formatted} IST`;
+}
+
+function ensureExplorerOption(select, sessionId) {
+  if (!select || !sessionId) return;
+  const exists = Array.from(select.options).some(o => o.value === sessionId);
+  if (!exists) {
+    const opt = document.createElement("option");
+    opt.value = sessionId;
+    opt.textContent = sessionId;
+    select.appendChild(opt);
+  }
 }
 
 function updateExplorerDropdown(sessions) {
   const select = document.getElementById("explorer-session-select");
   if (!select) return;
-  const curr = select.value;
+  const curr = select.value || pendingExplorerSessionId || selectedSession?.session?.session_id || "";
   select.innerHTML = '<option value="">Choose session to explore...</option>' +
     sessions.map(s => {
       const shortId = s.session_id.length > 16 ? `${s.session_id.substring(0, 16)}…` : s.session_id;
-      const when = s.created_at ? s.created_at.replace(/^\d{4}-/, "") : ""; // MM-DD HH:MM:SS
+      const when = s.created_at ? formatActivityTimestamp(s.created_at, { short: true }) : "";
       const meta = [s.predicted_label, s.task, when].filter(Boolean).join(" · ");
-      return `<option value="${s.session_id}">${shortId}${meta ? ` — ${meta}` : ""}</option>`;
+      return `<option value="${escapeHTML(s.session_id)}">${escapeHTML(shortId)}${meta ? ` — ${escapeHTML(meta)}` : ""}</option>`;
     }).join("");
-  if (curr) select.value = curr;
+  if (curr) {
+    ensureExplorerOption(select, curr);
+    select.value = curr;
+  }
 }
 
 // Session Explorer Logic
 async function inspectSession(sessionId) {
-  const explorerTab = document.querySelector("[data-target='tab-explorer']");
-  if (explorerTab) explorerTab.click();
-  const select = document.getElementById("explorer-session-select");
-  if (select) select.value = sessionId;
-  await loadSessionDetails(sessionId);
+  if (!sessionId) return;
+  activateTab("tab-explorer");
+  syncDashboardHistory({ tab: "tab-explorer", session: sessionId });
+  await selectExplorerSession(sessionId);
 }
 
 async function loadSessionDetails(sessionId) {
   if (!sessionId) return;
+  const requestToken = ++explorerLoadToken;
   try {
-    const res = await fetch(`/api/v1/sessions/${sessionId}`);
-    if (!res.ok) return;
+    const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}`);
+    if (!res.ok) {
+      if (requestToken === explorerLoadToken) pendingExplorerSessionId = null;
+      return;
+    }
     const detail = await res.json();
+    if (requestToken !== explorerLoadToken) return;
     selectedSession = detail;
+    pendingExplorerSessionId = null;
+
+    const select = document.getElementById("explorer-session-select");
+    if (select && detail.session?.session_id) {
+      ensureExplorerOption(select, detail.session.session_id);
+      select.value = detail.session.session_id;
+    }
 
     document.getElementById("explorer-session-id").textContent = detail.session.session_id;
     renderClientContext(detail.session);
@@ -594,6 +1299,7 @@ async function loadSessionDetails(sessionId) {
       badge.textContent = detail.session.predicted_label;
       badge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getBadgeClass(detail.session.predicted_label)}`;
     }
+    loadExplorerFeedbackState(detail.session.session_id, detail.session.predicted_label);
 
     const timeWrap = document.getElementById("explorer-session-time");
     const timeVal = document.getElementById("explorer-session-time-value");
@@ -652,6 +1358,7 @@ async function loadSessionDetails(sessionId) {
 
     drawStaticTrajectory();
   } catch (err) {
+    if (requestToken === explorerLoadToken) pendingExplorerSessionId = null;
     console.warn("Failed to load details:", err);
   }
 }
@@ -1045,11 +1752,169 @@ function escapeHTML(str) {
   }[tag] || tag));
 }
 
+function initWebSocket() {
+  try {
+    const proto = location.protocol === "https:" ? "wss://" : "ws://";
+    const siteParam = encodeURIComponent(selectedSite || "ALL");
+    const ws = new WebSocket(`${proto}${location.host}/ws/sessions?site_id=${siteParam}`);
+
+    ws.onmessage = function (event) {
+      try {
+        const msg = JSON.parse(event.data);
+        if (!msg || !msg.session_id) return;
+
+        // Prepend or update live session in allSessions without full-page refresh
+        const idx = allSessions.findIndex((s) => s.session_id === msg.session_id);
+        const entry = {
+          session_id: msg.session_id,
+          site_id: msg.site_id || selectedSite,
+          task: "live",
+          predicted_label: msg.predicted_label,
+          risk_score: msg.risk_score,
+          confidence: msg.confidence,
+          duration_ms: 0,
+          data_source: "realtime_sdk",
+          action: msg.action || "ALLOW",
+        };
+        if (idx >= 0) {
+          allSessions[idx] = Object.assign({}, allSessions[idx], entry);
+        } else {
+          allSessions.unshift(entry);
+          if (allSessions.length > 200) allSessions.pop();
+          const totalEl = document.getElementById("kpi-total");
+          if (totalEl) totalEl.textContent = String((parseInt(totalEl.textContent, 10) || 0) + 1);
+          const lblMap = {
+            HUMAN: "kpi-human",
+            TRADITIONAL_AUTOMATION: "kpi-bot",
+            AGENTIC_AI: "kpi-agent",
+          };
+          const kpiId = lblMap[msg.predicted_label];
+          if (kpiId) {
+            const el = document.getElementById(kpiId);
+            if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + 1);
+          }
+        }
+        if (typeof applySessionFilters === "function") {
+          applySessionFilters();
+        }
+      } catch (_) {}
+    };
+
+    ws.onclose = function () {
+      setTimeout(initWebSocket, 5000);
+    };
+  } catch (_) {}
+}
+
+async function loadExplorerFeedbackState(sessionId, predictedLabel) {
+  const promptEl = document.getElementById("explorer-fb-prompt");
+  const pickerEl = document.getElementById("explorer-fb-picker");
+  const statusEl = document.getElementById("explorer-fb-status");
+  if (!promptEl || !pickerEl || !statusEl) return;
+
+  promptEl.classList.remove("hidden");
+  pickerEl.classList.add("hidden");
+  statusEl.classList.add("hidden");
+
+  try {
+    const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/feedback`);
+    if (res.ok) {
+      const data = await res.json();
+      if (selectedSession?.session?.session_id !== sessionId) return;
+      if (data.verified && data.feedback) {
+        promptEl.classList.add("hidden");
+        pickerEl.classList.add("hidden");
+        statusEl.textContent = data.feedback.is_correct
+          ? `✓ Confirmed as ${data.feedback.analyst_label}`
+          : `✓ Corrected to ${data.feedback.analyst_label}`;
+        statusEl.className = data.feedback.is_correct
+          ? "text-[10px] font-bold text-emerald-700 px-2"
+          : "text-[10px] font-bold text-indigo-700 px-2";
+        statusEl.classList.remove("hidden");
+      }
+    }
+  } catch (_) {}
+}
+
+function openExplorerCorrectionPicker() {
+  const promptEl = document.getElementById("explorer-fb-prompt");
+  const pickerEl = document.getElementById("explorer-fb-picker");
+  const pred = selectedSession && selectedSession.session ? selectedSession.session.predicted_label : "";
+  if (promptEl) promptEl.classList.add("hidden");
+  if (pickerEl) {
+    pickerEl.classList.remove("hidden");
+    pickerEl.querySelectorAll("[data-fb-cls]").forEach((btn) => {
+      btn.style.display = btn.getAttribute("data-fb-cls") === pred ? "none" : "inline-block";
+    });
+  }
+}
+
+function confirmExplorerVerdict() {
+  if (!selectedSession || !selectedSession.session) return;
+  submitExplorerFeedback(selectedSession.session.predicted_label, true);
+}
+
+async function submitExplorerFeedback(analystLabel, isCorrect) {
+  const sidEl = document.getElementById("explorer-session-id");
+  const sessionId = (selectedSession && selectedSession.session && selectedSession.session.session_id) || (sidEl ? sidEl.textContent.trim() : "");
+  if (!sessionId || sessionId === "No session selected") return;
+  try {
+    const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ analyst_label: analystLabel, is_correct: isCorrect, notes: "Dashboard Session Explorer verification" }),
+    });
+    if (res.ok) {
+      await loadExplorerFeedbackState(sessionId, analystLabel);
+      fetchFeedbackStats();
+      fetchSessions();
+      fetchOverviewStats();
+    }
+  } catch (_) {}
+}
+
+async function triggerModelRetrain() {
+  const btn = document.getElementById("btn-retrain-model");
+  const statusEl = document.getElementById("retrain-status");
+  if (btn) btn.disabled = true;
+  if (statusEl) {
+    statusEl.textContent = "Retraining & validating against regression gate...";
+    statusEl.classList.remove("hidden");
+  }
+  try {
+    const res = await fetch("/api/v1/model/retrain", { method: "POST" });
+    const data = await res.json();
+    if (statusEl) {
+      const f1Info = typeof data.candidate_f1 === "number" ? ` (Candidate F1: ${data.candidate_f1.toFixed(4)})` : "";
+      statusEl.textContent = data.promoted
+        ? `✓ Model promoted & hot-reloaded${f1Info}`
+        : `⚠ Kept existing model — failed regression gate${f1Info}`;
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = `Retrain failed: ${err}`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 // Global Window Exports for Inline HTML Handlers
+window.submitVerification = submitVerification;
+window.openCorrectionPicker = openCorrectionPicker;
+window.confirmExplorerVerdict = confirmExplorerVerdict;
+window.openExplorerCorrectionPicker = openExplorerCorrectionPicker;
+window.submitExplorerFeedback = submitExplorerFeedback;
+window.triggerModelRetrain = triggerModelRetrain;
+window.submitLabelOverride = (lbl) => submitExplorerFeedback(lbl, false);
 window.runAdversarialSimulation = runAdversarialSimulation;
 window.inspectSession = inspectSession;
+window.activateTab = activateTab;
+window.navigateExplorerBack = navigateExplorerBack;
 window.handleSeedDemo = handleSeedDemo;
 window.runBenchmark = runBenchmark;
+window.openSitesTab = openSitesTab;
+window.selectSiteForInstall = selectSiteForInstall;
+window.filterDashboardBySite = filterDashboardBySite;
+window.fetchSites = fetchSites;
 
 
 

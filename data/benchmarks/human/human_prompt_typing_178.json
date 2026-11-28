@@ -1,0 +1,267 @@
+{
+  "session_id": "bm_human_prompt_typing_shopping_178",
+  "visitor_id": "vis_human_178",
+  "task": "shopping",
+  "start_time": 1724910680000,
+  "end_time": 1724910694669,
+  "duration_ms": 14669.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_prompt_typing",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "mouse",
+    "screen_width": 1440,
+    "screen_height": 900,
+    "viewport_width": 1280,
+    "viewport_height": 680,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 4,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 212,
+      "y": 235,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 220,
+      "y": 254,
+      "t": 3,
+      "type": "move"
+    },
+    {
+      "x": 233,
+      "y": 274,
+      "t": 14,
+      "type": "move"
+    },
+    {
+      "x": 238,
+      "y": 296,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 246,
+      "y": 320,
+      "t": 53,
+      "type": "move"
+    },
+    {
+      "x": 259,
+      "y": 342,
+      "t": 80,
+      "type": "move"
+    },
+    {
+      "x": 268,
+      "y": 367,
+      "t": 112,
+      "type": "move"
+    },
+    {
+      "x": 282,
+      "y": 387,
+      "t": 148,
+      "type": "move"
+    },
+    {
+      "x": 298,
+      "y": 410,
+      "t": 186,
+      "type": "move"
+    },
+    {
+      "x": 309,
+      "y": 434,
+      "t": 225,
+      "type": "move"
+    },
+    {
+      "x": 323,
+      "y": 463,
+      "t": 264,
+      "type": "move"
+    },
+    {
+      "x": 333,
+      "y": 480,
+      "t": 302,
+      "type": "move"
+    },
+    {
+      "x": 351,
+      "y": 503,
+      "t": 337,
+      "type": "move"
+    },
+    {
+      "x": 366,
+      "y": 521,
+      "t": 370,
+      "type": "move"
+    },
+    {
+      "x": 382,
+      "y": 540,
+      "t": 397,
+      "type": "move"
+    },
+    {
+      "x": 390,
+      "y": 563,
+      "t": 420,
+      "type": "move"
+    },
+    {
+      "x": 403,
+      "y": 582,
+      "t": 436,
+      "type": "move"
+    },
+    {
+      "x": 418,
+      "y": 599,
+      "t": 447,
+      "type": "move"
+    },
+    {
+      "x": 430,
+      "y": 615,
+      "t": 450,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 827,
+      "interval": 227.0,
+      "hold": 89,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 968,
+      "interval": 141.7,
+      "hold": 81,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1081,
+      "interval": 113.9,
+      "hold": 64,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1267,
+      "interval": 186.3,
+      "hold": 79,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1443,
+      "interval": 176.7,
+      "hold": 91,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1566,
+      "interval": 123.8,
+      "hold": 39,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1710,
+      "interval": 144.8,
+      "hold": 77,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1919,
+      "interval": 209.2,
+      "hold": 104,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2156,
+      "interval": 237.8,
+      "hold": 43,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2326,
+      "interval": 170.4,
+      "hold": 62,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2534,
+      "interval": 208.9,
+      "hold": 70,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2821,
+      "interval": 287.5,
+      "hold": 69,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2884,
+      "interval": 63.4,
+      "hold": 103,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [],
+  "click_events": [
+    {
+      "x": 430,
+      "y": 614,
+      "t": 460,
+      "target_category": "input",
+      "is_trusted": true
+    },
+    {
+      "x": 550,
+      "y": 624,
+      "t": 13202,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "input_focus",
+      "t": 460,
+      "details": {
+        "trusted": true
+      }
+    },
+    {
+      "action": "button_trigger",
+      "t": 13202,
+      "details": {
+        "trusted": true
+      }
+    }
+  ]
+}

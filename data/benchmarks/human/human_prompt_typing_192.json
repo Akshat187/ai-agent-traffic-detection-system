@@ -1,0 +1,344 @@
+{
+  "session_id": "bm_human_prompt_typing_forum_192",
+  "visitor_id": "vis_human_192",
+  "task": "forum",
+  "start_time": 1724911520000,
+  "end_time": 1724911531063,
+  "duration_ms": 11063.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_prompt_typing",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "mouse",
+    "screen_width": 1536,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.25,
+    "touch_support": false,
+    "hardware_concurrency": 4,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 205,
+      "y": 496,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 230,
+      "y": 506,
+      "t": 3,
+      "type": "move"
+    },
+    {
+      "x": 256,
+      "y": 511,
+      "t": 14,
+      "type": "move"
+    },
+    {
+      "x": 287,
+      "y": 510,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 318,
+      "y": 515,
+      "t": 53,
+      "type": "move"
+    },
+    {
+      "x": 344,
+      "y": 511,
+      "t": 80,
+      "type": "move"
+    },
+    {
+      "x": 374,
+      "y": 511,
+      "t": 112,
+      "type": "move"
+    },
+    {
+      "x": 402,
+      "y": 510,
+      "t": 148,
+      "type": "move"
+    },
+    {
+      "x": 433,
+      "y": 500,
+      "t": 186,
+      "type": "move"
+    },
+    {
+      "x": 462,
+      "y": 498,
+      "t": 225,
+      "type": "move"
+    },
+    {
+      "x": 492,
+      "y": 495,
+      "t": 264,
+      "type": "move"
+    },
+    {
+      "x": 517,
+      "y": 494,
+      "t": 302,
+      "type": "move"
+    },
+    {
+      "x": 542,
+      "y": 494,
+      "t": 337,
+      "type": "move"
+    },
+    {
+      "x": 570,
+      "y": 498,
+      "t": 370,
+      "type": "move"
+    },
+    {
+      "x": 592,
+      "y": 500,
+      "t": 397,
+      "type": "move"
+    },
+    {
+      "x": 613,
+      "y": 508,
+      "t": 420,
+      "type": "move"
+    },
+    {
+      "x": 632,
+      "y": 520,
+      "t": 436,
+      "type": "move"
+    },
+    {
+      "x": 648,
+      "y": 536,
+      "t": 447,
+      "type": "move"
+    },
+    {
+      "x": 662,
+      "y": 556,
+      "t": 450,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 923,
+      "interval": 323.2,
+      "hold": 95,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 958,
+      "interval": 35,
+      "hold": 99,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1027,
+      "interval": 69.4,
+      "hold": 88,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1257,
+      "interval": 230.8,
+      "hold": 62,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1464,
+      "interval": 207.8,
+      "hold": 75,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1661,
+      "interval": 197.0,
+      "hold": 93,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1908,
+      "interval": 247.1,
+      "hold": 103,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2028,
+      "interval": 120.3,
+      "hold": 73,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2154,
+      "interval": 126.3,
+      "hold": 98,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2390,
+      "interval": 236.7,
+      "hold": 91,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2626,
+      "interval": 236.4,
+      "hold": 69,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2826,
+      "interval": 200.6,
+      "hold": 60,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3051,
+      "interval": 225.4,
+      "hold": 78,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3233,
+      "interval": 182.0,
+      "hold": 42,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3446,
+      "interval": 213.8,
+      "hold": 68,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3698,
+      "interval": 252.6,
+      "hold": 48,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3776,
+      "interval": 78.5,
+      "hold": 93,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3826,
+      "interval": 50.8,
+      "hold": 72,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3950,
+      "interval": 124.2,
+      "hold": 56,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4136,
+      "interval": 186.3,
+      "hold": 45,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4284,
+      "interval": 148.3,
+      "hold": 63,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4445,
+      "interval": 161.1,
+      "hold": 43,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4726,
+      "interval": 281.2,
+      "hold": 98,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4913,
+      "interval": 187.2,
+      "hold": 77,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [],
+  "click_events": [
+    {
+      "x": 662,
+      "y": 556,
+      "t": 460,
+      "target_category": "input",
+      "is_trusted": true
+    },
+    {
+      "x": 782,
+      "y": 566,
+      "t": 9956,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "input_focus",
+      "t": 460,
+      "details": {
+        "trusted": true
+      }
+    },
+    {
+      "action": "button_trigger",
+      "t": 9956,
+      "details": {
+        "trusted": true
+      }
+    }
+  ]
+}

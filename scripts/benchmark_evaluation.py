@@ -209,15 +209,25 @@ def generate_markdown_report(
         m = per_class[cls]
         class_table += f"| **{cls}** | {m['precision']*100:.2f}% | {m['recall']*100:.2f}% | {m['f1']:.4f} | {m['support']} |\n"
 
-    subtype_rows = ""
+    subtype_rows = (
+        "| Subtype | True Class | Accuracy | Top Contributing Signals |\n"
+        "| :--- | :---: | :---: | :--- |\n"
+    )
     for subtype, items in sorted(profile_results.items()):
         sub_correct = sum(1 for it in items if it["correct"])
         sub_total = len(items)
         sub_acc = sub_correct / sub_total if sub_total > 0 else 0.0
-        sample_signals = ", ".join(items[0]["signals"][:2]) if items and items[0]["signals"] else "N/A"
+        sample_signals = ", ".join(items[0]["signals"][:2]) if items and items[0]["signals"] else "Neutral reading dwell / organic kinematics"
         subtype_rows += f"| `{subtype}` | {items[0]['true']} | {sub_acc*100:.1f}% ({sub_correct}/{sub_total}) | `{sample_signals}` |\n"
 
-    report = f"""# WebSense Sentinel - Behavioral Ground Truth Benchmark Report
+    acc_status = "**PASS (Superior)**" if accuracy >= 0.95 else "**FAIL**"
+    f1_status = "**PASS (Superior)**" if macro_f1 >= 0.95 else "**FAIL**"
+    ece_status = "**PASS (Calibrated)**" if ece <= 0.10 else "**FAIL**"
+    brier_status = "**PASS (Optimal)**" if brier <= 0.15 else "**FAIL**"
+    lat_mean_status = "**PASS (Real-time)**" if lat_mean <= 50.0 else "**FAIL (Exceeds target)**"
+    lat_p95_status = "**PASS (Real-time)**" if lat_p95 <= 100.0 else "**FAIL (Exceeds target)**"
+
+    report = f"""# SentinelTrace - Behavioral Ground Truth Benchmark Report
 
 > **Dataset Version**: 1.2.0  
 > **Evaluation Date**: October 2026  
@@ -228,7 +238,7 @@ def generate_markdown_report(
 
 ## 1. Executive Summary
 
-This benchmark validates the detection accuracy and calibration quality of **WebSense Sentinel** across real-world operational distributions:
+This benchmark validates the detection accuracy and calibration quality of **SentinelTrace** across real-world operational distributions:
 1. **Organic Humans**: Natural Bézier curves, physiological neuromuscular tremor ($80–200$ micro-corrections), Fitts's law deceleration ($< 0.35$ approach deceleration ratio), and natural typing latency variation ($\\text{{CV}} > 0.25$).
 2. **Traditional Automation & Evasive Bots**: Deterministic/randomized headless scripts, sub-80ms DOM execution, and evasive bots injecting artificial Gaussian coordinate noise while concealing `navigator.webdriver`.
 3. **Agentic AI**: Multi-step LLM browser agents (Stagehand, Browser-use, Claude Computer Use) exhibiting deliberative inference pauses ($1.2\\text{{s}}–6.5\\text{{s}}$), post-deliberation action burstiness, and DOM selector teleportation.
@@ -237,12 +247,12 @@ This benchmark validates the detection accuracy and calibration quality of **Web
 
 | Metric | Measured Value | Standard Target | Status |
 | :--- | :---: | :---: | :---: |
-| **Overall Accuracy** | **{accuracy * 100:.2f}%** | $\\ge 95.0\\%$ | **PASS (Superior)** |
-| **Macro-Averaged F1** | **{macro_f1:.4f}** | $\\ge 0.9500$ | **PASS (Superior)** |
-| **Expected Calibration Error (ECE)** | **{ece:.4f}** | $\\le 0.1000$ | **PASS (Calibrated)** |
-| **Multi-class Brier Score** | **{brier:.4f}** | $\\le 0.1500$ | **PASS (Optimal)** |
-| **Mean Inference Latency** | **{lat_mean:.2f} ms** | $\\le 50.0\\text{{ ms}}$ | **PASS (Real-time)** |
-| **P95 Inference Latency** | **{lat_p95:.2f} ms** | $\\le 100.0\\text{{ ms}}$ | **PASS (Real-time)** |
+| **Overall Accuracy** | **{accuracy * 100:.2f}%** | $\\ge 95.0\\%$ | {acc_status} |
+| **Macro-Averaged F1** | **{macro_f1:.4f}** | $\\ge 0.9500$ | {f1_status} |
+| **Expected Calibration Error (ECE)** | **{ece:.4f}** | $\\le 0.1000$ | {ece_status} |
+| **Multi-class Brier Score** | **{brier:.4f}** | $\\le 0.1500$ | {brier_status} |
+| **Mean Inference Latency** | **{lat_mean:.2f} ms** | $\\le 50.0\\text{{ ms}}$ | {lat_mean_status} |
+| **P95 Inference Latency** | **{lat_p95:.2f} ms** | $\\le 100.0\\text{{ ms}}$ | {lat_p95_status} |
 
 ---
 

@@ -1,0 +1,239 @@
+{
+  "session_id": "bm_human_prompt_typing_travel_017",
+  "visitor_id": "vis_human_017",
+  "task": "travel",
+  "start_time": 1724901020000,
+  "end_time": 1724901034290,
+  "duration_ms": 14290.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_prompt_typing",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "mouse",
+    "screen_width": 1536,
+    "screen_height": 900,
+    "viewport_width": 1280,
+    "viewport_height": 680,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 12,
+    "platform": "MacIntel",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 383,
+      "y": 288,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 387,
+      "y": 289,
+      "t": 3,
+      "type": "move"
+    },
+    {
+      "x": 398,
+      "y": 295,
+      "t": 14,
+      "type": "move"
+    },
+    {
+      "x": 401,
+      "y": 301,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 414,
+      "y": 307,
+      "t": 53,
+      "type": "move"
+    },
+    {
+      "x": 424,
+      "y": 318,
+      "t": 80,
+      "type": "move"
+    },
+    {
+      "x": 436,
+      "y": 330,
+      "t": 112,
+      "type": "move"
+    },
+    {
+      "x": 449,
+      "y": 349,
+      "t": 148,
+      "type": "move"
+    },
+    {
+      "x": 458,
+      "y": 361,
+      "t": 186,
+      "type": "move"
+    },
+    {
+      "x": 473,
+      "y": 378,
+      "t": 225,
+      "type": "move"
+    },
+    {
+      "x": 488,
+      "y": 397,
+      "t": 264,
+      "type": "move"
+    },
+    {
+      "x": 497,
+      "y": 414,
+      "t": 302,
+      "type": "move"
+    },
+    {
+      "x": 508,
+      "y": 430,
+      "t": 337,
+      "type": "move"
+    },
+    {
+      "x": 527,
+      "y": 448,
+      "t": 370,
+      "type": "move"
+    },
+    {
+      "x": 531,
+      "y": 463,
+      "t": 397,
+      "type": "move"
+    },
+    {
+      "x": 548,
+      "y": 478,
+      "t": 420,
+      "type": "move"
+    },
+    {
+      "x": 558,
+      "y": 495,
+      "t": 436,
+      "type": "move"
+    },
+    {
+      "x": 570,
+      "y": 505,
+      "t": 447,
+      "type": "move"
+    },
+    {
+      "x": 582,
+      "y": 517,
+      "t": 450,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 806,
+      "interval": 206.5,
+      "hold": 90,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1096,
+      "interval": 290.3,
+      "hold": 85,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1167,
+      "interval": 71.4,
+      "hold": 85,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1308,
+      "interval": 141.9,
+      "hold": 80,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1583,
+      "interval": 275.2,
+      "hold": 82,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1751,
+      "interval": 168.8,
+      "hold": 43,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2047,
+      "interval": 296.7,
+      "hold": 52,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2251,
+      "interval": 204.4,
+      "hold": 45,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2554,
+      "interval": 303.7,
+      "hold": 49,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [],
+  "click_events": [
+    {
+      "x": 581,
+      "y": 516,
+      "t": 460,
+      "target_category": "input",
+      "is_trusted": true
+    },
+    {
+      "x": 701,
+      "y": 526,
+      "t": 12861,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "input_focus",
+      "t": 460,
+      "details": {
+        "trusted": true
+      }
+    },
+    {
+      "action": "button_trigger",
+      "t": 12861,
+      "details": {
+        "trusted": true
+      }
+    }
+  ]
+}

@@ -69,6 +69,8 @@ class KeyboardEventSchema(BaseModel):
     interval: float = 0.0  # inter-key latency
     hold: float = 0.0      # key hold duration
     is_paste: bool = False
+    is_trusted: bool = True
+    is_programmatic: bool = False
 
 
 class ScrollEventSchema(BaseModel):
@@ -82,10 +84,12 @@ class ClickEventSchema(BaseModel):
     y: float
     t: float
     target_category: str = "general"
+    is_trusted: bool = True
 
 
 class BrowserSignalsSchema(BaseModel):
     webdriver: bool = False
+    pointer_type: Optional[str] = "mouse"
     screen_width: int = 1920
     screen_height: int = 1080
     viewport_width: int = 1280
@@ -121,6 +125,9 @@ class ClientContextSchema(BaseModel):
 class SiteCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=128)
     allowed_origins: str = Field(default="*", description="Comma-separated allowed domains e.g. https://example.com,http://localhost:3000")
+    webhook_url: Optional[str] = Field(default=None, max_length=512)
+    risk_threshold: int = Field(default=80, ge=0, le=100)
+    enforcement_mode: Literal["monitor", "challenge", "block"] = "monitor"
 
 
 class SiteResponse(BaseModel):
@@ -128,9 +135,29 @@ class SiteResponse(BaseModel):
     name: str
     allowed_origins: str
     api_key: Optional[str] = None
+    webhook_url: Optional[str] = None
+    risk_threshold: int = 80
+    enforcement_mode: str = "monitor"
     is_active: bool = True
     created_at: str
     total_sessions: int = 0
+    embed_snippet: str = ""
+
+
+class SessionFeedbackRequest(BaseModel):
+    analyst_label: Optional[Literal["HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI", "UNCERTAIN"]] = None
+    is_correct: Optional[bool] = None
+    notes: str = Field(default="", max_length=1000)
+
+
+class SessionFeedbackResponse(BaseModel):
+    id: int
+    session_id: str
+    predicted_label: Optional[str] = None
+    analyst_label: str
+    is_correct: Optional[bool] = None
+    notes: str
+    created_at: str
 
 
 class SiteListResponse(BaseModel):
@@ -225,6 +252,7 @@ class ClassificationResponse(BaseModel):
     counter_signals: List[str]
     human_explanation: str
     model_version: str
+    action: Literal["ALLOW", "CHALLENGE", "BLOCK"] = "ALLOW"
     # Layer 5 status: "valid" | "violated" | "not_applicable"
     l5_status: str = "not_applicable"
     active_duration_ms: Optional[float] = None
@@ -268,6 +296,8 @@ class SessionSummary(BaseModel):
     last_seq: int = 0
     active_duration_ms: Optional[float] = None
     updated_at: Optional[str] = None
+    feedback_is_correct: Optional[bool] = None
+    feedback_label: Optional[str] = None
 
 
 class SessionDetailResponse(BaseModel):

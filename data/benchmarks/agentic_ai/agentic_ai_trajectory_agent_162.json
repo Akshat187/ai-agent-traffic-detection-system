@@ -1,0 +1,322 @@
+{
+  "session_id": "bm_agentic_ai_trajectory_agent_forum_162",
+  "visitor_id": "vis_agentic_ai_162",
+  "task": "forum",
+  "start_time": 1724909720000,
+  "end_time": 1724909732333,
+  "duration_ms": 12333.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_trajectory_agent",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 8,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 150,
+      "y": 200,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 191,
+      "y": 202,
+      "t": 331,
+      "type": "move"
+    },
+    {
+      "x": 232,
+      "y": 205,
+      "t": 662,
+      "type": "move"
+    },
+    {
+      "x": 274,
+      "y": 207,
+      "t": 993,
+      "type": "move"
+    },
+    {
+      "x": 315,
+      "y": 209,
+      "t": 1324,
+      "type": "move"
+    },
+    {
+      "x": 356,
+      "y": 212,
+      "t": 1655,
+      "type": "move"
+    },
+    {
+      "x": 397,
+      "y": 214,
+      "t": 1986,
+      "type": "move"
+    },
+    {
+      "x": 397,
+      "y": 214,
+      "t": 2877,
+      "type": "move"
+    },
+    {
+      "x": 434,
+      "y": 245,
+      "t": 3058,
+      "type": "move"
+    },
+    {
+      "x": 470,
+      "y": 276,
+      "t": 3240,
+      "type": "move"
+    },
+    {
+      "x": 507,
+      "y": 307,
+      "t": 3421,
+      "type": "move"
+    },
+    {
+      "x": 544,
+      "y": 338,
+      "t": 3603,
+      "type": "move"
+    },
+    {
+      "x": 580,
+      "y": 370,
+      "t": 3784,
+      "type": "move"
+    },
+    {
+      "x": 617,
+      "y": 401,
+      "t": 3966,
+      "type": "move"
+    },
+    {
+      "x": 654,
+      "y": 432,
+      "t": 4147,
+      "type": "move"
+    },
+    {
+      "x": 691,
+      "y": 463,
+      "t": 4328,
+      "type": "move"
+    },
+    {
+      "x": 727,
+      "y": 494,
+      "t": 4510,
+      "type": "move"
+    },
+    {
+      "x": 764,
+      "y": 525,
+      "t": 4691,
+      "type": "move"
+    },
+    {
+      "x": 764,
+      "y": 525,
+      "t": 5754,
+      "type": "move"
+    },
+    {
+      "x": 776,
+      "y": 530,
+      "t": 5983,
+      "type": "move"
+    },
+    {
+      "x": 788,
+      "y": 536,
+      "t": 6212,
+      "type": "move"
+    },
+    {
+      "x": 800,
+      "y": 541,
+      "t": 6441,
+      "type": "move"
+    },
+    {
+      "x": 812,
+      "y": 546,
+      "t": 6670,
+      "type": "move"
+    },
+    {
+      "x": 823,
+      "y": 552,
+      "t": 6899,
+      "type": "move"
+    },
+    {
+      "x": 835,
+      "y": 557,
+      "t": 7129,
+      "type": "move"
+    },
+    {
+      "x": 847,
+      "y": 562,
+      "t": 7358,
+      "type": "move"
+    },
+    {
+      "x": 859,
+      "y": 568,
+      "t": 7587,
+      "type": "move"
+    },
+    {
+      "x": 871,
+      "y": 573,
+      "t": 7816,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 5000,
+      "interval": 141,
+      "hold": 31,
+      "is_paste": false
+    },
+    {
+      "t": 5127,
+      "interval": 127,
+      "hold": 42,
+      "is_paste": false
+    },
+    {
+      "t": 5197,
+      "interval": 70,
+      "hold": 41,
+      "is_paste": false
+    },
+    {
+      "t": 5325,
+      "interval": 128,
+      "hold": 46,
+      "is_paste": false
+    },
+    {
+      "t": 5453,
+      "interval": 128,
+      "hold": 40,
+      "is_paste": false
+    },
+    {
+      "t": 5527,
+      "interval": 74,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 5890,
+      "interval": 363,
+      "hold": 31,
+      "is_paste": false
+    },
+    {
+      "t": 5952,
+      "interval": 62,
+      "hold": 30,
+      "is_paste": false
+    },
+    {
+      "t": 6010,
+      "interval": 58,
+      "hold": 54,
+      "is_paste": false
+    },
+    {
+      "t": 6719,
+      "interval": 709,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 7274,
+      "interval": 555,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 7608,
+      "interval": 334,
+      "hold": 35,
+      "is_paste": false
+    },
+    {
+      "t": 7679,
+      "interval": 71,
+      "hold": 45,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 2466,
+      "scroll_y": 356,
+      "delta_y": 356
+    },
+    {
+      "t": 3406,
+      "scroll_y": 591,
+      "delta_y": 235
+    }
+  ],
+  "click_events": [
+    {
+      "x": 397,
+      "y": 214,
+      "t": 4316,
+      "target_category": "input"
+    },
+    {
+      "x": 871,
+      "y": 573,
+      "t": 9866,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 2466,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 6166,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 9249,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 11099,
+      "details": {}
+    }
+  ]
+}

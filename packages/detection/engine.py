@@ -51,11 +51,30 @@ class DecisionEngine:
         self._bootstrap_ml()
 
     def _bootstrap_ml(self):
-        """Pre-trains and calibrates behavioral classifier. Prioritizes persistent benchmark traces from disk."""
+        """Loads pre-trained behavioral classifier artifact if present, else trains & calibrates from disk/seeds."""
         try:
             import json
+            import pickle
             from pathlib import Path
             from packages.core.features import extract_all_features
+
+            model_path = Path(__file__).resolve().parent.parent.parent / "models" / "behavioral_v1.2.joblib"
+            if model_path.exists():
+                try:
+                    try:
+                        import joblib
+                        artifact = joblib.load(model_path)
+                    except ImportError:
+                        with open(model_path, "rb") as mf:
+                            artifact = pickle.load(mf)
+                    if isinstance(artifact, BehavioralClassifier):
+                        self.ml = artifact
+                        return
+                    elif isinstance(artifact, dict) and "classifier" in artifact:
+                        self.ml = artifact["classifier"]
+                        return
+                except Exception:
+                    pass
 
             benchmark_dir = Path(__file__).resolve().parent.parent.parent / "data" / "benchmarks"
             X, y = [], []
@@ -122,10 +141,7 @@ class DecisionEngine:
         n_click = len(session_data.get("click_events", []))
         n_scroll = len(session_data.get("scroll_events", []))
         n_tasks = len(session_data.get("task_actions", []))
-        total_interactions = (
-            n_mouse + n_key + n_click + n_scroll + n_tasks
-            + features.get("total_event_count", 0)
-        )
+        total_interactions = n_mouse + n_key + n_click + n_scroll + n_tasks
 
         is_synthetic = bool(session_data.get("is_synthetic"))
 
@@ -140,6 +156,7 @@ class DecisionEngine:
             (n_mouse >= 5 and features.get("path_length", 0) >= 15)
             or n_key >= 3
             or n_tasks >= 2
+            or (features.get("pointer_type") == "touch" and (n_click + n_scroll) >= 2)
             or (total_interactions >= 5 and (n_click >= 2 or n_scroll >= 2))
             or total_interactions >= 10
         )
@@ -180,25 +197,38 @@ class DecisionEngine:
                 "model_version": MODEL_VERSION,
             }
 
+        import time
+        from apps.api.observability import metrics_registry
+
         # --- Layer 1: Rules ---
+        t_l1 = time.perf_counter()
         rule_score, rule_flags, rule_mitigations = self.rules.evaluate(features)
+        metrics_registry.record_layer_latency("L1", (time.perf_counter() - t_l1) * 1000.0)
 
         # --- Layer 2: Behavioral ML ---
+        t_l2 = time.perf_counter()
         ml_pred, ml_conf, ml_probs = self.ml.predict(features)
+        metrics_registry.record_layer_latency("L2", (time.perf_counter() - t_l2) * 1000.0)
 
         # --- Layer 3: Anomaly Detection ---
+        t_l3 = time.perf_counter()
         anom_score, is_anom, anom_reasons = self.anomaly.score(features)
+        metrics_registry.record_layer_latency("L3", (time.perf_counter() - t_l3) * 1000.0)
 
         # --- Layer 4: Replay Detection ---
+        t_l4 = time.perf_counter()
         mouse_events = session_data.get("mouse_events", [])
         replay_sim, matched_id, is_replay = self.replay.check_replay(session_id, mouse_events)
         if register_replay:
             self.replay.register_session(session_id, mouse_events)
+        metrics_registry.record_layer_latency("L4", (time.perf_counter() - t_l4) * 1000.0)
 
         # --- Layer 5: Contextual Validation ---
+        t_l5 = time.perf_counter()
         task_actions = session_data.get("task_actions", [])
         click_events = session_data.get("click_events", [])
         ctx_valid, ctx_violations = self.context.validate(task, task_actions, click_events, features)
+        metrics_registry.record_layer_latency("L5", (time.perf_counter() - t_l5) * 1000.0)
         if ctx_violations:
             l5_status = "violated"
         elif task in WORKFLOW_TASKS:
@@ -219,7 +249,7 @@ class DecisionEngine:
         key_cv = features.get("key_latency_cv", 0.0)
         key_count = features.get("key_event_count", 0)
         key_hold = features.get("key_mean_hold_time", 0.0)
-        has_robotic_hold = (0.0 < key_hold < 35.0)
+        has_robotic_hold = (0.0 < key_hold < 18.0) or (0.0 < key_hold < 25.0 and key_cv < 0.10)
 
         # Evasive bots injecting Gaussian coordinate noise:
         # Evasive bots add artificial jitter to simulate tremor, but they lack human neuromuscular
@@ -273,30 +303,46 @@ class DecisionEngine:
             )
             risk -= 15.0
 
+        # Mobile / touch interaction: only when actual pointer_type is 'touch' (never touch_support alone)
+        is_touch_human = (
+            features.get("pointer_type") == "touch"
+            and not features.get("webdriver_flag")
+            and not is_artificial_jitter
+        )
+        if is_touch_human:
+            counter_signals.append(
+                "Mobile/touch pointer interaction detected — zero-mouse trajectory penalty suppressed"
+            )
+            risk -= 15.0
+
         # Agentic agency profile signals
         planning_pause_ratio = features.get("planning_pause_ratio", 0.0)
         llm_gap_ratio = features.get("llm_inference_gap_ratio", 0.0)
         action_burst = features.get("action_burstiness_score", 0.0)
+        cursor_teleport = features.get("cursor_teleport_ratio", 0.0)
         nav_segments = features.get("nav_segment_count", 0)
         adaptation_score = features.get("adaptation_score", 0.0)
         action_interval_var = features.get("action_interval_variance", 0.0)
         action_interval_mean = features.get("action_interval_mean_ms", 0.0)
         interaction_diversity = features.get("interaction_diversity_score", 0.0)
 
+        # Defer agentic contributing_signals emission until final_verdict is known
+        # so human reading/thinking dwell never leaks agentic planning strings.
+        pending_agentic_signals = []
         if planning_pause_ratio > 0.30 or llm_gap_ratio > 0.25:
-            contributing_signals.append(
+            pending_agentic_signals.append(
                 f"Goal-directed deliberation pauses ({planning_pause_ratio:.0%} of session time, LLM gap ratio: {llm_gap_ratio:.0%}) — agentic planning signature"
             )
             risk += 15.0  # Shifts toward AGENTIC_AI, not TRADITIONAL_AUTOMATION
 
         if nav_segments >= 3:
-            contributing_signals.append(
+            pending_agentic_signals.append(
                 f"Segmented cursor navigation ({nav_segments} distinct path segments) — autonomous task navigation"
             )
             risk += 10.0
 
         if adaptation_score > 0.4:
-            contributing_signals.append(
+            pending_agentic_signals.append(
                 f"Action adaptation pattern detected (score: {adaptation_score:.2f}) — context-sensitive decision making"
             )
 
@@ -348,9 +394,17 @@ class DecisionEngine:
             and (key_count < 4 or (key_cv >= 0.20 and not has_robotic_hold))
         )
 
+        untrusted_ratio = features.get("untrusted_event_ratio", 0.0)
+        prog_input_ratio = features.get("programmatic_input_ratio", 0.0)
+        has_agent_corroboration = (
+            cursor_teleport > 0.70
+            or untrusted_ratio > 0.0
+            or prog_input_ratio > 0.0
+            or action_burst > 0.30
+        )
         has_llm_deliberation = (
             llm_gap_ratio > 0.20
-            or (action_interval_mean >= 1200 and action_interval_var >= 400)
+            or (action_interval_mean >= 1200 and action_interval_var >= 400 and has_agent_corroboration)
             or (action_burst > 0.30 and planning_pause_ratio > 0.15)
         )
 
@@ -364,6 +418,8 @@ class DecisionEngine:
         is_agentic_profile = (
             has_agency_signal
             and not is_organic_human_kinematics
+            and not (is_touch_human and action_burst <= 0.30)
+            and not (is_keyboard_human and action_burst <= 0.30 and untrusted_ratio == 0.0 and prog_input_ratio == 0.0)
             and (
                 has_llm_deliberation or
                 (planning_pause_ratio > 0.30 and nav_segments >= 3 and straightness > 0.80) or
@@ -372,22 +428,39 @@ class DecisionEngine:
                 (action_interval_var > 1200 and nav_segments >= 3 and straightness > 0.80) or  # Strong LLM inference-delay signature
                 (len(task_actions) >= 2 and action_interval_var > 800 and planning_pause_ratio > 0.20 and features.get("micro_corrections", 0) <= 2) or  # Workflow / computer-use agent
                 (path_len < 50 and len(task_actions) >= 2 and (planning_pause_ratio > 0.20 or llm_gap_ratio > 0.20)) or  # DOM-driven agent without cursor trajectory
-                (ml_pred == "AGENTIC_AI" and ml_conf >= 68.0 and rule_score < 60.0)  # Corroborated ML prediction
+                (ml_pred == "AGENTIC_AI" and ml_conf >= 68.0 and rule_score < 60.0) or  # Corroborated ML prediction
+                (ml_pred == "AGENTIC_AI" and ml_conf >= 90.0 and rule_score < 70.0)     # High-confidence ML agentic trajectory
             )
         )
 
         # Traditional automation profile: highly uniform, deterministic behavior.
-        # Blocked if genuine LLM deliberation is present (LLM agents wait multi-seconds for tokens).
+        # Blocked if genuine LLM deliberation or strong organic human kinematics are present.
+        strong_organic_human = (
+            (
+                (features.get("micro_corrections", 0) >= 15 and target_decel < 0.35)
+                or (features.get("micro_corrections", 0) >= 10 and straightness < 0.88 and (key_count < 4 or key_cv >= 0.22))
+            )
+            and not is_artificial_jitter
+            and not features.get("webdriver_flag")
+            and ml_pred == "HUMAN"
+        )
+        effective_replay = is_replay and (not strong_organic_human or replay_sim >= 0.99)
+        rule_automation_trigger = (
+            rule_score >= 55.0
+            or (rule_score >= 35.0 and not (ml_pred == "HUMAN" and ml_conf >= 75.0))
+        )
         is_automation_profile = (
             (
-                is_replay or
+                effective_replay or
                 is_artificial_jitter or
-                rule_score >= 35.0 or
-                (key_count >= 4 and (key_cv < 0.18 or (0 < key_hold < 35.0))) or
-                (straightness > 0.92 and key_count >= 4 and (key_cv < 0.20 or features.get("micro_corrections", 0) <= 1)) or
+                untrusted_ratio > 0.30 or
+                prog_input_ratio > 0.50 or
+                rule_automation_trigger or
+                (key_count >= 4 and (key_cv < 0.18 or has_robotic_hold) and not strong_organic_human) or
+                (path_len > 100 and straightness > 0.92 and (key_count < 4 or key_cv < 0.20 or has_robotic_hold or (features.get("micro_corrections", 0) <= 1 and ml_pred != "HUMAN"))) or
                 (features.get("duration_ms", 1000) < 500 and features.get("total_event_count", 0) >= 5) or
-                (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0 and not is_keyboard_human)
-            ) and not is_agentic_profile and not has_llm_deliberation  # Never override agentic LLM evidence
+                (ml_pred == "TRADITIONAL_AUTOMATION" and ml_conf >= 65.0 and not is_keyboard_human and not is_touch_human)
+            ) and not is_agentic_profile and not has_llm_deliberation and not (is_touch_human and rule_score < 50.0 and not is_artificial_jitter)
         )
 
         # Calibrated confidence computation:
@@ -435,7 +508,7 @@ class DecisionEngine:
                 confidence = 48.0
                 fallback_used = True
 
-        elif risk_score <= 30.0 and rule_score < 30.0 and (ml_pred == "HUMAN" or is_keyboard_human):
+        elif risk_score <= 30.0 and rule_score < 30.0 and (ml_pred == "HUMAN" or is_keyboard_human or is_touch_human):
             final_verdict = "HUMAN"
             c_target = ml_probs.get("HUMAN", calibrated_conf / 100.0) * 100.0 if ml_probs else calibrated_conf
             heuristic_conf = min(98.0, max(68.0, 100.0 - (risk_score * 1.1)))
@@ -451,6 +524,20 @@ class DecisionEngine:
             final_verdict = "UNCERTAIN"
             confidence = round(max(40.0, min(65.0, 50.0 + (calibrated_conf - 50.0) * 0.5)), 1)
             fallback_used = True
+
+        # Gate agentic contributing_signals: only emit when AGENTIC_AI or secondary
+        # burstiness/teleportation condition is met; otherwise classify as neutral reading dwell.
+        has_secondary_burstiness = (
+            action_burst > 0.30
+            or (cursor_teleport > 0.70 and not is_keyboard_human and not is_touch_human)
+        )
+        if pending_agentic_signals:
+            if final_verdict == "AGENTIC_AI" or has_secondary_burstiness:
+                contributing_signals.extend(pending_agentic_signals)
+            else:
+                counter_signals.append(
+                    f"Neutral reading dwell and cognitive pauses ({planning_pause_ratio:.0%} pause ratio) without post-pause action burstiness"
+                )
 
         # ── GENERATE HUMAN-READABLE EXPLANATION ───────────────────────────────
 

@@ -1,0 +1,225 @@
+{
+  "session_id": "bm_human_mobile_touch_travel_026",
+  "visitor_id": "vis_human_026",
+  "task": "travel",
+  "start_time": 1724901560000,
+  "end_time": 1724901566915,
+  "duration_ms": 6915.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_mobile_touch",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "touch",
+    "screen_width": 390,
+    "screen_height": 844,
+    "viewport_width": 1200,
+    "viewport_height": 720,
+    "device_pixel_ratio": 2.0,
+    "touch_support": true,
+    "hardware_concurrency": 4,
+    "platform": "MacIntel",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [
+    {
+      "t": 1808,
+      "interval": 167.7,
+      "hold": 44,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1968,
+      "interval": 160.2,
+      "hold": 38,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2249,
+      "interval": 281.3,
+      "hold": 41,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2515,
+      "interval": 266.9,
+      "hold": 64,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2799,
+      "interval": 284.2,
+      "hold": 75,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3111,
+      "interval": 313.0,
+      "hold": 62,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3289,
+      "interval": 178.4,
+      "hold": 106,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3556,
+      "interval": 267.9,
+      "hold": 63,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3813,
+      "interval": 257.9,
+      "hold": 83,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4009,
+      "interval": 196.2,
+      "hold": 55,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4189,
+      "interval": 180.3,
+      "hold": 85,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 4387,
+      "interval": 198.9,
+      "hold": 75,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 691,
+      "scroll_y": 164,
+      "delta_y": 164
+    },
+    {
+      "t": 1105,
+      "scroll_y": 320,
+      "delta_y": 156
+    },
+    {
+      "t": 1279,
+      "scroll_y": 452,
+      "delta_y": 132
+    },
+    {
+      "t": 1744,
+      "scroll_y": 588,
+      "delta_y": 136
+    },
+    {
+      "t": 2196,
+      "scroll_y": 717,
+      "delta_y": 129
+    },
+    {
+      "t": 2379,
+      "scroll_y": 893,
+      "delta_y": 176
+    },
+    {
+      "t": 2601,
+      "scroll_y": 943,
+      "delta_y": 50
+    },
+    {
+      "t": 2810,
+      "scroll_y": 1107,
+      "delta_y": 164
+    },
+    {
+      "t": 3074,
+      "scroll_y": 1243,
+      "delta_y": 136
+    },
+    {
+      "t": 3549,
+      "scroll_y": 1307,
+      "delta_y": 64
+    },
+    {
+      "t": 3908,
+      "scroll_y": 1459,
+      "delta_y": 152
+    },
+    {
+      "t": 4111,
+      "scroll_y": 1548,
+      "delta_y": 89
+    },
+    {
+      "t": 4654,
+      "scroll_y": 1686,
+      "delta_y": 138
+    },
+    {
+      "t": 5164,
+      "scroll_y": 1817,
+      "delta_y": 131
+    },
+    {
+      "t": 5611,
+      "scroll_y": 1904,
+      "delta_y": 87
+    },
+    {
+      "t": 6108,
+      "scroll_y": 1974,
+      "delta_y": 70
+    }
+  ],
+  "click_events": [
+    {
+      "x": 1013,
+      "y": 734,
+      "t": 4840,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 1037,
+      "details": {}
+    },
+    {
+      "action": "filter_applied",
+      "t": 2766,
+      "details": {}
+    },
+    {
+      "action": "item_selected",
+      "t": 4494,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 6085,
+      "details": {}
+    }
+  ]
+}

@@ -25,10 +25,13 @@ test:
 	$(PYTHON) -m $(PYTEST) tests/ -v
 
 lint:
-	$(PYTHON) -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+	$(PYTHON) -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
 format:
-	$(PYTHON) -m black . || true
+	$(PYTHON) -m black .
+
+format-check:
+	$(PYTHON) -m black --check .
 
 build:
 	@echo "Build complete. Web templates and Python package ready."
@@ -43,13 +46,19 @@ docker-up:
 	docker compose -f docker/docker-compose.yml up -d
 
 migrate:
-	$(PYTHON) -c "from packages.database.db import init_db; init_db()"
+	$(PYTHON) -m alembic upgrade head
+
+prune:
+	$(PYTHON) scripts/prune_telemetry.py --ttl-days 14
 
 seed:
 	$(PYTHON) demo_seed.py
 
 train:
-	$(PYTHON) -c "from packages.detection.ml_classifier import BehavioralClassifier; print('Trained behavioral classifier model ready.')"
+	$(PYTHON) scripts/train_model.py --output models/behavioral_v1.2.joblib
+
+retrain:
+	$(PYTHON) scripts/retrain_model.py
 
 evaluate:
 	$(PYTHON) -m $(PYTEST) tests/test_detection.py -v

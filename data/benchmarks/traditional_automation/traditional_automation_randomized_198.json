@@ -1,0 +1,389 @@
+{
+  "session_id": "bm_traditional_automation_randomized_forum_198",
+  "visitor_id": "vis_traditional_automation_198",
+  "task": "forum",
+  "start_time": 1724911880000,
+  "end_time": 1724911881409,
+  "duration_ms": 1409.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_randomized",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 197,
+      "y": 202,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 213,
+      "y": 211,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 240,
+      "y": 231,
+      "t": 61,
+      "type": "move"
+    },
+    {
+      "x": 247,
+      "y": 231,
+      "t": 91,
+      "type": "move"
+    },
+    {
+      "x": 270,
+      "y": 235,
+      "t": 122,
+      "type": "move"
+    },
+    {
+      "x": 277,
+      "y": 254,
+      "t": 152,
+      "type": "move"
+    },
+    {
+      "x": 293,
+      "y": 266,
+      "t": 183,
+      "type": "move"
+    },
+    {
+      "x": 310,
+      "y": 276,
+      "t": 213,
+      "type": "move"
+    },
+    {
+      "x": 333,
+      "y": 279,
+      "t": 244,
+      "type": "move"
+    },
+    {
+      "x": 344,
+      "y": 304,
+      "t": 274,
+      "type": "move"
+    },
+    {
+      "x": 362,
+      "y": 305,
+      "t": 305,
+      "type": "move"
+    },
+    {
+      "x": 373,
+      "y": 324,
+      "t": 335,
+      "type": "move"
+    },
+    {
+      "x": 392,
+      "y": 333,
+      "t": 366,
+      "type": "move"
+    },
+    {
+      "x": 409,
+      "y": 338,
+      "t": 396,
+      "type": "move"
+    },
+    {
+      "x": 422,
+      "y": 347,
+      "t": 426,
+      "type": "move"
+    },
+    {
+      "x": 441,
+      "y": 363,
+      "t": 457,
+      "type": "move"
+    },
+    {
+      "x": 459,
+      "y": 371,
+      "t": 487,
+      "type": "move"
+    },
+    {
+      "x": 471,
+      "y": 384,
+      "t": 518,
+      "type": "move"
+    },
+    {
+      "x": 492,
+      "y": 401,
+      "t": 548,
+      "type": "move"
+    },
+    {
+      "x": 508,
+      "y": 400,
+      "t": 579,
+      "type": "move"
+    },
+    {
+      "x": 527,
+      "y": 416,
+      "t": 609,
+      "type": "move"
+    },
+    {
+      "x": 545,
+      "y": 433,
+      "t": 640,
+      "type": "move"
+    },
+    {
+      "x": 565,
+      "y": 424,
+      "t": 670,
+      "type": "move"
+    },
+    {
+      "x": 574,
+      "y": 446,
+      "t": 701,
+      "type": "move"
+    },
+    {
+      "x": 588,
+      "y": 459,
+      "t": 731,
+      "type": "move"
+    },
+    {
+      "x": 610,
+      "y": 471,
+      "t": 761,
+      "type": "move"
+    },
+    {
+      "x": 622,
+      "y": 480,
+      "t": 792,
+      "type": "move"
+    },
+    {
+      "x": 638,
+      "y": 494,
+      "t": 822,
+      "type": "move"
+    },
+    {
+      "x": 658,
+      "y": 505,
+      "t": 853,
+      "type": "move"
+    },
+    {
+      "x": 667,
+      "y": 511,
+      "t": 883,
+      "type": "move"
+    },
+    {
+      "x": 684,
+      "y": 527,
+      "t": 914,
+      "type": "move"
+    },
+    {
+      "x": 692,
+      "y": 539,
+      "t": 944,
+      "type": "move"
+    },
+    {
+      "x": 719,
+      "y": 541,
+      "t": 975,
+      "type": "move"
+    },
+    {
+      "x": 734,
+      "y": 559,
+      "t": 1005,
+      "type": "move"
+    },
+    {
+      "x": 745,
+      "y": 564,
+      "t": 1036,
+      "type": "move"
+    },
+    {
+      "x": 771,
+      "y": 578,
+      "t": 1066,
+      "type": "move"
+    },
+    {
+      "x": 785,
+      "y": 591,
+      "t": 1097,
+      "type": "move"
+    },
+    {
+      "x": 794,
+      "y": 599,
+      "t": 1127,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 122,
+      "interval": 72,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 176,
+      "interval": 54,
+      "hold": 22,
+      "is_paste": false
+    },
+    {
+      "t": 243,
+      "interval": 67,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 301,
+      "interval": 58,
+      "hold": 27,
+      "is_paste": false
+    },
+    {
+      "t": 375,
+      "interval": 74,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 438,
+      "interval": 63,
+      "hold": 21,
+      "is_paste": false
+    },
+    {
+      "t": 493,
+      "interval": 55,
+      "hold": 17,
+      "is_paste": false
+    },
+    {
+      "t": 552,
+      "interval": 59,
+      "hold": 19,
+      "is_paste": false
+    },
+    {
+      "t": 610,
+      "interval": 58,
+      "hold": 21,
+      "is_paste": false
+    },
+    {
+      "t": 681,
+      "interval": 71,
+      "hold": 29,
+      "is_paste": false
+    },
+    {
+      "t": 761,
+      "interval": 80,
+      "hold": 24,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 70,
+      "scroll_y": 300,
+      "delta_y": 300
+    },
+    {
+      "t": 217,
+      "scroll_y": 600,
+      "delta_y": 300
+    },
+    {
+      "t": 390,
+      "scroll_y": 900,
+      "delta_y": 300
+    },
+    {
+      "t": 524,
+      "scroll_y": 1200,
+      "delta_y": 300
+    },
+    {
+      "t": 664,
+      "scroll_y": 1500,
+      "delta_y": 300
+    },
+    {
+      "t": 789,
+      "scroll_y": 1800,
+      "delta_y": 300
+    },
+    {
+      "t": 949,
+      "scroll_y": 2100,
+      "delta_y": 300
+    },
+    {
+      "t": 1125,
+      "scroll_y": 2400,
+      "delta_y": 300
+    }
+  ],
+  "click_events": [
+    {
+      "x": 800,
+      "y": 600,
+      "t": 1197,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "filter_applied",
+      "t": 493,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 845,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 1127,
+      "details": {}
+    }
+  ]
+}

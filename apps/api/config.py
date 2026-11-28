@@ -71,6 +71,9 @@ class Settings(BaseModel):
     # Only trust X-Forwarded-For when running behind a known reverse proxy.
     TRUST_PROXY_HEADERS: bool = os.getenv("TRUST_PROXY_HEADERS", "False").lower() in ("true", "1")
 
+    # Public origin used in generated <script> embed snippets (optional; inferred from request if empty)
+    PUBLIC_BASE_URL: str = os.getenv("PUBLIC_BASE_URL", "").strip().rstrip("/")
+
     # External Agent configuration (optional — app works without these)
     AGENT_PROVIDER: str = os.getenv("AGENT_PROVIDER", "")
     AGENT_MODEL: str = os.getenv("AGENT_MODEL", "")

@@ -122,6 +122,7 @@ def test_web_page_rendering():
     assert res_dash.status_code == 200
     # Dashboard title should mention the platform name
     assert "WebSense" in res_dash.text or "SentinelTrace" in res_dash.text
+    assert 'id="explorer-back-btn"' in res_dash.text
 
     res_shop = client.get("/visitor/shop")
     assert res_shop.status_code == 200

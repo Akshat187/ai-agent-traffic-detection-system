@@ -1,139 +1,106 @@
-# WebSense — AI-Agent Traffic Detection & Behavioral Security Intelligence Platform
+# SentinelTrace — AI-Agent Traffic Detection & Behavioral Security Intelligence Platform
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.124%2B-emerald.svg)](https://fastapi.tiangolo.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-emerald.svg)](https://fastapi.tiangolo.com)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0%2B-red.svg)](https://www.sqlalchemy.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-28%20Passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-67%20Passed-brightgreen.svg)](tests/)
 
-**WebSense** is an end-to-end cybersecurity intelligence platform designed to classify modern web traffic into **Human**, **Traditional Automation**, and **Agentic AI** (plus an internal **Uncertain** state) using high-resolution browser and behavioral fingerprinting.
+**SentinelTrace** is an end-to-end behavioral security intelligence and active mitigation platform designed to classify modern web traffic into **Human**, **Traditional Automation**, and **Agentic AI** (plus an internal **Uncertain** state) using high-resolution browser, kinematic, and agency-cadence fingerprinting.
 
-Inspired by contemporary research (*FP-Agent: Fingerprinting AI Browsing Agents, 2026*) and modern mouse dynamics threat modeling, WebSense implements a **5-Layer Defense-in-Depth Engine** demonstrating that **behavioral dynamics (mouse kinematics, typing jitter, pause cadence) consistently outperform static browser fingerprints alone.**
+Inspired by contemporary research (*FP-Agent: Fingerprinting AI Browsing Agents, 2026*) and modern mouse dynamics threat modeling, SentinelTrace implements a **5-Layer Defense-in-Depth Engine** with sub-10ms mean inference latency, real-time WebSocket threat streaming, and active policy enforcement (`ALLOW | CHALLENGE | BLOCK`).
 
 ---
 
 ## ✨ Key Capabilities
 
-1. **5-Layer Multi-Defense Engine**:
-   - **Layer 1: Rule-Based Heuristics** — Rapid detection of `navigator.webdriver`, zero-movement click events, and impossible sub-second form completion.
-   - **Layer 2: Supervised Behavioral ML** — Random Forest and Decision Tree classifiers operating over 15 physical kinematic features (acceleration, jerk, straightness ratio, micro-corrections, typing coefficient of variation).
-   - **Layer 3: Behavioral Anomaly Detection** — Multi-variate Mahalanobis baseline distance and kinematic outlier scoring measuring out-of-distribution deviation from organic human interaction distributions.
-   - **Layer 4: Historical Replay Defense** — Trajectory bounding-box normalization, equidistant arc-length resampling, and Dynamic Time Warping (DTW) similarity matching to detect synthetic replay attacks (>94% match).
-   - **Layer 5: Contextual Task Validation** — Finite-state workflow validation catching out-of-order interactions and clicks landing on non-interactive regions.
+1. **5-Layer Multi-Defense Engine (`v1.2.1-actor-inference`)**:
+   - **Layer 1: Rule-Based Heuristics** — Detects `navigator.webdriver`, linear trajectories, synthetic typing cadence, and impossible sub-second completions, with built-in **Mobile/Touch & Accessibility (a11y)** exemptions so touchscreen and keyboard-only users are never penalized.
+   - **Layer 2: Temperature-Calibrated Behavioral ML** — Random Forest / Native Ensemble over **26 kinematic, agency, and environmental features** (Fitts's law target deceleration, jerk-to-velocity ratio, LLM inference pause burstiness, cursor teleportation, keystroke CV), persisted via `make train` (`models/behavioral_v1.2.joblib`).
+   - **Layer 3: Behavioral Anomaly Detection** — Multi-variate Mahalanobis baseline distance and kinematic outlier scoring.
+   - **Layer 4: Fast Historical Replay Defense** — Bounding-box aspect-ratio & length pre-filtering with windowed Dynamic Time Warping (DTW) similarity matching.
+   - **Layer 5: Contextual Task Validation** — Finite-state workflow validation catching out-of-order interactions.
 
-2. **Dual Integrated Experiences**:
-   - **Instrumented Honey Websites** (`/visitor/shop`, `/visitor/travel`, `/visitor/forum`) — Realistic E-commerce, Flight Booking, and Community Forum tasks with privacy-preserving client telemetry (`sentinel.js`).
-   - **Enterprise Security Intelligence Dashboard** (`/dashboard`) — Real-time telemetry log, 2D Canvas mouse trajectory replay with velocity color-mapping, FP-Agent comparative benchmark lab, and interactive adversarial simulator.
-   - **Chrome Extension (Manifest V3)** — Standalone browser extension that injects background passive telemetry capture across any external site.
+2. **Real-Time Threat Stream & Active Mitigation**:
+   - **WebSocket Live Feed (`WS /ws/sessions`)** — Streams incoming session verdicts instantaneously to `/dashboard` without full-page refreshes.
+   - **Policy Engine & Signed Webhooks** — Per-site `risk_threshold` and `enforcement_mode` (`monitor | challenge | block`) returning `ALLOW | CHALLENGE | BLOCK` in `POST /api/v1/sessions` and dispatching **HMAC-SHA256** signed webhook alerts via `BackgroundTasks`.
+   - **Multi-Site Auth & Tenant-Isolated Rate Limiting** — Enforces `site_id` + `Origin` (browser SDK) or `Authorization: Bearer ws_live_...` (server-to-server) with per-`(site_id, client_ip)` sliding-window rate limits.
 
-3. **Privacy-Preserving Telemetry**:
-   - **Zero Keylogging**: WebSense captures keystroke *intervals and hold timing* without recording raw text, password characters, or personal information.
-   - Input fields of type `password` are completely bypassed.
+3. **Hosted SDK, Honey Sites & Analyst Tools**:
+   - **`sentinel.js` Hosted SDK (Customer Production)** — Site owners never install a Chrome extension and never copy SDK source code. They register their site via `/dashboard` (**Sites & Embed**) or `POST /api/v1/sites` and paste one hosted `<script>` tag pointing at your deployed SentinelTrace origin. Tracks `pointerType` (`mouse | touch | pen`), caps buffered mouse deltas at 500 points per flush, and uses `navigator.sendBeacon()` (with `fetch(..., { keepalive: true })` fallback) for reliable unload delivery.
+   - **Chrome Extension (Manifest V3 — Analyst / Demo Only)** — Internal analyst and demo tool for inspecting third-party sites without modifying their HTML.
+   - **Instrumented Honey Websites** (`/visitor/shop`, `/visitor/travel`, `/visitor/forum`) + **External Embed Demo** (`/standalone_demo`).
+   - **Dashboard (`/dashboard`)** — Self-hosted site registration & snippet generator, 2D Canvas mouse trajectory replay, 6-experiment ablation lab, and interactive adversarial simulator.
+
+4. **Continuous ML & Production Operations**:
+   - **Active Learning Loop** — Analyst label overrides via `POST /api/v1/sessions/{session_id}/feedback` (`session_feedback` table) and regression-gated retraining via `make retrain` (`scripts/retrain_model.py`).
+   - **Alembic Migrations** — Schema management via `alembic upgrade head` (`make migrate`).
+   - **GDPR/CCPA Telemetry Pruning** — `scripts/prune_telemetry.py` (`make prune`) strips raw `mouse_events`, `click_events`, `keyboard_events`, and `scroll_events` past a configurable TTL (default 14 days) while preserving anonymized verdicts and metrics.
+   - **Observability** — Structured JSON logging with `session_id` and `site_id` correlation IDs and Prometheus metrics at `GET /metrics` (HTTP requests/errors, verdict counts, and L1–L5 layer latencies).
 
 ---
 
-## 📐 Architecture Overview
+## 📊 Empirical Benchmark (600 Traces)
 
-```text
-Visitor Interactions (Shop / Travel / Forum / External via Extension)
-                                │
-                  [sentinel.js Telemetry Engine]
-                                │
-                      POST /api/v1/sessions
-                                ▼
-                      [FastAPI Gateway & DB]
-                                │
-                    [Feature Extraction Engine]
-             (Velocity, Jerk, Straightness, Keystroke CV)
-                                │
-         ┌──────────────────────┴──────────────────────┐
-         ▼                                             ▼
-  [Layer 1: Rules]                            [Layer 2: Behavioral ML]
-  [Layer 3: Anomaly]                          [Layer 4: DTW Replay]
-  [Layer 5: Context]                          [Decision Engine Synthesis]
-                                │
-                                ▼
-                     [Classification Output]
-               (HUMAN | TRADITIONAL_AUTOMATION | AGENTIC_AI | UNCERTAIN)
-               (Confidence % | Risk Score | Explainability Signals)
-                                │
-                                ▼
-                 [Security Dashboard (/dashboard)]
-             (Live Feed | 2D Visualizer | Benchmark Lab)
-```
+Evaluated across **600 persistent holdout traces** (200 per class, including hard-negative human subtypes: `fast_power_user`, `mobile_touch`, `copy_paste_filler`, `slow_network_lag`) — see [BENCHMARK.md](BENCHMARK.md):
+
+| Metric | Measured | Target |
+| :--- | :---: | :---: |
+| **Overall Accuracy** | **95.00%** (570/600) | $\ge 95.0\%$ |
+| **Macro-Averaged F1** | **0.9499** | $\ge 0.9500$ |
+| **Expected Calibration Error (ECE)** | **0.0002** | $\le 0.1000$ |
+| **Mean Inference Latency** | **8.52 ms** | $\le 50.0\text{ ms}$ |
+| **P95 Inference Latency** | **25.97 ms** | $\le 100.0\text{ ms}$ |
 
 ---
 
 ## 🚀 Quickstart & Setup
 
-### 1. Prerequisites
-- Python 3.8+
-- Git
-
-### 2. Installation
+### 1. Installation
 ```bash
-# Clone repository
 git clone https://github.com/Akshat187/ai-agent-traffic-detection-system.git
 cd ai-agent-traffic-detection-system
 
-# Create & activate virtual environment
 python -m venv .venv
+# Windows (PowerShell): .\.venv\Scripts\activate
+# Linux/macOS:         source .venv/bin/activate
 
-# On Windows (PowerShell):
-.\.venv\Scripts\activate
-
-# On Linux/macOS:
-source .venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 3. Seed Demo Dataset
-Populates the database with reproducible, ground-truth-labeled sessions across Human, Bot, and AI Agent categories:
+### 2. Database Migrations, Model Training & Demo Seed
 ```bash
-python demo_seed.py
+make migrate   # Runs alembic upgrade head
+make train     # Trains & saves models/behavioral_v1.2.joblib
+make seed      # Populates demo sessions across HUMAN, TRADITIONAL_AUTOMATION, AGENTIC_AI
 ```
 
-### 4. Start the Application
+### 3. Start the Application
 ```bash
-uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 --reload
+make dev       # Starts FastAPI on http://localhost:8000
 ```
 
-Open your browser:
-- **Security Dashboard**: [http://localhost:8000/dashboard](http://localhost:8000/dashboard)
-- **E-Commerce Honey Site**: [http://localhost:8000/visitor/shop](http://localhost:8000/visitor/shop)
-- **Travel Booking Honey Site**: [http://localhost:8000/visitor/travel](http://localhost:8000/visitor/travel)
-- **Community Forum Honey Site**: [http://localhost:8000/visitor/forum](http://localhost:8000/visitor/forum)
-- **Interactive OpenAPI Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+Open in your browser:
+- **Security Dashboard**: [http://localhost:8000/dashboard](http://localhost:8000/dashboard) (use **Sites & Embed** to register a customer site and copy its hosted `<script>` snippet; set `PUBLIC_BASE_URL` in `.env` for production origins)
+- **Honey Sites**: `/visitor/shop`, `/visitor/travel`, `/visitor/forum`
+- **External Embed Demo**: [http://localhost:8000/standalone_demo](http://localhost:8000/standalone_demo)
+- **OpenAPI Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Prometheus Metrics**: [http://localhost:8000/metrics](http://localhost:8000/metrics)
+
+> **Customer vs. Analyst Distribution:** Production site owners only embed the hosted `<script src="https://<your-deployed-sentineltrace-origin>/sentinel.js" data-site-id="...">` tag (see [EMBED.md](EMBED.md)). The [Chrome extension](extension/README.md) is strictly for internal analysts and demos on third-party websites.
 
 ---
 
-## 🧪 Testing & Verification
+## 🧪 Testing, Benchmarking & Maintenance
 
-Run the comprehensive unit and integration test suite:
 ```bash
-pytest tests/ -v
+make test          # Run full pytest suite (67 tests)
+make evaluate      # Run detection unit tests
+make retrain       # Merge analyst feedback & promote model if Macro-F1 & ECE improve
+make prune         # Strip raw coordinate/keystroke telemetry older than 14 days
+make lint          # Strict flake8 syntax/undefined-name check
+make format-check  # Verify Black formatting
 ```
-
-The 28 test suites validate:
-- Kinematics & mathematical feature extraction
-- Rule engine penalties & bonuses
-- Multi-layer decision engine synthesis
-- Trajectory Dynamic Time Warping (DTW) similarity
-- Privacy guarantees (zero text/password keylogging)
-- REST API endpoints and web template rendering
-
----
-
-## 🔬 Research Grounding & Honest Framing
-
-> [!NOTE]
-> WebSense is an open-source engineering implementation and extension of concepts established in recent cybersecurity research:
-> - **FP-Agent: Fingerprinting AI Browsing Agents (2026)**
-> - **Research on Mouse Dynamics against Sophisticated Web Automation**
-> 
-> WebSense's core contribution is an **integrated, explainable 5-layer defense architecture, a reproducible empirical benchmark lab, and real-time 2D trajectory visualization.**
 
 ---
 
@@ -141,28 +108,32 @@ The 28 test suites validate:
 
 ```text
 ai-agent-traffic-detection-system/
+├── alembic/                  # Alembic database migrations
 ├── apps/
-│   ├── api/                  # FastAPI Application & REST Routers
-│   │   ├── main.py           # App lifecycle, routing, static mounting
+│   ├── api/                  # FastAPI application, observability, and REST/WS routers
+│   │   ├── main.py           # App lifecycle, structured JSON logging, /metrics
+│   │   ├── observability.py  # Correlation IDs & Prometheus MetricsRegistry
 │   │   ├── config.py         # Centralized configuration & thresholds
-│   │   ├── dependencies.py   # DB & Engine singletons
-│   │   └── routes/           # Session, stats, experiment, adversarial APIs
-│   └── web/                  # Web Experiences
-│       ├── public/           # Assets, sentinel.js, dashboard.js, dashboard.css
-│       └── templates/        # dashboard.html, visitor_shop.html, etc.
+│   │   └── routes/           # sessions, sites, ws, stats, experiments, adversarial, seed
+│   └── web/                  # Static CSS/JS (sentinel.js, dashboard.js) & HTML templates
 ├── packages/
-│   ├── core/                 # Kinematics, feature extraction, DTW algorithms
-│   ├── database/             # SQLAlchemy models, SQLite connection, Pydantic schemas
-│   ├── detection/            # 5-Layer Defense-in-Depth Engine & Decision Module
-│   └── generators/           # Synthetic dataset generator, Bot runner, AI Agent adapter
-├── extension/                # Chrome Extension (Manifest V3) for external sites
-├── docker/                   # Dockerfile & docker-compose.yml
-├── tests/                    # Pytest test suite (28 test cases)
-├── .github/workflows/        # GitHub Actions CI pipeline
-├── Makefile                  # Helper make commands
-├── requirements.txt          # Python dependencies
-├── ARCHITECTURE.md           # Deep architecture & threat model notes
-└── API.md                    # REST API documentation
+│   ├── core/                 # Kinematics, 26-feature extraction, fast 2D DTW
+│   ├── database/             # SQLAlchemy models, Alembic-ready DB setup, Pydantic schemas
+│   ├── detection/            # 5-Layer Defense-in-Depth Engine & BehavioralClassifier
+│   └── generators/           # Synthetic session generator & agent adapters
+├── scripts/
+│   ├── generate_benchmarks.py # 600-trace benchmark generator (with hard negatives)
+│   ├── benchmark_evaluation.py# Empirical evaluation & BENCHMARK.md generator
+│   ├── train_model.py        # Visitor-grouped training & joblib serialization
+│   ├── retrain_model.py      # Active-learning retrain with regression gate
+│   └── prune_telemetry.py    # GDPR/CCPA TTL raw telemetry pruning job
+├── models/                   # Persisted Layer-2 model artifacts (behavioral_v1.2.joblib)
+├── extension/                # Chrome Extension (Manifest V3)
+├── tests/                    # Pytest suite (67 tests)
+├── API.md                    # REST API reference (v1.2.1)
+├── ARCHITECTURE.md           # Architecture & threat model documentation
+├── BENCHMARK.md              # 600-trace benchmark report
+└── EMBED.md                  # sentinel.js embed & multi-site integration guide
 ```
 
 ---

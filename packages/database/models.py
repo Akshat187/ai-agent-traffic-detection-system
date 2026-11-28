@@ -24,8 +24,8 @@ from packages.version import MODEL_VERSION, FEATURE_SCHEMA_VERSION
 
 class SiteRecord(Base):
     """
-    Registered client site using the WebSense embeddable SDK.
-    Enforces origin verification and segregates multi-site analytics.
+    Registered client site using the SentinelTrace embeddable SDK.
+    Enforces origin verification, mitigation policy, and multi-site analytics.
     """
 
     __tablename__ = "sites"
@@ -34,10 +34,29 @@ class SiteRecord(Base):
     name = Column(String(128), nullable=False)
     allowed_origins = Column(String(512), default="*")  # Comma-separated domains e.g. "https://example.com,http://localhost:3000"
     api_key = Column(String(64), nullable=True)
+    webhook_url = Column(String(512), nullable=True)
+    risk_threshold = Column(Integer, default=80)
+    enforcement_mode = Column(String(16), default="monitor")  # monitor | challenge | block
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     sessions = relationship("SessionRecord", back_populates="site", cascade="all, delete-orphan")
+
+
+class SessionFeedback(Base):
+    """
+    Analyst label overrides & verdict verifications for active learning and live accuracy.
+    """
+
+    __tablename__ = "session_feedback"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String(64), ForeignKey("sessions.session_id", ondelete="CASCADE"), index=True, nullable=False)
+    predicted_label = Column(String(32), nullable=True)
+    analyst_label = Column(String(32), nullable=False)
+    is_correct = Column(Boolean, nullable=True)
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 
 class SessionRecord(Base):
@@ -132,6 +151,12 @@ class SessionRecord(Base):
     verdict_history = relationship(
         "VerdictHistory", back_populates="session", cascade="all, delete-orphan",
         order_by="VerdictHistory.seq", lazy="dynamic",
+    )
+    feedbacks = relationship(
+        "SessionFeedback",
+        backref="session",
+        cascade="all, delete-orphan",
+        order_by="SessionFeedback.created_at.desc()",
     )
 
 

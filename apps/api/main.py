@@ -11,14 +11,17 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 
 import packages.database.db as db_module
 from packages.database.models import SessionRecord, SiteRecord
 from apps.api.config import settings
-from apps.api.routes import sessions, stats, experiments, adversarial, seed, sites
+from apps.api.observability import configure_structured_logging, metrics_registry
+from apps.api.routes import sessions, stats, experiments, adversarial, seed, sites, ws, model
+
+configure_structured_logging()
 
 # Setup base directories
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -130,14 +133,24 @@ async def log_request_timing(request: Request, call_next):
     start = time.perf_counter()
     response = await call_next(request)
     duration_ms = round((time.perf_counter() - start) * 1000, 1)
+    metrics_registry.record_http(request.method, response.status_code)
     http_logger.info(
-        "%s %s → %s  duration_ms=%s",
+        "%s %s -> %s duration_ms=%s",
         request.method,
         request.url.path,
         response.status_code,
         duration_ms,
     )
     return response
+
+
+@app.get("/metrics", tags=["Observability"])
+def prometheus_metrics():
+    """Exposes Prometheus-format metrics for HTTP requests, errors, verdicts, and L1-L5 latency."""
+    return PlainTextResponse(
+        content=metrics_registry.render_prometheus(),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
 
 
 # CORS Middleware (Supports external embedded sites)
@@ -160,21 +173,51 @@ app.include_router(experiments.router)
 app.include_router(adversarial.router)
 app.include_router(seed.router)
 app.include_router(sites.router)
+app.include_router(ws.router)
+app.include_router(model.router)
 
 
 # Direct SDK Script Endpoint
-@app.get("/sentinel.js", tags=["SDK"])
+_SDK_SCRIPT_HEADERS = {
+    "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+    "Access-Control-Allow-Headers": "*",
+    "Cross-Origin-Resource-Policy": "cross-origin",
+    "X-Content-Type-Options": "nosniff",
+}
+
+
+@app.api_route("/sentinel.js", methods=["GET", "HEAD"], tags=["SDK"])
 def get_sentinel_script():
     """Serves the standalone embeddable Sentinel SDK directly from root."""
     js_path = STATIC_DIR / "sentinel.js"
-    return FileResponse(js_path, media_type="application/javascript")
+    return FileResponse(
+        js_path,
+        media_type="application/javascript; charset=utf-8",
+        headers=_SDK_SCRIPT_HEADERS,
+    )
+
+
+@app.options("/sentinel.js", tags=["SDK"], include_in_schema=False)
+def options_sentinel_script():
+    """Handles CORS preflight requests for the hosted /sentinel.js SDK."""
+    return PlainTextResponse("", status_code=204, headers=_SDK_SCRIPT_HEADERS)
 
 
 @app.get("/collector.js", tags=["SDK"], include_in_schema=False)
 @app.get("/static/collector.js", tags=["SDK"], include_in_schema=False)
 def get_collector_legacy():
     """Legacy alias redirecting to /sentinel.js."""
-    return RedirectResponse(url="/sentinel.js", status_code=301)
+    return RedirectResponse(
+        url="/sentinel.js",
+        status_code=301,
+        headers={
+            "Cache-Control": "public, max-age=3600",
+            "Access-Control-Allow-Origin": "*",
+            "Cross-Origin-Resource-Policy": "cross-origin",
+        },
+    )
 
 
 # Health Check Endpoints

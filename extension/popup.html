@@ -121,6 +121,28 @@
       transition: background 0.15s;
     }
     .btn-dashboard:hover { background: #4338ca; }
+    .fb-strip {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .fb-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .fb-btn {
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: #e2e8f0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .fb-btn-yes:hover { background: rgba(16,185,129,0.2); border-color: #34d399; color: #34d399; }
+    .fb-btn-no:hover { background: rgba(239,68,68,0.2); border-color: #f87171; color: #f87171; }
+    .fb-btn-cls:hover { background: rgba(99,102,241,0.25); border-color: #818cf8; color: #c7d2fe; }
   </style>
 </head>
 <body>
@@ -136,6 +158,25 @@
     <div class="verdict-label">Real-Time Actor Verdict</div>
     <div class="verdict-badge" id="verdict-badge">ANALYZING...</div>
     <div style="font-size:11px;color:#94a3b8;margin-top:6px;" id="confidence-text">Waiting for interactions</div>
+  </div>
+
+  <div class="fb-strip" id="feedback-strip" style="display: none;">
+    <div id="fb-prompt">
+      <div style="font-size:11px;color:#cbd5e1;font-weight:500;">Is this prediction correct?</div>
+      <div class="fb-row">
+        <button type="button" class="fb-btn fb-btn-yes" id="btn-fb-yes">✓ Yes</button>
+        <button type="button" class="fb-btn fb-btn-no" id="btn-fb-no">✗ No</button>
+      </div>
+    </div>
+    <div id="fb-picker" style="display: none;">
+      <div style="font-size:11px;color:#cbd5e1;font-weight:500;">Select true actor class:</div>
+      <div class="fb-row">
+        <button type="button" class="fb-btn fb-btn-cls" data-label="HUMAN">Human</button>
+        <button type="button" class="fb-btn fb-btn-cls" data-label="TRADITIONAL_AUTOMATION">Bot</button>
+        <button type="button" class="fb-btn fb-btn-cls" data-label="AGENTIC_AI">AI Agent</button>
+      </div>
+    </div>
+    <div id="fb-status" style="display: none; font-size:11px; font-weight:600; color:#34d399;"></div>
   </div>
 
   <div class="metrics-grid">

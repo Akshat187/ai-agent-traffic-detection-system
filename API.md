@@ -1,6 +1,6 @@
-﻿# WebSense REST API Reference
+# SentinelTrace REST API Reference
 
-The WebSense backend exposes clean, OpenAPI-compliant REST endpoints for session telemetry ingestion, classification, statistics, and experiments.
+The SentinelTrace backend exposes clean, OpenAPI-compliant REST endpoints for multi-site registration, session telemetry ingestion, classification, statistics, and experiments.
 
 Interactive Swagger documentation is available at:
 `http://localhost:8000/docs`
@@ -61,7 +61,7 @@ Interactive Swagger documentation is available at:
     "Organic typing rhythm variation (CV: 0.32)"
   ],
   "human_explanation": "Classified as Human (94% confidence) with low risk (12/100). Demonstrated organic motor variability...",
-  "model_version": "v1.0.0-defense-in-depth"
+  "model_version": "v1.2.1-actor-inference"
 }
 ```
 
@@ -73,7 +73,7 @@ Interactive Swagger documentation is available at:
 **Query Parameters:**
 - `limit` (int, default=50)
 - `offset` (int, default=0)
-- `label` (string, optional: `HUMAN`, `BOT`, `AI_AGENT`, `UNCERTAIN`)
+- `label` (string, optional: `HUMAN`, `TRADITIONAL_AUTOMATION`, `AGENTIC_AI`, `UNCERTAIN`)
 
 ---
 
@@ -84,7 +84,39 @@ Returns complete session summary, full extracted feature vector, 5-layer verdict
 
 ---
 
-## 2. Statistics API
+## 2. Multi-Site Registration API
+
+### Register a Site
+`POST /api/v1/sites`
+
+Registers a new site for the SentinelTrace hosted SDK (`sentinel.js`), returning a `site_id`, server-to-server `api_key` (`ws_live_...`), and copy-pasteable `embed_snippet`.
+
+**Request Body:**
+```json
+{
+  "name": "Acme Global Store",
+  "allowed_origins": "https://acmestore.com,https://staging.acmestore.com",
+  "risk_threshold": 80,
+  "enforcement_mode": "monitor"
+}
+```
+
+**Response (`201 Created`):**
+Includes `site_id`, `api_key`, policy settings, and `embed_snippet` (`<script src=".../sentinel.js" data-site-id="..." data-task="general" async></script>`).
+
+### List Registered Sites
+`GET /api/v1/sites`
+
+Returns all registered sites, their session counts, and `embed_snippet`.
+
+### Get Site Details
+`GET /api/v1/sites/{site_id}`
+
+Returns metadata, configuration, and `embed_snippet` for a specific registered site.
+
+---
+
+## 3. Statistics API
 
 ### Get Platform Overview Metrics
 `GET /api/v1/stats/overview`
@@ -93,12 +125,12 @@ Returns aggregated counts, class percentages, average confidence, average risk s
 
 ---
 
-## 3. Experiments & Adversarial API
+## 4. Experiments & Adversarial API
 
-### Run FP-Agent Benchmark
+### Run 6-Experiment Ablation Suite
 `POST /api/v1/experiments/run`
 
-Runs 4-way comparative evaluation (Browser Only vs Behavioral vs Combined vs 5-Layer Defense-in-Depth) and returns Confusion Matrix and Feature Importance rankings.
+Runs the 6-experiment comparative evaluation and ablation suite (Browser Only vs Behavioral Only vs Full 5-Layer Defense-in-Depth, Feature Importance, Calibration, and Evasive Resistance) and returns Confusion Matrix and Feature Importance rankings.
 
 ### Simulate Adversarial Attack
 `POST /api/v1/adversarial/simulate`

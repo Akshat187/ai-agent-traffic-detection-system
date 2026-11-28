@@ -30,15 +30,17 @@
   if (window.__WEBSENSE_COLLECTOR_ACTIVE__ || document.documentElement.dataset.wsOwner === 'sdk') {
     return;
   }
-  document.documentElement.dataset.wsOwner = 'sdk';
-  window.__WEBSENSE_COLLECTOR_ACTIVE__ = true;
 
-  // Notify extension or other observers that SDK owns collection
-  try {
-    window.dispatchEvent(new CustomEvent('ws:collector_activated', { detail: { owner: 'sdk', timestamp: Date.now() } }));
-    window.dispatchEvent(new CustomEvent('ws:claimed', { detail: { owner: 'sdk' } }));
-    window.postMessage({ type: 'WEBSENSE_SDK_ACTIVATED' }, '*');
-  } catch (_) {}
+  function claimSdkOwnership() {
+    if (window.__WEBSENSE_COLLECTOR_ACTIVE__) return;
+    document.documentElement.dataset.wsOwner = 'sdk';
+    window.__WEBSENSE_COLLECTOR_ACTIVE__ = true;
+    try {
+      window.dispatchEvent(new CustomEvent('ws:collector_activated', { detail: { owner: 'sdk', timestamp: Date.now() } }));
+      window.dispatchEvent(new CustomEvent('ws:claimed', { detail: { owner: 'sdk' } }));
+      window.postMessage({ type: 'WEBSENSE_SDK_ACTIVATED' }, '*');
+    } catch (_) {}
+  }
 
   // 1. Discover configuration from script tag
   const currentScript = document.currentScript || (function () {
@@ -87,7 +89,7 @@
 
   const MOUSE_THROTTLE_MS = 25;
   const SCROLL_THROTTLE_MS = 50;
-  const MAX_MOUSE_DELTA = 300;
+  const MAX_MOUSE_DELTA = 500;
   const MAX_KEYBOARD_DELTA = 200;
   const MAX_SCROLL_DELTA = 150;
   const MAX_CLICK_DELTA = 50;
@@ -155,6 +157,9 @@
   }
 
   let consentGranted = checkConsent();
+  if (consentGranted) {
+    claimSdkOwnership();
+  }
 
   // 5. Page Visit State Factory (Encapsulated State Object)
   function createPageVisit(prevVisitId, task) {
@@ -233,9 +238,12 @@
   }
 
   // 6. Browser Signals & Client Context
+  let lastPointerType = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) ? 'touch' : 'mouse';
+
   function getBrowserSignals() {
     return {
       webdriver: Boolean(navigator.webdriver),
+      pointer_type: lastPointerType,
       screen_width: window.screen ? window.screen.width : 1920,
       screen_height: window.screen ? window.screen.height : 1080,
       viewport_width: window.innerWidth || 1280,
@@ -277,6 +285,14 @@
   function attachListeners() {
     if (listenersAttached || !consentGranted) return;
     listenersAttached = true;
+
+    // Pointer type tracking (mouse | touch | pen) for mobile/a11y false-positive protection
+    window.addEventListener('pointerdown', function (e) {
+      if (e && e.pointerType) lastPointerType = e.pointerType;
+    }, { passive: true });
+    window.addEventListener('touchstart', function () {
+      lastPointerType = 'touch';
+    }, { passive: true });
 
     // Mouse dynamics
     window.addEventListener('mousemove', function (e) {
@@ -498,6 +514,20 @@
     }
 
     const inFlight = visit.inFlight;
+
+    // On final/unload flushes, prefer navigator.sendBeacon() so browser tab close
+    // does not abort the request before delivery.
+    if (isFinal && navigator.sendBeacon) {
+      try {
+        const blob = new Blob([inFlight.bodyStr], { type: 'application/json' });
+        if (navigator.sendBeacon(apiEndpoint, blob)) {
+          visit.transmissionSeq++;
+          visit.inFlight = null;
+          return null;
+        }
+      } catch (_) {}
+    }
+
     visit.isSending = true;
 
     // Timeout guard: 10s timeout ensures isSending never gets permanently stuck
@@ -530,14 +560,32 @@
         visit.transmissionSeq++;
         visit.inFlight = null;
 
-        // Broadcast verdict to window observers (such as the Chrome Extension)
+        // Broadcast verdict and live event counts to window observers (such as the Chrome Extension)
         window.postMessage({
           type: 'WEBSENSE_VERDICT_UPDATE',
           verdict: data,
           sessionId: visit.sessionId,
           pageVisitId: visit.sessionId,
           seq: inFlight.seq,
+          events: {
+            mouseTotal: visit.totalEventsCount || 0,
+            keysTotal: 0,
+            clicksTotal: 0,
+            activeDurationMs: getActiveDurationMs(visit),
+          },
         }, '*');
+
+        // Active Mitigation Policy enforcement hook (ALLOW | CHALLENGE | BLOCK)
+        if (data.action && data.action !== 'ALLOW') {
+          window.dispatchEvent(new CustomEvent('sentinel:action', { detail: data }));
+          if (data.action === 'BLOCK' && !document.getElementById('sentinel-block-banner')) {
+            const banner = document.createElement('div');
+            banner.id = 'sentinel-block-banner';
+            banner.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(15,23,42,0.92);color:#fff;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:24px;';
+            banner.innerHTML = '<div><h2 style="font-size:20px;font-weight:700;margin-bottom:8px;">Automated Activity Blocked</h2><p style="font-size:14px;color:#cbd5e1;">SentinelTrace policy engine flagged this session (' + data.predicted_label + ', risk ' + data.risk_score + '/100).</p></div>';
+            if (document.body) document.body.appendChild(banner);
+          }
+        }
 
         return data;
       } else if (resp.status >= 400 && resp.status < 500 && resp.status !== 429) {
@@ -664,6 +712,7 @@
 
     grantConsent: function () {
       consentGranted = true;
+      claimSdkOwnership();
       for (let i = 0; i < CONSENT_KEYS.length; i++) {
         try { localStorage.setItem(CONSENT_KEYS[i], 'granted'); } catch (_) {}
       }

@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from packages.database.db import get_db
-from packages.database.models import SessionRecord
+from packages.database.models import SessionRecord, SessionFeedback
 from packages.database.schemas import OverviewStatsResponse, SessionSummary
 from packages.database.repository import build_session_summary, apply_source_filter
 
@@ -145,3 +145,47 @@ def get_overview_stats(
         detection_timeline=timeline,
         low_signal_count=low_signal_count,
     )
+
+
+@router.get("/feedback")
+def get_feedback_stats(db: Session = Depends(get_db)):
+    """
+    Computes live real-world accuracy and 3x3 confusion matrix from verified
+    user/analyst feedback (latest feedback per unique session_id).
+    """
+    classes = ["HUMAN", "TRADITIONAL_AUTOMATION", "AGENTIC_AI"]
+    rows = db.query(SessionFeedback).order_by(SessionFeedback.id.desc()).all()
+    latest_by_session = {}
+    for fb in rows:
+        if fb.session_id not in latest_by_session:
+            latest_by_session[fb.session_id] = fb
+
+    total_verified = len(latest_by_session)
+    correct_count = 0
+    cm = {pred: {true_cls: 0 for true_cls in classes} for pred in classes}
+    class_counts = {c: 0 for c in classes}
+
+    for fb in latest_by_session.values():
+        pred = fb.predicted_label
+        if not pred:
+            sess = db.query(SessionRecord.predicted_label).filter(SessionRecord.session_id == fb.session_id).first()
+            pred = sess[0] if sess else "UNCERTAIN"
+        true_lbl = fb.analyst_label
+        is_ok = fb.is_correct if fb.is_correct is not None else (pred == true_lbl)
+        if is_ok:
+            correct_count += 1
+        if true_lbl in class_counts:
+            class_counts[true_lbl] += 1
+        if pred in cm and true_lbl in cm[pred]:
+            cm[pred][true_lbl] += 1
+
+    accuracy = round((correct_count / total_verified) * 100.0, 2) if total_verified > 0 else None
+    return {
+        "total_verified": total_verified,
+        "correct_count": correct_count,
+        "incorrect_count": total_verified - correct_count,
+        "accuracy_pct": accuracy,
+        "classes": classes,
+        "confusion_matrix": cm,
+        "verified_class_counts": class_counts,
+    }

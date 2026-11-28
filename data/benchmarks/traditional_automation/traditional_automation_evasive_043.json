@@ -1,0 +1,394 @@
+{
+  "session_id": "bm_traditional_automation_evasive_shopping_043",
+  "visitor_id": "vis_traditional_automation_043",
+  "task": "shopping",
+  "start_time": 1724902580000,
+  "end_time": 1724902581510,
+  "duration_ms": 1510.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_evasive",
+  "browser_signals": {
+    "webdriver": false,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 198,
+      "y": 200,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 217,
+      "y": 218,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 208,
+      "y": 229,
+      "t": 60,
+      "type": "move"
+    },
+    {
+      "x": 242,
+      "y": 225,
+      "t": 91,
+      "type": "move"
+    },
+    {
+      "x": 253,
+      "y": 250,
+      "t": 121,
+      "type": "move"
+    },
+    {
+      "x": 272,
+      "y": 254,
+      "t": 151,
+      "type": "move"
+    },
+    {
+      "x": 278,
+      "y": 277,
+      "t": 181,
+      "type": "move"
+    },
+    {
+      "x": 323,
+      "y": 256,
+      "t": 211,
+      "type": "move"
+    },
+    {
+      "x": 322,
+      "y": 295,
+      "t": 242,
+      "type": "move"
+    },
+    {
+      "x": 326,
+      "y": 291,
+      "t": 272,
+      "type": "move"
+    },
+    {
+      "x": 370,
+      "y": 295,
+      "t": 302,
+      "type": "move"
+    },
+    {
+      "x": 371,
+      "y": 305,
+      "t": 332,
+      "type": "move"
+    },
+    {
+      "x": 375,
+      "y": 326,
+      "t": 362,
+      "type": "move"
+    },
+    {
+      "x": 392,
+      "y": 319,
+      "t": 393,
+      "type": "move"
+    },
+    {
+      "x": 427,
+      "y": 352,
+      "t": 423,
+      "type": "move"
+    },
+    {
+      "x": 431,
+      "y": 337,
+      "t": 453,
+      "type": "move"
+    },
+    {
+      "x": 447,
+      "y": 365,
+      "t": 483,
+      "type": "move"
+    },
+    {
+      "x": 449,
+      "y": 357,
+      "t": 513,
+      "type": "move"
+    },
+    {
+      "x": 461,
+      "y": 383,
+      "t": 544,
+      "type": "move"
+    },
+    {
+      "x": 480,
+      "y": 369,
+      "t": 574,
+      "type": "move"
+    },
+    {
+      "x": 479,
+      "y": 414,
+      "t": 604,
+      "type": "move"
+    },
+    {
+      "x": 499,
+      "y": 404,
+      "t": 634,
+      "type": "move"
+    },
+    {
+      "x": 527,
+      "y": 412,
+      "t": 664,
+      "type": "move"
+    },
+    {
+      "x": 553,
+      "y": 441,
+      "t": 695,
+      "type": "move"
+    },
+    {
+      "x": 570,
+      "y": 421,
+      "t": 725,
+      "type": "move"
+    },
+    {
+      "x": 579,
+      "y": 432,
+      "t": 755,
+      "type": "move"
+    },
+    {
+      "x": 591,
+      "y": 456,
+      "t": 785,
+      "type": "move"
+    },
+    {
+      "x": 607,
+      "y": 465,
+      "t": 815,
+      "type": "move"
+    },
+    {
+      "x": 620,
+      "y": 490,
+      "t": 846,
+      "type": "move"
+    },
+    {
+      "x": 635,
+      "y": 499,
+      "t": 876,
+      "type": "move"
+    },
+    {
+      "x": 659,
+      "y": 509,
+      "t": 906,
+      "type": "move"
+    },
+    {
+      "x": 680,
+      "y": 516,
+      "t": 936,
+      "type": "move"
+    },
+    {
+      "x": 677,
+      "y": 496,
+      "t": 966,
+      "type": "move"
+    },
+    {
+      "x": 677,
+      "y": 522,
+      "t": 997,
+      "type": "move"
+    },
+    {
+      "x": 727,
+      "y": 539,
+      "t": 1027,
+      "type": "move"
+    },
+    {
+      "x": 709,
+      "y": 534,
+      "t": 1057,
+      "type": "move"
+    },
+    {
+      "x": 744,
+      "y": 563,
+      "t": 1087,
+      "type": "move"
+    },
+    {
+      "x": 764,
+      "y": 566,
+      "t": 1117,
+      "type": "move"
+    },
+    {
+      "x": 771,
+      "y": 569,
+      "t": 1148,
+      "type": "move"
+    },
+    {
+      "x": 787,
+      "y": 583,
+      "t": 1178,
+      "type": "move"
+    },
+    {
+      "x": 800,
+      "y": 600,
+      "t": 1208,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 168,
+      "interval": 118,
+      "hold": 52,
+      "is_paste": false
+    },
+    {
+      "t": 228,
+      "interval": 60,
+      "hold": 15,
+      "is_paste": false
+    },
+    {
+      "t": 295,
+      "interval": 67,
+      "hold": 18,
+      "is_paste": false
+    },
+    {
+      "t": 379,
+      "interval": 84,
+      "hold": 26,
+      "is_paste": false
+    },
+    {
+      "t": 454,
+      "interval": 75,
+      "hold": 53,
+      "is_paste": false
+    },
+    {
+      "t": 544,
+      "interval": 90,
+      "hold": 55,
+      "is_paste": false
+    },
+    {
+      "t": 620,
+      "interval": 76,
+      "hold": 47,
+      "is_paste": false
+    },
+    {
+      "t": 681,
+      "interval": 61,
+      "hold": 20,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 75,
+      "scroll_y": 388,
+      "delta_y": 388
+    },
+    {
+      "t": 215,
+      "scroll_y": 776,
+      "delta_y": 388
+    },
+    {
+      "t": 341,
+      "scroll_y": 1164,
+      "delta_y": 388
+    },
+    {
+      "t": 501,
+      "scroll_y": 1552,
+      "delta_y": 388
+    },
+    {
+      "t": 662,
+      "scroll_y": 1940,
+      "delta_y": 388
+    },
+    {
+      "t": 857,
+      "scroll_y": 2328,
+      "delta_y": 388
+    },
+    {
+      "t": 972,
+      "scroll_y": 2716,
+      "delta_y": 388
+    },
+    {
+      "t": 1152,
+      "scroll_y": 3104,
+      "delta_y": 388
+    },
+    {
+      "t": 1344,
+      "scroll_y": 3492,
+      "delta_y": 388
+    }
+  ],
+  "click_events": [
+    {
+      "x": 800,
+      "y": 600,
+      "t": 1283,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "filter_applied",
+      "t": 528,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 906,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 1208,
+      "details": {}
+    }
+  ]
+}

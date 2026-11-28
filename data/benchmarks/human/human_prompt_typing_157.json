@@ -1,0 +1,232 @@
+{
+  "session_id": "bm_human_prompt_typing_shopping_157",
+  "visitor_id": "vis_human_157",
+  "task": "shopping",
+  "start_time": 1724909420000,
+  "end_time": 1724909431374,
+  "duration_ms": 11374.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_prompt_typing",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "mouse",
+    "screen_width": 1440,
+    "screen_height": 800,
+    "viewport_width": 1440,
+    "viewport_height": 800,
+    "device_pixel_ratio": 2.0,
+    "touch_support": false,
+    "hardware_concurrency": 16,
+    "platform": "MacIntel",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 280,
+      "y": 347,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 286,
+      "y": 355,
+      "t": 3,
+      "type": "move"
+    },
+    {
+      "x": 298,
+      "y": 361,
+      "t": 14,
+      "type": "move"
+    },
+    {
+      "x": 308,
+      "y": 368,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 326,
+      "y": 376,
+      "t": 53,
+      "type": "move"
+    },
+    {
+      "x": 342,
+      "y": 385,
+      "t": 80,
+      "type": "move"
+    },
+    {
+      "x": 365,
+      "y": 385,
+      "t": 112,
+      "type": "move"
+    },
+    {
+      "x": 390,
+      "y": 391,
+      "t": 148,
+      "type": "move"
+    },
+    {
+      "x": 409,
+      "y": 398,
+      "t": 186,
+      "type": "move"
+    },
+    {
+      "x": 437,
+      "y": 409,
+      "t": 225,
+      "type": "move"
+    },
+    {
+      "x": 458,
+      "y": 412,
+      "t": 264,
+      "type": "move"
+    },
+    {
+      "x": 484,
+      "y": 418,
+      "t": 302,
+      "type": "move"
+    },
+    {
+      "x": 504,
+      "y": 429,
+      "t": 337,
+      "type": "move"
+    },
+    {
+      "x": 521,
+      "y": 435,
+      "t": 370,
+      "type": "move"
+    },
+    {
+      "x": 541,
+      "y": 444,
+      "t": 397,
+      "type": "move"
+    },
+    {
+      "x": 554,
+      "y": 455,
+      "t": 420,
+      "type": "move"
+    },
+    {
+      "x": 565,
+      "y": 463,
+      "t": 436,
+      "type": "move"
+    },
+    {
+      "x": 571,
+      "y": 473,
+      "t": 447,
+      "type": "move"
+    },
+    {
+      "x": 571,
+      "y": 484,
+      "t": 450,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 642,
+      "interval": 42.6,
+      "hold": 74,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 783,
+      "interval": 141.0,
+      "hold": 49,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 948,
+      "interval": 165.7,
+      "hold": 45,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1087,
+      "interval": 139.2,
+      "hold": 53,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1252,
+      "interval": 165.0,
+      "hold": 103,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1457,
+      "interval": 205.7,
+      "hold": 54,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1630,
+      "interval": 173.5,
+      "hold": 45,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1779,
+      "interval": 149.0,
+      "hold": 64,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [],
+  "click_events": [
+    {
+      "x": 571,
+      "y": 483,
+      "t": 460,
+      "target_category": "input",
+      "is_trusted": true
+    },
+    {
+      "x": 691,
+      "y": 493,
+      "t": 10236,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "input_focus",
+      "t": 460,
+      "details": {
+        "trusted": true
+      }
+    },
+    {
+      "action": "button_trigger",
+      "t": 10236,
+      "details": {
+        "trusted": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,260 @@
+{
+  "session_id": "bm_traditional_automation_deterministic_shopping_169",
+  "visitor_id": "vis_traditional_automation_169",
+  "task": "shopping",
+  "start_time": 1724910140000,
+  "end_time": 1724910140795,
+  "duration_ms": 795.0,
+  "ground_truth_label": "TRADITIONAL_AUTOMATION",
+  "is_synthetic": false,
+  "data_source": "benchmark_deterministic",
+  "browser_signals": {
+    "webdriver": true,
+    "screen_width": 1280,
+    "screen_height": 800,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 2,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 200,
+      "y": 200,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 229,
+      "y": 219,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 257,
+      "y": 238,
+      "t": 61,
+      "type": "move"
+    },
+    {
+      "x": 286,
+      "y": 257,
+      "t": 91,
+      "type": "move"
+    },
+    {
+      "x": 314,
+      "y": 276,
+      "t": 121,
+      "type": "move"
+    },
+    {
+      "x": 343,
+      "y": 295,
+      "t": 151,
+      "type": "move"
+    },
+    {
+      "x": 371,
+      "y": 314,
+      "t": 182,
+      "type": "move"
+    },
+    {
+      "x": 400,
+      "y": 333,
+      "t": 212,
+      "type": "move"
+    },
+    {
+      "x": 429,
+      "y": 352,
+      "t": 242,
+      "type": "move"
+    },
+    {
+      "x": 457,
+      "y": 371,
+      "t": 273,
+      "type": "move"
+    },
+    {
+      "x": 486,
+      "y": 390,
+      "t": 303,
+      "type": "move"
+    },
+    {
+      "x": 514,
+      "y": 410,
+      "t": 333,
+      "type": "move"
+    },
+    {
+      "x": 543,
+      "y": 429,
+      "t": 363,
+      "type": "move"
+    },
+    {
+      "x": 571,
+      "y": 448,
+      "t": 394,
+      "type": "move"
+    },
+    {
+      "x": 600,
+      "y": 467,
+      "t": 424,
+      "type": "move"
+    },
+    {
+      "x": 629,
+      "y": 486,
+      "t": 454,
+      "type": "move"
+    },
+    {
+      "x": 657,
+      "y": 505,
+      "t": 485,
+      "type": "move"
+    },
+    {
+      "x": 686,
+      "y": 524,
+      "t": 515,
+      "type": "move"
+    },
+    {
+      "x": 714,
+      "y": 543,
+      "t": 545,
+      "type": "move"
+    },
+    {
+      "x": 743,
+      "y": 562,
+      "t": 575,
+      "type": "move"
+    },
+    {
+      "x": 771,
+      "y": 581,
+      "t": 606,
+      "type": "move"
+    },
+    {
+      "x": 800,
+      "y": 600,
+      "t": 636,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 91,
+      "interval": 41,
+      "hold": 18,
+      "is_paste": false
+    },
+    {
+      "t": 130,
+      "interval": 39,
+      "hold": 26,
+      "is_paste": false
+    },
+    {
+      "t": 171,
+      "interval": 41,
+      "hold": 24,
+      "is_paste": false
+    },
+    {
+      "t": 210,
+      "interval": 39,
+      "hold": 15,
+      "is_paste": false
+    },
+    {
+      "t": 251,
+      "interval": 41,
+      "hold": 18,
+      "is_paste": false
+    },
+    {
+      "t": 290,
+      "interval": 39,
+      "hold": 15,
+      "is_paste": false
+    },
+    {
+      "t": 327,
+      "interval": 37,
+      "hold": 16,
+      "is_paste": false
+    },
+    {
+      "t": 365,
+      "interval": 38,
+      "hold": 21,
+      "is_paste": false
+    }
+  ],
+  "scroll_events": [
+    {
+      "t": 39,
+      "scroll_y": 472,
+      "delta_y": 472
+    },
+    {
+      "t": 178,
+      "scroll_y": 944,
+      "delta_y": 472
+    },
+    {
+      "t": 293,
+      "scroll_y": 1416,
+      "delta_y": 472
+    },
+    {
+      "t": 486,
+      "scroll_y": 1888,
+      "delta_y": 472
+    },
+    {
+      "t": 603,
+      "scroll_y": 2360,
+      "delta_y": 472
+    }
+  ],
+  "click_events": [
+    {
+      "x": 800,
+      "y": 600,
+      "t": 675,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "filter_applied",
+      "t": 278,
+      "details": {}
+    },
+    {
+      "action": "quantity_updated",
+      "t": 477,
+      "details": {}
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 636,
+      "details": {}
+    }
+  ]
+}

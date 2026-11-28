@@ -1,0 +1,288 @@
+{
+  "session_id": "bm_human_prompt_typing_travel_143",
+  "visitor_id": "vis_human_143",
+  "task": "travel",
+  "start_time": 1724908580000,
+  "end_time": 1724908588235,
+  "duration_ms": 8235.0,
+  "ground_truth_label": "HUMAN",
+  "is_synthetic": false,
+  "data_source": "benchmark_prompt_typing",
+  "browser_signals": {
+    "webdriver": false,
+    "pointer_type": "mouse",
+    "screen_width": 1440,
+    "screen_height": 1080,
+    "viewport_width": 1200,
+    "viewport_height": 720,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 4,
+    "platform": "Linux x86_64",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [
+    {
+      "x": 387,
+      "y": 303,
+      "t": 0,
+      "type": "move"
+    },
+    {
+      "x": 403,
+      "y": 307,
+      "t": 3,
+      "type": "move"
+    },
+    {
+      "x": 417,
+      "y": 313,
+      "t": 14,
+      "type": "move"
+    },
+    {
+      "x": 431,
+      "y": 321,
+      "t": 30,
+      "type": "move"
+    },
+    {
+      "x": 445,
+      "y": 327,
+      "t": 53,
+      "type": "move"
+    },
+    {
+      "x": 459,
+      "y": 340,
+      "t": 80,
+      "type": "move"
+    },
+    {
+      "x": 470,
+      "y": 352,
+      "t": 112,
+      "type": "move"
+    },
+    {
+      "x": 486,
+      "y": 363,
+      "t": 148,
+      "type": "move"
+    },
+    {
+      "x": 499,
+      "y": 377,
+      "t": 186,
+      "type": "move"
+    },
+    {
+      "x": 512,
+      "y": 392,
+      "t": 225,
+      "type": "move"
+    },
+    {
+      "x": 527,
+      "y": 402,
+      "t": 264,
+      "type": "move"
+    },
+    {
+      "x": 541,
+      "y": 416,
+      "t": 302,
+      "type": "move"
+    },
+    {
+      "x": 559,
+      "y": 437,
+      "t": 337,
+      "type": "move"
+    },
+    {
+      "x": 574,
+      "y": 455,
+      "t": 370,
+      "type": "move"
+    },
+    {
+      "x": 594,
+      "y": 465,
+      "t": 397,
+      "type": "move"
+    },
+    {
+      "x": 613,
+      "y": 489,
+      "t": 420,
+      "type": "move"
+    },
+    {
+      "x": 630,
+      "y": 509,
+      "t": 436,
+      "type": "move"
+    },
+    {
+      "x": 650,
+      "y": 526,
+      "t": 447,
+      "type": "move"
+    },
+    {
+      "x": 671,
+      "y": 545,
+      "t": 450,
+      "type": "move"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "t": 827,
+      "interval": 227.8,
+      "hold": 40,
+      "is_paste": true,
+      "is_trusted": true
+    },
+    {
+      "t": 1020,
+      "interval": 193.9,
+      "hold": 67,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1293,
+      "interval": 273.5,
+      "hold": 86,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1443,
+      "interval": 150.0,
+      "hold": 88,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1587,
+      "interval": 144.1,
+      "hold": 56,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 1895,
+      "interval": 308.6,
+      "hold": 91,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2045,
+      "interval": 150.4,
+      "hold": 84,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2293,
+      "interval": 248.1,
+      "hold": 90,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2430,
+      "interval": 137.5,
+      "hold": 57,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 2780,
+      "interval": 350.9,
+      "hold": 62,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3003,
+      "interval": 223.0,
+      "hold": 42,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3261,
+      "interval": 258.2,
+      "hold": 104,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3350,
+      "interval": 89.4,
+      "hold": 76,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3487,
+      "interval": 137.4,
+      "hold": 60,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3807,
+      "interval": 320.5,
+      "hold": 72,
+      "is_paste": false,
+      "is_trusted": true
+    },
+    {
+      "t": 3913,
+      "interval": 106.1,
+      "hold": 48,
+      "is_paste": false,
+      "is_trusted": true
+    }
+  ],
+  "scroll_events": [],
+  "click_events": [
+    {
+      "x": 672,
+      "y": 545,
+      "t": 460,
+      "target_category": "input",
+      "is_trusted": true
+    },
+    {
+      "x": 792,
+      "y": 555,
+      "t": 7411,
+      "target_category": "button",
+      "is_trusted": true
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "input_focus",
+      "t": 460,
+      "details": {
+        "trusted": true
+      }
+    },
+    {
+      "action": "button_trigger",
+      "t": 7411,
+      "details": {
+        "trusted": true
+      }
+    }
+  ]
+}

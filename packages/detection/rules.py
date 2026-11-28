@@ -67,11 +67,32 @@ class RuleEngine:
         # ── BEHAVIORAL SIGNALS (primary) ──────────────────────────────────────
 
         # 1. Clicks present but zero or almost no mouse movement
+        # Mobile/touch users and keyboard-only a11y/screen-reader users naturally lack mouse hover paths.
         click_count = features.get("click_count", 0)
         mouse_count = features.get("mouse_event_count", 0)
+        key_count = features.get("key_event_count", 0)
+        key_cv = features.get("key_latency_cv", 0.0)
+        key_hold = features.get("key_mean_hold_time", 0.0)
+        # Fast human typists routinely average 25-34ms holds; require <18ms or (<25ms with robotic CV <0.10)
+        has_robotic_hold = (0.0 < key_hold < 18.0) or (0.0 < key_hold < 25.0 and key_cv < 0.10)
+        is_touch_session = (
+            features.get("pointer_type") == "touch"
+        ) and not features.get("webdriver_flag")
+        is_a11y_keyboard = (
+            mouse_count < 3
+            and key_count >= 4
+            and key_cv >= 0.20
+            and not has_robotic_hold
+            and not features.get("webdriver_flag")
+        )
         if click_count > 0 and mouse_count < 3:
-            risk += self.config["zero_mouse_with_clicks_penalty"]
-            flags.append("DOM_CLICKS_WITHOUT_MOUSE_TRAJECTORY")
+            if is_touch_session:
+                mitigations.append("MOBILE_TOUCH_INTERACTION")
+            elif is_a11y_keyboard:
+                mitigations.append("ACCESSIBILITY_KEYBOARD_NAVIGATION")
+            else:
+                risk += self.config["zero_mouse_with_clicks_penalty"]
+                flags.append("DOM_CLICKS_WITHOUT_MOUSE_TRAJECTORY")
 
         # 2. Perfectly straight mouse movements (automation signature)
         straightness = features.get("straightness_ratio", 1.0)
@@ -81,13 +102,19 @@ class RuleEngine:
             flags.append("ABNORMAL_LINEAR_MOUSE_PATH")
 
         # 3. Uniform typing cadence or superhuman key hold speed
-        key_count = features.get("key_event_count", 0)
-        key_cv = features.get("key_latency_cv", 0.0)
-        key_hold = features.get("key_mean_hold_time", 0.0)
-        has_robotic_hold = (0.0 < key_hold < 35.0)
         if key_count >= 4 and (key_cv < 0.18 or has_robotic_hold):
             risk += self.config["uniform_keystrokes_penalty"]
             flags.append("SYNTHETIC_UNIFORM_KEYSTROKE_CADENCE")
+
+        # 3b. Untrusted synthetic DOM events (isTrusted === false) or programmatic input injection
+        untrusted_ratio = features.get("untrusted_event_ratio", 0.0)
+        prog_input_ratio = features.get("programmatic_input_ratio", 0.0)
+        if untrusted_ratio > 0.30:
+            risk += 35.0
+            flags.append("UNTRUSTED_SYNTHETIC_EVENTS")
+        if prog_input_ratio > 0.50:
+            risk += 25.0
+            flags.append("PROGRAMMATIC_INPUT_INJECTION")
 
         # 4. Instantaneous task completion (<300ms with multiple events)
         duration_ms = features.get("duration_ms", 1000.0)

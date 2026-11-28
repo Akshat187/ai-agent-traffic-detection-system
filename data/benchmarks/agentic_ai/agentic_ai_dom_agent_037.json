@@ -1,0 +1,104 @@
+{
+  "session_id": "bm_agentic_ai_dom_agent_shopping_037",
+  "visitor_id": "vis_agentic_ai_037",
+  "task": "shopping",
+  "start_time": 1724902220000,
+  "end_time": 1724902229743,
+  "duration_ms": 9743.0,
+  "ground_truth_label": "AGENTIC_AI",
+  "is_synthetic": false,
+  "data_source": "benchmark_dom_agent",
+  "browser_signals": {
+    "webdriver": false,
+    "screen_width": 1920,
+    "screen_height": 1080,
+    "viewport_width": 1280,
+    "viewport_height": 800,
+    "device_pixel_ratio": 1.0,
+    "touch_support": false,
+    "hardware_concurrency": 8,
+    "platform": "Win32",
+    "language": "en-US",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
+  },
+  "mouse_events": [],
+  "keyboard_events": [],
+  "scroll_events": [
+    {
+      "t": 1948,
+      "scroll_y": 366,
+      "delta_y": 366
+    },
+    {
+      "t": 3508,
+      "scroll_y": 567,
+      "delta_y": 201
+    },
+    {
+      "t": 5415,
+      "scroll_y": 778,
+      "delta_y": 211
+    },
+    {
+      "t": 6677,
+      "scroll_y": 995,
+      "delta_y": 217
+    },
+    {
+      "t": 8417,
+      "scroll_y": 1231,
+      "delta_y": 236
+    }
+  ],
+  "click_events": [
+    {
+      "x": 300,
+      "y": 250,
+      "t": 484,
+      "target_category": "input"
+    },
+    {
+      "x": 520,
+      "y": 380,
+      "t": 3645,
+      "target_category": "button"
+    },
+    {
+      "x": 750,
+      "y": 620,
+      "t": 5937,
+      "target_category": "button"
+    }
+  ],
+  "task_actions": [
+    {
+      "action": "browsed_listing",
+      "t": 484,
+      "details": {
+        "target": "search_input"
+      }
+    },
+    {
+      "action": "item_selected",
+      "t": 3645,
+      "details": {
+        "target": "item_card"
+      }
+    },
+    {
+      "action": "quantity_updated",
+      "t": 5937,
+      "details": {
+        "target": "action_button"
+      }
+    },
+    {
+      "action": "checkout_initiated",
+      "t": 9281,
+      "details": {
+        "target": "confirm_button"
+      }
+    }
+  ],
+  "active_duration_ms": 9743.0
+}
